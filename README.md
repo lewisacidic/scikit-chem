@@ -1,2 +1,4 @@
 # scikit-chem
-Quick attempt at a python scientific stack compatable cheminformatics library, based on the RDKit library.  
+Quick attempt at more straightforwardly integrating the Scientific Python Stack with the RDKit Cheminformatics library.
+
+Note: Speed is not high on priority list. A demonstration of the convenience is the aim - much more would be required to maintain the RDKit levels of efficiency.
