@@ -3,11 +3,12 @@ from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 import gzip
 import cPickle
 import skchem
+import os
 
 class PIDGIN(object):
     
     def __init__(self):
-        with gzip.open('/Users/RichLewis/Git/compound_combinations/models.pkl.gz', 'rb') as f:
+        with gzip.open(os.path.join(os.path.dirname(__file__),'../data/PIDGIN_models.pkl.gz'), 'rb') as f:
             self.models = cPickle.load(f)
         self.fingerprint = skchem.skchemize(GetMorganFingerprintAsBitVect, 2, nBits=2048)
 
