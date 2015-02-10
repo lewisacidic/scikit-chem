@@ -17,6 +17,5 @@ setup(name='scikit-chem',
         ],
     test_suite='nose.collector',
     tests_require=['nose'],
-    zip_safe=False,
-
+    zip_safe=False
     )
