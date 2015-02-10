@@ -51,6 +51,17 @@ class PIDGIN(object):
             res[target] = model.predict_proba(fps)[:, 1]
         return res
 
+    def df_map_predict_proba(self, df):
+
+        ''' map based way to call the predict_proba on large scikit-chem style dataframes'''
+
+        fps = df.structure.apply(self.fingerprint)
+        ts = self.models.keys()
+
+        #parallize here trivially
+        return pd.DataFrame(map(lambda k: self.models[k].predict_proba(fps)[:, 1], ts), columns=fps.index, index=ts).T
+
+
 if __name__ == "__main__":
 
     from rdkit import Chem
@@ -67,3 +78,11 @@ if __name__ == "__main__":
     t = time()
     print p.df_predict_proba(df)
     print 'Prediction for', df.shape[0], 'molecules took', time() - t, 'seconds'
+    
+    t = time()
+    print p.df_map_predict_proba(df)
+    print 'Prediction for', df.shape[0], 'molecules using map took', time() - t, 'seconds'
+
+    t = time()
+    print df.structure.apply(p.predict_proba)
+    print 'Prediction for', df.shape[0], 'molecules using slow method took', time() - t, 'seconds'
