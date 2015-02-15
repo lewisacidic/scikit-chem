@@ -4,7 +4,7 @@ import pandas as _pd
 def read_sdf(sdf_file, *args, **kwargs):
 
     if type(sdf_file) is str:
-        sdf_file = open(sdf_file)
+        sdf_file = open(sdf_file, 'r')
 
     ms = []
     idx = []
@@ -31,6 +31,18 @@ def read_sdf(sdf_file, *args, **kwargs):
         df[prop] = df.structure.apply(lambda m: get_prop(m, prop))
 
     df.index.name = 'Name'
+
+    return df
+
+def read_smiles(smiles_file, *args, **kwargs):
+
+    if type(smiles_file) is str:
+        smiles_file = open(smiles_file, 'r')
+
+    df = _pd.read_csv(smiles_file, delimiter='\t', header=0)
+
+    df.columns = [col if i > 0 else 'structure' for i, col in enumerate(df.columns)]
+    df['structure'] = df['structure'].apply(_Chem.MolFromSmiles)
 
     return df
 

@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='scikit-chem', 
-    version='0.0.1', 
+    version='0.0.1dev', 
     description='Python Scientific Stack integrated Cheminformatics library, using RDKit',
     url='http://github.com/richlewis42/scikit-chem',
     author='Richard Lewis',
