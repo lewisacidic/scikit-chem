@@ -7,8 +7,8 @@ setup(name='scikit-chem',
     author='Richard Lewis',
     author_email='rl403@cam.ac.uk',
     license='BSD',
-    packages=['skchem', 'skchem.ext'],
-    package_data = {'skchem.ext': ['data/PIDGIN_models.pkl.gz']},
+    packages=['skchem', 'skchem.target_prediction'],
+    package_data = {'skchem.target_prediction': ['data/PIDGIN_models.pkl.gz']},
     install_requires=[
         #'rdkit',  ## currently rdkit does not have a valid pip installable package, so this dependency must be met by the installer
         'pandas',

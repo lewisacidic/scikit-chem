@@ -12,6 +12,9 @@ class PIDGIN(object):
             self.models = cPickle.load(f)
         self.fingerprint = skchem.skchemize(GetMorganFingerprintAsBitVect, 2, nBits=2048)
 
+    def __call__(self, m):
+        return self.predict_proba(m)
+        
     def predict(self, m):
         fp = self.fingerprint(m)
         res = pd.Series()
