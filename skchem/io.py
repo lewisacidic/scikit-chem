@@ -46,9 +46,20 @@ def read_smiles(smiles_file, *args, **kwargs):
 
     return df
 
+def _json(m):
+
+    i = Chem.rdchem.Compute2DCoords(m)
+    conformer_2d = m.GetConformer(i)
+    conformer_2d
+
 @classmethod
-def from_sdf(self, *args, **kwargs):
+def _from_sdf(self, *args, **kwargs):
     return read_sdf(*args, **kwargs)
 
+@classmethod
+def _from_smiles(self, *args, **kwargs):
+    return read_smiles(*args, **kwargs)
+
 #set on pandas dataframe
-_pd.DataFrame.from_sdf = from_sdf
+_pd.DataFrame.from_sdf = _from_sdf
+_pd.DataFrame.from_smiles = _from_smiles
