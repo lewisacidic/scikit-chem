@@ -1,12 +1,17 @@
 import pandas as _pd
+from rdkit.Chem import DataStructs as _DataStructs
+import numpy as _np
+import skchem as _skc
 
-def skchemize(func, *args, **kwargs):
-    '''transform a fingerprinting function to work well with pandas
+def skchemize(func, columns=None, *args, **kwargs):
+    """
+
+    transform an RDKit fingerprinting function to work well with pandas
 
     >>> from rdkit import Chem
-    >>> import skchem
+    >>> from skchem import *
     >>> f = skchemize(Chem.RDKFingerprint)
-    >>> m = Chem.MolFromSmiles('c1ccccc1')
+    >>> m = Mol.from_smiles('c1ccccc1')
     >>> f(m)
     0     0
     1     0
@@ -56,21 +61,38 @@ def skchemize(func, *args, **kwargs):
     6334     0     0     0     0     0     0     0     0     0  
 
     [3 rows x 2048 columns]
+    
 
-    >>> @skchemize
-    >>> def weird_fingerprint(m):
-    ...     return [m.GetNumAtoms(), m.GetNumBonds()]
-    ... 
-    >>> df.structure.apply(weird_fingerprint)
-          0  1
-    Name      
-    297   1  0
-    6324  2  1
-    6334  3  2
-
-    '''
+    """
 
     def func_wrapper(m):
-        return _pd.Series(list(func(m, *args, **kwargs)))
+        a = _np.array(0)
+        _DataStructs.ConvertToNumpyArray(func(m, *args, **kwargs), a)
+        return _pd.Series(a, index=columns)
     return func_wrapper
+
+class Fingerprinter(object):
+
+    @classmethod
+    def from_rdkit_func(self, func, columns=None, *args, **kwargs):
+        fp = Fingerprinter()
+        fp.columns = columns
+        fp.func = skchemize(func, columns=columns, *args, **kwargs)
+        return fp
+
+    def __call__(self, obj):
+        return self.calculate(obj)
+
+    def calculate(self, obj):
+        if obj.__class__ is _skc.core.Mol:
+            return self._calculate_m(obj)
+
+        elif obj.__class__ in [_pd.DataFrame, _pd.Series]:
+            return self._calculate_df(obj)
+
+    def _calculate_m(self, m):
+        return self.func(m)
+
+    def _calculate_df(self, df):
+        return df.structure.apply(self.func)
 
