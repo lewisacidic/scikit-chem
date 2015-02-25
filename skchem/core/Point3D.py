@@ -1,6 +1,7 @@
 import rdkit.Geometry.rdGeometry
+from skchem.core import ChemicalObject as _ChemicalObject
 
-class Point3D(rdkit.Geometry.rdGeometry.Point3D):
+class Point3D(rdkit.Geometry.rdGeometry.Point3D, _ChemicalObject):
 
     @classmethod
     def _from_super(self, sup):

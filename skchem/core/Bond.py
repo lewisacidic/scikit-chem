@@ -1,12 +1,8 @@
 import rdkit.Chem
 from skchem.core import Atom
+from skchem.core import ChemicalObject as _ChemicalObject
 
-class Bond(rdkit.Chem.rdchem.Bond):
-
-    @classmethod
-    def _from_super(self, rdbond):
-        rdbond.__class__ = Bond
-        return rdbond
+class Bond(rdkit.Chem.rdchem.Bond, _ChemicalObject):
 
     @property
     def order(self):

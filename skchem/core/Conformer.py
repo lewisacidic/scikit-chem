@@ -1,7 +1,9 @@
 import rdkit.Chem
 from skchem.core import Point3D
+from skchem.core import ChemicalObject as _ChemicalObject
 
-class Conformer(rdkit.Chem.rdchem.Conformer):
+
+class Conformer(rdkit.Chem.rdchem.Conformer, _ChemicalObject):
 
     #should use a view, list will do for now
     @property

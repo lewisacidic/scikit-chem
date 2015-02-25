@@ -3,16 +3,9 @@ from rdkit.Chem.rdDepictor import Compute2DCoords
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula as _molecular_formula
 import json
 from skchem.core import *
+from skchem.core import ChemicalObject as _ChemicalObject
 
-class Mol(rdkit.Chem.rdchem.Mol):
-
-    @classmethod
-    def _from_super(self, rdmol):
-        
-        """reclasses an rdkit molecule to a skchem one"""
-
-        rdmol.__class__ = Mol
-        return rdmol
+class Mol(rdkit.Chem.rdchem.Mol, _ChemicalObject):
 
     @property
     def name(self):
