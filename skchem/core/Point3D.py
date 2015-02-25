@@ -9,9 +9,9 @@ class Point3D(rdkit.Geometry.rdGeometry.Point3D):
 
     def to_dict(self, two_d=True):
         if two_d:
-            return {"x": self.x, "y": self.y}
+            return {"x": round(self.x), "y": round(self.y)}
         else:
-            raise NotImplementedError
+            return {"x": round(self.x), "y": round(self.y), "z": round(self.z)}
 
     def __repr__(self):
         return '<{klass} coords="({x:.2f}, {y:.2f}, {z:.2f})">'.format(klass=self.__class__.__name__, x=self.x, y=self.y, z=self.z)

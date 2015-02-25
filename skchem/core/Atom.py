@@ -1,13 +1,13 @@
-import rdkit.Chem
-
-class Atom(rdkit.Chem.rdchem.Atom):
+import rdkit.Chem as _Chem
+from skchem.core import ChemicalObject
+class Atom(_Chem.rdchem.Atom, ChemicalObject):
 
     @classmethod
-    def _from_super(self, rdatom):
+    def _from_super(cls, rdatom):
 
         """ reclasses an RDKit atom to a skchem one """
         
-        rdatom.__class__ = Atom
+        rdatom.__class__ = cls
         return rdatom
 
     @property

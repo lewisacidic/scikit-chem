@@ -1,5 +1,5 @@
 import rdkit.Chem
-from skchem.core.Atom import Atom
+from skchem.core import Atom
 
 class Bond(rdkit.Chem.rdchem.Bond):
 

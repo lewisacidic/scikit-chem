@@ -6,6 +6,14 @@ from skchem.core import *
 
 class Mol(rdkit.Chem.rdchem.Mol):
 
+    @classmethod
+    def _from_super(self, rdmol):
+        
+        """reclasses an rdkit molecule to a skchem one"""
+
+        rdmol.__class__ = Mol
+        return rdmol
+
     @property
     def name(self):
         try:
@@ -57,7 +65,15 @@ class Mol(rdkit.Chem.rdchem.Mol):
             self.__2D = Compute2DCoords(self)
         return self.conformers[self.__2D]
 
-    def to_dict(self):
+    def to_dict(self, kind="chemdoodle"):
+
+        if kind == "chemdoodle":
+            return self._to_dict_chemdoodle()
+
+        else:
+            raise NotImplementedError
+
+    def _to_dict_chemdoodle(self):
 
         aps = map(lambda p: p.to_dict(), self._2D().atom_positions)
         ats = map(lambda a: a.element, self.atoms)
@@ -81,6 +97,9 @@ class Mol(rdkit.Chem.rdchem.Mol):
             name=self.name,
             formula=self.to_formula(),
             address=hex(id(self)))
+
+    def _repr_javascript(self):
+            return """"""
 
     def __str__(self):
         return self.to_smiles()
