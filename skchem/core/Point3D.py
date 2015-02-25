@@ -3,11 +3,6 @@ from skchem.core import ChemicalObject as _ChemicalObject
 
 class Point3D(rdkit.Geometry.rdGeometry.Point3D, _ChemicalObject):
 
-    @classmethod
-    def _from_super(self, sup):
-        sup.__class__ = Point3D
-        return sup
-
     def to_dict(self, two_d=True):
         if two_d:
             return {"x": round(self.x), "y": round(self.y)}
