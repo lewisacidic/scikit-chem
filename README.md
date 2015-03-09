@@ -1,5 +1,6 @@
 # scikit-chem
 [![DOI](https://zenodo.org/badge/4513/richlewis42/scikit-chem.svg?style=flat-square)](http://dx.doi.org/10.5281/zenodo.15919)
+[![Coveralls](https://img.shields.io/coveralls/richlewis42/scikit-chem.svg?style=flat-square)]()
 [![Travis](https://img.shields.io/travis/richlewis42/scikit-chem.svg?style=flat-square)]()
 [![Release](https://img.shields.io/github/release/richlewis42/scikit-chem.svg?style=flat-square)]()
 
