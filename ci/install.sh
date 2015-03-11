@@ -25,6 +25,6 @@ conda update -q conda
 # Useful for debugging any issues with conda
 conda info -a
 
-conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --file ../requirements.txt
+conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --file $TRAVIS_BUILD_DIR/requirements.txt
 source activate test-environment
 python setup.py install
