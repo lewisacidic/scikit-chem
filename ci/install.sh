@@ -8,18 +8,26 @@
 
 set -e
 
+# update travis environment
 sudo apt-get update
 
+# retrieve miniconda distribution appropriate for travis' python version
 if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
   wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
 else
   wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 fi
 
+# install miniconda
 bash miniconda.sh -b -p $HOME/miniconda
+
+# add it to path
 export PATH="$HOME/miniconda/bin:$PATH"
-hash -r
+
+# configure conda to not ask for confirmation and not to change the prompt
 conda config --set always_yes yes --set changeps1 no
+
+# update conda (shouldn't be necessary as the latest is retrieved, but can't hurt)
 conda update -q conda
 
 # Useful for debugging any issues with conda

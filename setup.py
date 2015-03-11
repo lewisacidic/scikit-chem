@@ -52,8 +52,7 @@ def setup_package():
                     version=VERSION,
                     download_url=DOWNLOAD_URL,
                     long_description=LONG_DESCRIPTION,
-                    classifiers=CLASSIFIERS,
-                    version=VERSION
+                    classifiers=CLASSIFIERS
     )
 
     setup(
