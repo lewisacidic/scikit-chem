@@ -1,8 +1,8 @@
 import rdkit.Chem
 from skchem.core import Atom
-from skchem.core import ChemicalObject as _ChemicalObject
+from skchem.core import ChemicalObject
 
-class Bond(rdkit.Chem.rdchem.Bond, _ChemicalObject):
+class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
 
     @property
     def order(self):
@@ -13,7 +13,7 @@ class Bond(rdkit.Chem.rdchem.Bond, _ChemicalObject):
 
     @property
     def atoms(self):
-        return [Atom._from_super(self.GetBeginAtom()), Atom._from_super(self.GetEndAtom())]
+        return [Atom.from_super(self.GetBeginAtom()), Atom.from_super(self.GetEndAtom())]
     @atoms.setter
     def atoms(self, value):
         raise NotImplementedError

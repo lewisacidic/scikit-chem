@@ -46,5 +46,3 @@ class TargetPredictionAlgorithm(object):
 
     def __call__(self, obj):
         self.predict(obj)
-
-s

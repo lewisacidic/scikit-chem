@@ -38,35 +38,53 @@ def read_sdf(sdf_file, *args, **kwargs):
 
     return df
 
-def read_smiles(smiles_file, *args, **kwargs):
+def read_smiles(smiles_file, smiles_column=0, index_column=None, delimiter='\t', header=True, *args, **kwargs):
 
+    # set the header line to pass to the pandas parser
+
+    if header:
+        header = 0
+    else:
+        header = None
+
+    # open file if not already open
     if type(smiles_file) is str:
         smiles_file = open(smiles_file, 'r')
 
-    df = _pd.read_csv(smiles_file, delimiter='\t', header=0)
+    # read the smiles file as a ?del
+    df = _pd.read_csv(smiles_file, delimiter=delimiter, header=header)
 
-    df.columns = [col if i > 0 else 'structure' for i, col in enumerate(df.columns)]
-    df['structure'] = df['structure'].apply(_Chem.MolFromSmiles) #perhaps should raise errors for incorrectly parsed molecules here?
+    # replace the smiles column with the structure column 
+    l = list(df.columns)
+    l[smiles_column] = 'structure'
+    df.columns = l
 
+    # apply the from smiles constructor
+    df['structure'] = df['structure'].apply(lambda smi: _skc.Mol.from_smiles(smi)) #perhaps should raise errors for incorrectly parsed molecules here?
+    
+    # set index if passed
+    if index_column is not None:
+        df = df.set_index(df.columns[index_column])
+    
     return df
 
 _to_dict = _pd.DataFrame.to_dict
 _to_json = _pd.DataFrame.to_json
 
 def to_dict(self, *args, **kwargs):
-    kwargs = defaultdict(None, kwargs)
+    kwargs = defaultdict(lambda: None, kwargs)
     if kwargs['orient'] == 'chemdoodle':
         #this may be wrong - may have to extract
         return {'m': [m.to_dict(kind='chemdoodle')['m'][0] for m in self.structure]}
     else:
-        return _to_dict(*args, **kwargs)
+        return _to_dict(self, *args, **kwargs)
 
 def to_json(self, *args, **kwargs):
-    kwargs = defaultdict(None, kwargs)
+    kwargs = defaultdict(lambda: None, kwargs)
     if kwargs['orient'] == 'chemdoodle':
         return json.dumps(self.to_dict(*args, **kwargs))
     else:
-        return _to_dict(*args, **kwargs)
+        return _to_dict(self, *args, **kwargs)
 
 _pd.DataFrame.to_dict = to_dict
 _pd.DataFrame.to_json = to_json

@@ -1,11 +1,10 @@
 import rdkit.Chem
 from rdkit.Chem.rdDepictor import Compute2DCoords
-from rdkit.Chem.rdMolDescriptors import CalcMolFormula as _molecular_formula
+from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 import json
-from skchem.core import *
-from skchem.core import ChemicalObject as _ChemicalObject
+from skchem.core import ChemicalObject
 
-class Mol(rdkit.Chem.rdchem.Mol, _ChemicalObject):
+class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
     @property
     def name(self):
@@ -23,14 +22,14 @@ class Mol(rdkit.Chem.rdchem.Mol, _ChemicalObject):
 
     @property
     def atoms(self):
-        return [Atom._from_super(self.GetAtomWithIdx(i)) for i in range(self.GetNumAtoms())]
+        return [Atom.from_super(self.GetAtomWithIdx(i)) for i in range(self.GetNumAtoms())]
     @atoms.setter
     def atoms(self, value):
         raise NotImplementedError
 
     @property
     def bonds(self):
-        return [Bond._from_super(self.GetBondWithIdx(i)) for i in xrange(self.GetNumBonds())]
+        return [Bond.from_super(self.GetBondWithIdx(i)) for i in xrange(self.GetNumBonds())]
     @bonds.setter
     def bonds(self, value):
         raise NotImplementedError
@@ -45,7 +44,7 @@ class Mol(rdkit.Chem.rdchem.Mol, _ChemicalObject):
 
     @property
     def conformers(self):
-        return [ Conformer._from_super(self.GetConformer(i)) for i in range(len(self.GetConformers()))]
+        return [ Conformer.from_super(self.GetConformer(i)) for i in range(len(self.GetConformers()))]
     @conformers.setter
     def conformers(self, value):
         raise NotImplementedError
@@ -95,7 +94,7 @@ class Mol(rdkit.Chem.rdchem.Mol, _ChemicalObject):
             return """"""
 
     def __str__(self):
-        return self.to_smiles()
+        return 'Mol: {}'.format(self.to_smiles())
 
 def bind_constructor(constructor_name, to=None):
 

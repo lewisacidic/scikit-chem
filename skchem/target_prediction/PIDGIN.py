@@ -1,7 +1,10 @@
 import pandas as pd
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 import gzip
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import skchem
 import os
 from skchem.target_prediction import TargetPredictionAlgorithm
@@ -10,8 +13,8 @@ class PIDGIN(object):
     
     def __init__(self):
         with gzip.open(os.path.join(os.path.dirname(__file__),'../data/PIDGIN_models.pkl.gz'), 'rb') as f:
-            self.models = cPickle.load(f)
-        self.fingerprint = skchem.skchemize(GetMorganFingerprintAsBitVect, 2, nBits=2048)
+            self.models = pickle.load(f)
+        self.fingerprint = skchem.skchemize(GetMorganFingerprintAsBitVect, radius=2, nBits=2048)
         self.targets = self.models.keys()
 
     def __call__(self, m):
@@ -54,7 +57,7 @@ class PIDGIN(object):
 
         fp = self.fingerprint(m)
         res = pd.Series(index=self.targets)
-        for taget, model in self.models.iteritems():
+        for target, model in self.models.iteritems():
             res[target] = model.predict_log_proba(fp)[:, 1][0]
         return res
 
@@ -124,33 +127,3 @@ class PIDGIN(object):
         fps = df.structure.apply(self.fingerprint)
         
         return pd.DataFrame(map(lambda k: self.models[k].predict_log_proba(fps)[:, 1], self.targets), columns=fps.index, index=self.targets).T
-
-if __name__ == "__main__":
-
-    from rdkit import Chem
-    from time import time
-
-    p = PIDGIN()
-    m = Chem.MolFromSmiles('c1ccccc1')
-
-    t = time()
-    res = p.predict_proba(m)
-    print 'Prediction for one molecule took', time() - t, 'seconds'
-
-    t = time()
-    res = p.map_predict_proba(m)
-    print 'Prediction for one molecule using map took', time() - t, 'seconds'
-
-    df = skchem.read_sdf('/Users/RichLewis/Dropbox/PhD/Data/sa_named.sdf')
-
-    t = time()
-    res = p.df_predict_proba(df)
-    print 'Prediction for', df.shape[0], 'molecules took', time() - t, 'seconds'
-    
-    t = time()
-    res = p.df_map_predict_proba(df)
-    print 'Prediction for', df.shape[0], 'molecules using map took', time() - t, 'seconds'
-
-    t = time()
-    res = df.structure.apply(p.predict_proba)
-    print 'Prediction for', df.shape[0], 'molecules using slow method took', time() - t, 'seconds'

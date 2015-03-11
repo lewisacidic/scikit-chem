@@ -1,14 +1,14 @@
 import rdkit.Chem
 from skchem.core import Point3D
-from skchem.core import ChemicalObject as _ChemicalObject
+from skchem.core import ChemicalObject
 
 
-class Conformer(rdkit.Chem.rdchem.Conformer, _ChemicalObject):
+class Conformer(rdkit.Chem.rdchem.Conformer, ChemicalObject):
 
     #should use a view, list will do for now
     @property
     def atom_positions(self):
-        return [Point3D._from_super(self.GetAtomPosition(i)) for i in range(self.GetNumAtoms())]
+        return [Point3D.from_super(self.GetAtomPosition(i)) for i in range(self.GetNumAtoms())]
     @atom_positions.setter
     def atom_positions(self, value):
         raise NotImplementedError

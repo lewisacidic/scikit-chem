@@ -1,6 +1,8 @@
-boost=1.56.0=py34_0
-numpy=1.9.2=py34_0
-pandas=0.15.2=np19py34_0
-rdkit=2014.09.2=np19py34_0
-scipy=0.15.1=np19py34_0
-setuptools=14.0=py34_0
+boost
+numpy
+pandas
+rdkit
+scipy
+scikit-learn
+nose
+setuptools
