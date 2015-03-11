@@ -25,6 +25,14 @@ conda update -q conda
 # Useful for debugging any issues with conda
 conda info -a
 
+# Add required channels for dependencies
+conda config --add channels 'http://conda.binstar.org/rdkit'
+
+# Create the virtual environment with appropriate requirements
 conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --file $TRAVIS_BUILD_DIR/requirements.txt
+
+# Activate the virtual environment
 source activate test-environment
-python setup.py install
+
+# Install the package
+python $TRAVIS_BUILD_DIR/setup.py install
