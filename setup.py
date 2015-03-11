@@ -37,9 +37,10 @@ CLASSIFIERS = [
     'Topic :: Software Development',
     'Topic :: Scientific/Engineering :: Chemistry'
 ]
-
-import skchem
-VERSION = skchem.__version__
+MAJOR = 0
+MINOR = 0
+MICRO = 1
+VERSION = '{major}.{minor}.{micro}'.format(major=MAJOR, minor=MINOR, micro=MICRO)
 
 def setup_package():
 
@@ -65,7 +66,10 @@ def setup_package():
             'scikit-learn'
             ],
         test_suite='nose.collector',
-        tests_require=['nose'],
+        tests_require=[
+            'nose',
+            'StringIO'
+            ],
         zip_safe=False,
         **metadata
         )
