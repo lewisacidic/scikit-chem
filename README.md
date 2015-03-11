@@ -1,8 +1,10 @@
-# scikit-chem
 [![DOI](https://zenodo.org/badge/4513/richlewis42/scikit-chem.svg?style=flat-square)](http://dx.doi.org/10.5281/zenodo.15919)
 [![Coveralls](https://img.shields.io/coveralls/richlewis42/scikit-chem.svg?style=flat-square)]()
 [![Travis](https://img.shields.io/travis/richlewis42/scikit-chem.svg?style=flat-square)]()
+[![Code Health](https://landscape.io/github/richlewis42/scikit-chem/master/landscape.svg?style=flat-square)](https://landscape.io/github/richlewis42/scikit-chem/master)
 [![Release](https://img.shields.io/github/release/richlewis42/scikit-chem.svg?style=flat-square)]()
+
+# scikit-chem
 
 Quick attempt at more straightforwardly integrating the Scientific Python Stack with the RDKit Cheminformatics library.
 
