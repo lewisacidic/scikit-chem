@@ -7,4 +7,4 @@ python:
 install: 
   -  source ci/install.sh
 # command to run tests
-script: nosetests
+script: nosetests --with-coverage --cover-package=skchem
