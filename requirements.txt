@@ -1,4 +1,4 @@
-boost
+boost==1.56.0
 numpy
 pandas
 rdkit
