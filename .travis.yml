@@ -6,5 +6,10 @@ python:
 # command to install dependencies
 install: 
   -  source ci/install.sh
+  -  pip install coveralls
 # command to run tests
-script: nosetests --with-coverage --cover-package=skchem
+script: 
+  nosetests --with-coverage --cover-package=skchem
+
+after_success:
+  coveralls
