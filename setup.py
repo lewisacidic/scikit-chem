@@ -67,8 +67,7 @@ def setup_package():
             ],
         test_suite='nose.collector',
         tests_require=[
-            'nose',
-            'StringIO'
+            'nose'
             ],
         zip_safe=False,
         **metadata

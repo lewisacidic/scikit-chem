@@ -50,7 +50,7 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         raise NotImplementedError
 
     def to_formula(self):
-        return _molecular_formula(self)
+        return CalcMolFormula(self)
 
     def _2D(self):
         if not hasattr(self, '__2D'):
@@ -113,6 +113,6 @@ def bind_serializer(serializer_name, to=None):
 
     setattr(Mol, 'to_{}'.format(serializer_name).lower() if to is None else to, serializer)
 
-map(bind_constructor, ['Inchi', 'Smiles', 'Mol2Block', 'Mol2File', 'MolBlock', 'MolFile', 'PDBBlock', 'PDBFile', 'Smarts', 'TPLBlock', 'TPLFile'])
-map(bind_serializer, ['Inchi', 'Smiles', 'MolBlock', 'PDBBlock', 'Smarts', 'TPLBlock', 'TPLFile'])
+list(map(bind_constructor, ['Inchi', 'Smiles', 'Mol2Block', 'Mol2File', 'MolBlock', 'MolFile', 'PDBBlock', 'PDBFile', 'Smarts', 'TPLBlock', 'TPLFile']))
+list(map(bind_serializer, ['Inchi', 'Smiles', 'MolBlock', 'PDBBlock', 'Smarts', 'TPLBlock', 'TPLFile']))
 

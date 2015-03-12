@@ -1,8 +1,8 @@
 [![DOI](https://zenodo.org/badge/4513/richlewis42/scikit-chem.svg?style=flat-square)](http://dx.doi.org/10.5281/zenodo.15919)
-[![Coveralls](https://img.shields.io/coveralls/richlewis42/scikit-chem.svg?style=flat-square)]()
-[![Travis](https://img.shields.io/travis/richlewis42/scikit-chem.svg?style=flat-square)]()
+[![Coveralls](https://img.shields.io/coveralls/richlewis42/scikit-chem.svg?style=flat-square)](https://coveralls.io/r/richlewis42/scikit-chem)
+[![Travis](https://img.shields.io/travis/richlewis42/scikit-chem.svg?style=flat-square)](https://travis-ci.org/richlewis42/scikit-chem)
 [![Code Health](https://landscape.io/github/richlewis42/scikit-chem/master/landscape.svg?style=flat-square)](https://landscape.io/github/richlewis42/scikit-chem/master)
-[![Release](https://img.shields.io/github/release/richlewis42/scikit-chem.svg?style=flat-square)]()
+[![Release](https://img.shields.io/github/release/richlewis42/scikit-chem.svg?style=flat-square)](https://github.com/richlewis42/scikit-chem/releases)
 
 # scikit-chem
 
