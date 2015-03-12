@@ -7,7 +7,7 @@ from collections import defaultdict
 def read_sdf(sdf_file, *args, **kwargs):
 
     if type(sdf_file) is str:
-        sdf_file = open(sdf_file, 'r')
+        sdf_file = open(sdf_file, 'rb')
 
     ms = []
     idx = []
