@@ -6,6 +6,8 @@
 
 # scikit-chem
 
+[![Join the chat at https://gitter.im/richlewis42/scikit-chem](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/richlewis42/scikit-chem?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Quick attempt at more straightforwardly integrating the Scientific Python Stack with the RDKit Cheminformatics library.
 
 - RDKit objects are inherited from, and their APIs are made more Pythonic(to an extent).
