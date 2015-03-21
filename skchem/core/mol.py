@@ -1,8 +1,17 @@
+#! /usr/bin/env python
+#
+# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# License: 3-clause BSD
+
+"""skchem.core.mol
+
+Defining molecules in scikit-chem."""
+
 import rdkit.Chem
 from rdkit.Chem.rdDepictor import Compute2DCoords
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 import json
-from skchem.core import ChemicalObject
+from skchem.core import ChemicalObject, Atom, Bond
 
 class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
@@ -34,6 +43,7 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
     def bonds(self, value):
         raise NotImplementedError
 
+    # use a view to easily set properties?
     @property
     def props(self):
         return {i: self.GetProp(i) for i in self.GetPropNames()}
@@ -44,7 +54,7 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
     @property
     def conformers(self):
-        return [ Conformer.from_super(self.GetConformer(i)) for i in range(len(self.GetConformers()))]
+        return [Conformer.from_super(self.GetConformer(i)) for i in range(len(self.GetConformers()))]
     @conformers.setter
     def conformers(self, value):
         raise NotImplementedError

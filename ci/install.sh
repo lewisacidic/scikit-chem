@@ -1,10 +1,12 @@
-#!/bin/bash
+#! /bin/bash
+#
+# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# License: 3-clause BSD
+
 # This script is meant to be called by the "install" step defined in
 # .travis.yml. See http://docs.travis-ci.com/ for more details.
-# The behavior of the script is controlled by environment variabled defined
+# The behavior of the script is controlled by environment variables defined
 # in the .travis.yml in the top level folder of the project.
-
-# License: 3-clause BSD
 
 set -e
 

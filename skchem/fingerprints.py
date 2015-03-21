@@ -1,3 +1,8 @@
+#! /usr/bin/env python
+#
+# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# License: 3-clause BSD
+
 import pandas as _pd
 from rdkit.Chem import DataStructs as _DataStructs
 import numpy as _np

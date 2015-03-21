@@ -1,12 +1,43 @@
+#! /usr/bin/env python
+#
+# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# License: 3-clause BSD
+
+"""skchem.core.bond
+
+Defining chemical bonds in scikit-chem."""
+
 import rdkit.Chem
 from skchem.core import Atom
 from skchem.core import ChemicalObject
 
 class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
 
+    """ 
+    Object representing a chemical bond in scikit-chem. 
+
+    """
+
     @property
     def order(self):
+
+        """ 
+        The order of the bond.
+
+        Parameters
+        ----------
+
+        None
+
+        Returns
+        -------
+
+        bond :int 
+
+        """
+
         return self.GetBondTypeAsDouble()
+
     @order.setter
     def order(self, value):
         raise NotImplementedError
