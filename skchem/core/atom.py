@@ -1,7 +1,17 @@
-import rdkit.Chem as _Chem
-from skchem.core import ChemicalObject as _ChemicalObject
+#! /usr/bin/env python
+#
+# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# License: 3-clause BSD
 
-class Atom(_Chem.rdchem.Atom, _ChemicalObject):
+
+"""skchem.core.atom
+
+Defining atoms in scikit-chem."""
+
+from rdkit import Chem
+from skchem.core import ChemicalObject
+
+class Atom(Chem.rdchem.Atom, ChemicalObject):
 
     @property
     def element(self):

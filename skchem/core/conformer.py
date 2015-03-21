@@ -1,11 +1,19 @@
+#! /usr/bin/env python
+#
+# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# License: 3-clause BSD
+
+"""skchem.core.conformer
+
+Defining conformers in scikit-chem."""
+
 import rdkit.Chem
 from skchem.core import Point3D
 from skchem.core import ChemicalObject
 
-
 class Conformer(rdkit.Chem.rdchem.Conformer, ChemicalObject):
 
-    #should use a view, list will do for now
+    #should use a view, list for now
     @property
     def atom_positions(self):
         return [Point3D.from_super(self.GetAtomPosition(i)) for i in range(self.GetNumAtoms())]

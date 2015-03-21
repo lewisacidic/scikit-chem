@@ -1,7 +1,18 @@
-import rdkit.Geometry.rdGeometry
-from skchem.core import ChemicalObject as _ChemicalObject
+#! /usr/bin/env python
+#
+# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# License: 3-clause BSD
 
-class Point3D(rdkit.Geometry.rdGeometry.Point3D, _ChemicalObject):
+"""skchem.core.chem
+
+Defining points in scikit-chem."""
+
+# the functionality here perhaps should be replaced by numpy arrays to get closer integration with the scientific python stack.
+
+import rdkit.Geometry.rdGeometry
+from skchem.core import ChemicalObject
+
+class Point3D(rdkit.Geometry.rdGeometry.Point3D, ChemicalObject):
 
     def to_dict(self, two_d=True):
         if two_d:
