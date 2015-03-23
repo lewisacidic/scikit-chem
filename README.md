@@ -3,6 +3,7 @@
 [![Travis](https://img.shields.io/travis/richlewis42/scikit-chem.svg?style=flat-square)](https://travis-ci.org/richlewis42/scikit-chem)
 [![Code Health](https://landscape.io/github/richlewis42/scikit-chem/master/landscape.svg?style=flat-square)](https://landscape.io/github/richlewis42/scikit-chem/master)
 [![Release](https://img.shields.io/github/release/richlewis42/scikit-chem.svg?style=flat-square)](https://github.com/richlewis42/scikit-chem/releases)
+[![License](https://img.shields.io/badge/License-BSD-blue.svg?style=flat-square)](https://github.com/richlewis42/scikit-chem/blob/master/LICENSE)
 
 # scikit-chem
 
