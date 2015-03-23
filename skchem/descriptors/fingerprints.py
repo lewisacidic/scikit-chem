@@ -3,10 +3,10 @@
 # Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
-import pandas as _pd
-from rdkit.Chem import DataStructs as _DataStructs
-import numpy as _np
-import skchem as _skc
+import pandas as pd
+from rdkit.Chem import DataStructs
+import numpy as np
+import skchem as skc
 
 def skchemize(func, columns=None, *args, **kwargs):
     """
@@ -71,9 +71,9 @@ def skchemize(func, columns=None, *args, **kwargs):
     """
 
     def func_wrapper(m):
-        a = _np.array(0)
-        _DataStructs.ConvertToNumpyArray(func(m, *args, **kwargs), a)
-        return _pd.Series(a, index=columns)
+        a = np.array(0)
+        DataStructs.ConvertToNumpyArray(func(m, *args, **kwargs), a)
+        return pd.Series(a, index=columns)
     return func_wrapper
 
 class Fingerprinter(object):
@@ -89,10 +89,10 @@ class Fingerprinter(object):
         return self.calculate(obj)
 
     def calculate(self, obj):
-        if obj.__class__ is _skc.core.Mol:
+        if obj.__class__ is skc.core.Mol:
             return self._calculate_m(obj)
 
-        elif obj.__class__ in [_pd.DataFrame, _pd.Series]:
+        elif obj.__class__ in [pd.DataFrame, pd.Series]:
             return self._calculate_df(obj)
 
     def _calculate_m(self, m):
