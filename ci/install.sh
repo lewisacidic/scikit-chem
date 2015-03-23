@@ -39,7 +39,9 @@ conda info -a
 conda config --add channels 'http://conda.binstar.org/rdkit'
 
 # Create the virtual environment with appropriate requirements
-conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION --file $TRAVIS_BUILD_DIR/requirements.txt
+conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION 
+conda install --file $TRAVIS_BUILD_DIR/requirements.txt
+conda install --file $TRAVIS_BUILD_DIR/test_requirements.txt
 
 # Activate the virtual environment
 source activate test-environment
