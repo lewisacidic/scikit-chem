@@ -13,6 +13,12 @@ from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 import json
 from skchem.core import ChemicalObject, Atom, Bond
 
+import sys
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
+
 class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
     @property
@@ -104,13 +110,16 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
             return """"""
 
     def __str__(self):
-        return 'Mol: {}'.format(self.to_smiles())
+        return '<Mol: {}>'.format(self.to_smiles())
 
 def bind_constructor(constructor_name, to=None):
 
     @classmethod
-    def constructor(self, m, name=None, *args, **kwargs):
-        m = Mol(getattr(rdkit.Chem, 'MolFrom' + constructor_name)(m, *args, **kwargs)) 
+    def constructor(self, in_arg, name=None, *args, **kwargs):
+        m = getattr(rdkit.Chem, 'MolFrom' + constructor_name)(in_arg, *args, **kwargs)
+        if m is None:
+            raise ValueError('Failed to parse molecule, {}'.format(in_arg))
+        m = Mol.from_super(m)
         m.name = name
         return m     
 

@@ -65,7 +65,8 @@ def setup_package():
             ],
         test_suite='nose.collector',
         tests_require=[
-            'nose'
+            'nose',
+            'pytest'
             ],
         zip_safe=False,
         **metadata
