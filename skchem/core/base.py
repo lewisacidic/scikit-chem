@@ -12,11 +12,12 @@ Define base classes for scikit chem objects
 class ChemicalObject(object):
 
     """ A mixin for each chemical object in scikit-chem """
-    
+
     @classmethod
     def from_super(cls, obj):
 
         """A method that converts the class of an object of parent class to that of the child. """
-    
+
         obj.__class__ = cls
         return obj
+        
