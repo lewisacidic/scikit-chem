@@ -4,8 +4,11 @@
 # License: 3-clause BSD
 
 """
-Defining input and output methods in scikit-chem.
+skchem.io
+
+Module defining input and output methods in scikit-chem.
 
 """
+
 from .sdf import read_sdf
 from .smiles import read_smiles

@@ -3,36 +3,43 @@
 # Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
+"""
+skchem.io.sdf
 
-"""skchem.io.sdf
-
-Defining input and output operations for sdf files."""
+Defining input and output operations for sdf files.
+"""
 
 from rdkit import Chem
 import skchem
-from skchem.utils import suppress_stdout_stderr
+from skchem.utils import Suppressor
 import pandas as pd
 
 def read_sdf(sdf_file, force=False, *args, **kwargs):
 
     """
-        Read an sdf file into a pandas dataframe.  The function wraps the RDKit ForwardSDMolSupplier function.
+        Read an sdf file into a pandas dataframe.
+        The function wraps the RDKit ForwardSDMolSupplier function.
 
         @param sdf_file     A file path provided as a :str:, or a :file-like: object.
-        @param force        A :bool: specifying if the dataframe should be constructed even if a molecule fails to parse correctly.
-                            Defaults to _True_.
+        @param force        A :bool: specifying if the dataframe should be constructed even if
+                            a molecule fails to parse correctly.  Defaults to _True_.
 
         Additionally, ForwardSDMolSupplier arguments may be passed.
-        
+
         @returns df         A dataframe of type :pandas.core.frame.DataFrame:.
 
     """
-    with suppress_stdout_stderr():
 
-        if type(sdf_file) is str:
+    # use the suppression context manager to not pollute our stdout with rdkit errors and warnings.
+    # perhaps this should be captured better by Mol etc.
+
+    with Suppressor():
+
+        if isinstance(sdf_file, str):
             sdf_file = open(sdf_file, 'rb') # use read bytes for python 3 compatibility
 
-        ms = [] # for now, use a list as we need a resizing array as we don't know how many compounds there are.
+        # use a list as we need a resizing array as we don't know how many compounds there are.
+        ms = []
         idx = []
         props = set()
 
@@ -49,22 +56,18 @@ def read_sdf(sdf_file, force=False, *args, **kwargs):
 
         df = pd.DataFrame(ms, index=idx, columns=['structure'])
 
-        def get_prop(m, prop):
-            '''get the properties for a molecule'''
-            try:
-                return m.GetProp(prop)
-            except KeyError:
-                return None
-
         for prop in props:
-            df[prop] = df.structure.apply(lambda m: get_prop(m, prop))
+            df[prop] = df.structure.apply(lambda m: m.props.get(prop, None))
 
         df.index.name = 'name'
 
         return df
 
 @classmethod
-def from_sdf(self, *args, **kwargs):
+def from_sdf(_, *args, **kwargs):
+
+    """ Create a DataFrame from an sdf file """
+
     return read_sdf(*args, **kwargs)
 
 #set on pandas dataframe

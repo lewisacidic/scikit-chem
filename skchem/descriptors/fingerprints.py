@@ -3,6 +3,13 @@
 # Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
+"""
+skchem.descriptors.fingerprints
+
+Fingerprinting classes and associated functions are defined.
+
+"""
+
 import pandas as pd
 from rdkit.Chem import DataStructs
 import numpy as np
@@ -54,41 +61,54 @@ def skchemize(func, columns=None, *args, **kwargs):
     >>> df = skchem.read_sdf('skchem/tests/test_resources/hydrocarbons.sdf')
     >>> df.structure.apply(f)
          0     1     2     3     4     5     6     7     8     9     ...   2038  \
-    Name                                                              ...          
-    297      0     0     0     0     0     0     0     0     0     0  ...      0   
-    6324     0     0     0     0     0     0     0     0     0     0  ...      0   
-    6334     0     0     0     0     0     0     0     0     0     0  ...      0   
+    Name                                                              ...
+    297      0     0     0     0     0     0     0     0     0     0  ...      0
+    6324     0     0     0     0     0     0     0     0     0     0  ...      0
+    6334     0     0     0     0     0     0     0     0     0     0  ...      0
 
-          2039  2040  2041  2042  2043  2044  2045  2046  2047  
-    Name                                                        
-    297      0     0     0     0     0     0     0     0     0  
-    6324     0     0     0     0     0     0     0     0     0  
-    6334     0     0     0     0     0     0     0     0     0  
+          2039  2040  2041  2042  2043  2044  2045  2046  2047
+    Name
+    297      0     0     0     0     0     0     0     0     0
+    6324     0     0     0     0     0     0     0     0     0
+    6334     0     0     0     0     0     0     0     0     0
 
     [3 rows x 2048 columns]
-    
 
     """
 
     def func_wrapper(m):
-        a = np.array(0)
-        DataStructs.ConvertToNumpyArray(func(m, *args, **kwargs), a)
-        return pd.Series(a, index=columns)
+
+        """ Function that wraps an rdkit function allowing it to produce dataframes. """
+
+        arr = np.array(0)
+        DataStructs.ConvertToNumpyArray(func(m, *args, **kwargs), arr)
+
+        return pd.Series(arr, index=columns)
+
     return func_wrapper
 
 class Fingerprinter(object):
 
+    """ Fingerprinter class. """
+
+    def __init__(self, columns, func):
+        self.columns = columns
+        self.func = func
+
     @classmethod
-    def from_rdkit_func(self, func, columns=None, *args, **kwargs):
-        fp = Fingerprinter()
-        fp.columns = columns
-        fp.func = skchemize(func, columns=columns, *args, **kwargs)
-        return fp
+    def from_rdkit_func(cls, func, columns=None, *args, **kwargs):
+
+        """ Construct a Fingerprinter from an rdkit function. """
+
+        return Fingerprinter(columns, func=skchemize(func, columns=columns, *args, **kwargs))
 
     def __call__(self, obj):
         return self.calculate(obj)
 
     def calculate(self, obj):
+
+        """ calculate the fingerprint for the given object. """
+
         if obj.__class__ is skc.core.Mol:
             return self._calculate_m(obj)
 
@@ -96,8 +116,13 @@ class Fingerprinter(object):
             return self._calculate_df(obj)
 
     def _calculate_m(self, m):
+
+        """ calculate the fingerprint for a molecule. """
+
         return self.func(m)
 
     def _calculate_df(self, df):
-        return df.structure.apply(self.func)
 
+        """ calculate a fingerprint for a dataframe of molecules """
+
+        return df.structure.apply(self.func)

@@ -4,31 +4,49 @@
 # License: 3-clause BSD
 
 
-"""skchem.core.atom
+"""
+skchem.core.atom
 
-Defining atoms in scikit-chem."""
+Defining atoms in scikit-chem.
+"""
 
 from rdkit import Chem
 from skchem.core import ChemicalObject
 
 class Atom(Chem.rdchem.Atom, ChemicalObject):
 
+    """ Object representing an Atom in scikit-chem. """
+
     @property
     def element(self):
+
+        """ Get the element of the atom as a string. """
+
         return self.GetSymbol()
+
     @element.setter
     def element(self, value):
+
+        """ Set the element of the atom.  Not implemented. """
+
         raise NotImplementedError
 
     @property
     def props(self):
+
+        """ Return a dictionary of properties of the atom. """
+
         return {i: self.GetProp() for i in self.GetProps()}
+
     @props.setter
     def props(self, value):
-        map(self.ClearProp, self.GetPropNames())
-        map(lambda k: self.SetProp(k, value[k]), value)
+
+        """ Set the properties of the Atom.  Not implemented. """
+
+        raise NotImplementedError
 
     def __repr__(self):
+
         return '<{klass} element="{element}" at {address}>'.format(
             klass=self.__class__.__name__,
             element=self.element,
