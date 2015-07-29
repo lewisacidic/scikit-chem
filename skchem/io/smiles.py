@@ -81,7 +81,7 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t', 
                 """
                 return skchem.Mol.from_smiles(smiles)
 
-        df['structure'] = df['structure'].apply(parse)
+        df['structure'] = df['structure'].apply(str).apply(parse) #make sure is a string
 
         if force:
             df = df[df['structure'].notnull()]
