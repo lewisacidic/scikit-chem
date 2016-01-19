@@ -1,8 +1,4 @@
-boost==1.56.0
 numpy
 pandas
-rdkit
 scipy
 scikit-learn
-setuptools
-joblib

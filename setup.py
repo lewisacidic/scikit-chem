@@ -40,6 +40,13 @@ MINOR = 0
 MICRO = 4 
 VERSION = '{major}.{minor}.{micro}'.format(major=MAJOR, minor=MINOR, micro=MICRO)
 
+with open('requirements.txt') as f:
+   REQUIREMENTS = [l.strip() for l in f]
+
+with open('test_requirements.txt') as f:
+   TEST_REQUIREMENTS = [l.strip() for l in f]
+
+
 def setup_package():
 
     metadata = dict(name=DISTNAME,
@@ -57,17 +64,9 @@ def setup_package():
     setup(
         packages=find_packages(),
         package_data = {'skchem.target_prediction': ['data/PIDGIN_models.pkl.gz']},
-        install_requires=[
-            #'rdkit',  ## currently rdkit does not have a valid pip installable package, so this dependency must be met by the installer
-            'pandas',
-            'numpy',
-            'scikit-learn'
-            ],
+        install_requires=REQUIREMENTS,
         test_suite='nose.collector',
-        tests_require=[
-            'nose',
-            'pytest'
-            ],
+        tests_require=TEST_REQUIREMENTS,
         zip_safe=False,
         **metadata
         )

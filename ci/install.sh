@@ -36,7 +36,8 @@ conda update -q conda
 conda info -a
 
 # Add required channels for dependencies
-conda config --add channels 'http://conda.binstar.org/rdkit'
+conda config --add channels 'http://conda.anaconda.org/rdkit'
+conda config --add channels 'http://conda.anaconda.org/richlewis'
 
 # Create the virtual environment
 conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION 
