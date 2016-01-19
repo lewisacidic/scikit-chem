@@ -10,9 +10,6 @@
 
 set -e
 
-# update travis environment
-sudo apt-get update
-
 # retrieve miniconda distribution appropriate for travis' python version
 if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
   wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
