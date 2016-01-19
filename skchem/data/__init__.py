@@ -11,9 +11,14 @@ Module for handling data. Data can be accessed using the resource function.
 """
 
 import os
+import pandas as pd
 
 def resource(*args):
 
     """ passes a file path for a data resource specified """
 
     return os.path.join(os.path.dirname(__file__), *args)
+
+def periodic_table():
+
+    return pd.read_csv(resource('atomic_data.csv'))

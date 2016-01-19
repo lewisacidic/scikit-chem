@@ -66,7 +66,7 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
         """ Return an iterable over the bonds of the molecule. """
 
-        return [Bond.from_super(self.GetBondWithIdx(i)) for i in xrange(self.GetNumBonds())]
+        return [Bond.from_super(self.GetBondWithIdx(i)) for i in range(self.GetNumBonds())]
 
     @bonds.setter
     def bonds(self, value):
@@ -138,7 +138,7 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
         """ Return a chemdoodle dict representation of the molecule. """
 
-        atom_positions = [p.to_dict() for p in self._2D().atom_positions]
+        atom_positions = [p.to_dict() for p in self._two_d().atom_positions]
         atom_elements = [a.element for a in self.atoms]
 
         for i, atom_position in enumerate(atom_positions):
@@ -148,11 +148,11 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
         return {"m": [{"a": atom_positions, "b": bonds}]}
 
-    def to_json(self):
+    def to_json(self, kind='chemdoodle'):
 
         """ Return a JSON representation of the molecule. """
 
-        return json.dumps(self.to_dict())
+        return json.dumps(self.to_dict(kind=kind))
 
     def to_inchi_key(self, *args, **kwargs):
 
@@ -213,4 +213,3 @@ SERIALIZERS = ['Inchi', 'Smiles', 'MolBlock', 'PDBBlock', 'Smarts', 'TPLBlock', 
 
 list(map(bind_constructor, CONSTRUCTORS))
 list(map(bind_serializer, SERIALIZERS))
-

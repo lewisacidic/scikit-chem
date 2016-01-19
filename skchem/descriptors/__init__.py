@@ -10,3 +10,4 @@ A module concerned with calculating molecular descriptors.
 """
 
 from .fingerprints import skchemize, Fingerprinter
+from .atom import AtomFeatureCalculator
