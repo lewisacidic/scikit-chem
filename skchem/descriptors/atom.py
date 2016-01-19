@@ -174,9 +174,9 @@ atom_features = {
     'is_heteroatom': is_hetero,
     'total_polar_surface_area_contrib': tpsa_contrib,
     'total_labute_accessible_surface_area': labute_asa_contrib,
-    **element_features,
-    **hybridization_features
 }
+atom_features.update(element_features)
+atom_features.update(hybridization_features)
 
 class AtomFeatureCalculator(object):
 
