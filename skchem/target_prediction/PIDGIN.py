@@ -18,6 +18,8 @@ import pandas as pd
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 import gzip
 
+import sys
+
 # if cpickle available, import it.  otherwise use pickle
 try:
     import cPickle as pickle
@@ -33,7 +35,10 @@ class PIDGIN(AbstractTargetPredictionAlgorithm):
     """ Class implementing the PIDGIN target prediction algorithm """
 
     def __init__(self):
-        with gzip.open(resource('PIDGIN_models.pkl.gz'), 'rb') as f:
+        # fix py3 incompat by creating py2k and py3k PIDGIN models
+        filename = 'models_{}{}.pkl.gz'.format(*sys.version_info[:2])
+
+        with gzip.open(resource('PIDGIN', filename), 'rb') as f:
             self.models = pickle.load(f)
         self.fingerprint = skchemize(GetMorganFingerprintAsBitVect, \
                                         radius=2, nBits=2048)
@@ -64,8 +69,8 @@ class PIDGIN(AbstractTargetPredictionAlgorithm):
 
         fp = self.fingerprint(m)
         res = pd.Series(index=self.targets)
-        for target, model in self.models.iteritems():
-            res[target] = model.predict_proba(fp)[:, 1][0]
+        for target in self.models:
+            res[target] = self.models[target].predict_proba(fp)[:, 1][0]
         return res
 
     def _map_predict_proba(self, m):
@@ -101,8 +106,8 @@ class PIDGIN(AbstractTargetPredictionAlgorithm):
 
         fps = df.structure.apply(self.fingerprint)
         res = pd.DataFrame(index=fps.index, columns=self.targets)
-        for target, model in self.models.iteritems():
-            res[target] = model.predict(fps)
+        for target in self.models:
+            res[target] = self.models[target].predict(fps)
         return res
 
     def _df_map_predict(self, df):
@@ -124,13 +129,13 @@ class PIDGIN(AbstractTargetPredictionAlgorithm):
         res = pd.DataFrame(index=fps.index, columns=self.targets)
 
         #parallelize here
-        for target, model in self.models.iteritems():
-            res[target] = model.predict_proba(fps)[:, 1]
+        for target in self.models:
+            res[target] = self.models[target].predict_proba(fps)[:, 1]
         return res
 
     def _df_map_predict_proba(self, df):
 
-        ''' map based way to call the predict_proba on large scikit-chem style dataframes'''
+        """ map based way to call the predict_proba on large scikit-chem style dataframes """
 
         fps = df.structure.apply(self.fingerprint)
 
@@ -145,8 +150,8 @@ class PIDGIN(AbstractTargetPredictionAlgorithm):
         fps = df.structure.apply(self.fingerprint)
         res = pd.DataFrame(index=fps.index, columns=self.targets)
 
-        for target, model in self.models.iteritems():
-            res[target] = model.predict_log_proba(fps)[:, 1]
+        for target in self.models:
+            res[target] = self.models[target].predict_log_proba(fps)[:, 1]
         return res
 
     def _df_map_predict_log_proba(self, df):
