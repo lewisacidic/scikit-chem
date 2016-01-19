@@ -33,7 +33,6 @@ conda update -q conda
 conda info -a
 
 # Add required channels for dependencies
-conda config --add channels 'http://conda.anaconda.org/rdkit'
 conda config --add channels 'http://conda.anaconda.org/richlewis'
 
 # Create the virtual environment
@@ -43,6 +42,7 @@ conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
 source activate test-environment
 
 # Install the package and test dependencies
+conda install -c 'http://conda.anaconda.org/rdkit' rdkit
 conda install --file $TRAVIS_BUILD_DIR/requirements.txt
 conda install --file $TRAVIS_BUILD_DIR/test_requirements.txt
 
