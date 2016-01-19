@@ -37,7 +37,7 @@ CLASSIFIERS = [
 ]
 MAJOR = 0
 MINOR = 0
-MICRO = 1
+MICRO = 4 
 VERSION = '{major}.{minor}.{micro}'.format(major=MAJOR, minor=MINOR, micro=MICRO)
 
 def setup_package():
