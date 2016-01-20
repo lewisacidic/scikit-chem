@@ -1,10 +1,9 @@
-[![DOI](https://zenodo.org/badge/4513/richlewis42/scikit-chem.svg?style=flat-square)](http://dx.doi.org/10.5281/zenodo.15919)
-[![Coveralls](https://img.shields.io/coveralls/richlewis42/scikit-chem.svg?style=flat-square)](https://coveralls.io/r/richlewis42/scikit-chem)
 [![Travis](https://img.shields.io/travis/richlewis42/scikit-chem.svg?style=flat-square)](https://travis-ci.org/richlewis42/scikit-chem)
+[![Coveralls](https://img.shields.io/coveralls/richlewis42/scikit-chem.svg?style=flat-square)](https://coveralls.io/r/richlewis42/scikit-chem)
 [![Code Health](https://landscape.io/github/richlewis42/scikit-chem/master/landscape.svg?style=flat-square)](https://landscape.io/github/richlewis42/scikit-chem/master)
-[![Release](https://img.shields.io/pypi/v/scikit-chem.svg)](https://github.com/richlewis42/scikit-chem/releases)
+[![Release](https://img.shields.io/pypi/v/scikit-chem.svg?style=flat-square)](https://github.com/richlewis42/scikit-chem/releases)
 [![PyPI](https://img.shields.io/pypi/dm/scikit-chem.svg?style=flat-square)](https://pypi.python.org/pypi/scikit-chem)
-[![License](https://img.shields.io/badge/License-BSD-blue.svg?style=flat-square)](https://github.com/richlewis42/scikit-chem/blob/master/LICENSE)
+[![DOI](https://zenodo.org/badge/4513/richlewis42/scikit-chem.svg?style=flat-square)](http://dx.doi.org/10.5281/zenodo.15919)
 
 # scikit-chem
 
