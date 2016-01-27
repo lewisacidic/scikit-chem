@@ -3,7 +3,7 @@
 [![Code Health](https://landscape.io/github/richlewis42/scikit-chem/master/landscape.svg?style=flat-square)](https://landscape.io/github/richlewis42/scikit-chem/master)
 [![Release](https://img.shields.io/pypi/v/scikit-chem.svg?style=flat-square)](https://github.com/richlewis42/scikit-chem/releases)
 [![PyPI](https://img.shields.io/pypi/dm/scikit-chem.svg?style=flat-square)](https://pypi.python.org/pypi/scikit-chem)
-[![DOI](https://zenodo.org/badge/4513/richlewis42/scikit-chem.svg?style=flat-square)](http://dx.doi.org/10.5281/zenodo.15919)
+[![DOI](https://zenodo.org/badge/4513/richlewis42/scikit-chem.svg?style=flat-square)](https://zenodo.org/badge/latestdoi/4513/richlewis42/scikit-chem)
 
 # scikit-chem
 
