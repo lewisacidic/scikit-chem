@@ -13,7 +13,7 @@ import skchem
 import pandas as pd
 from skchem.utils import Suppressor
 
-def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t', \
+def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
                         title_line=False, force=False, *args, **kwargs):
 
     """
