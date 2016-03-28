@@ -10,10 +10,24 @@ Fingerprinting classes and associated functions are defined.
 
 """
 
+from functools import wraps
+
 import pandas as pd
 from rdkit.Chem import DataStructs
+from rdkit.Chem.rdMolDescriptors import (GetMorganFingerprint,
+                                         GetHashedMorganFingerprint,
+                                         GetAtomPairFingerprint,
+                                         GetHashedAtomPairFingerprint,
+                                         GetTopologicalTorsionFingerprint,
+                                         GetHashedTopologicalTorsionFingerprint,
+                                         GetMACCSKeysFingerprint,
+                                         GetFeatureInvariants,
+                                         GetConnectivityInvariants)
+from rdkit.Chem.rdReducedGraphs import GetErGFingerprint
+from rdkit.Chem.rdmolops import RDKFingerprint
+
 import numpy as np
-import skchem as skc
+import skchem
 
 def skchemize(func, columns=None, *args, **kwargs):
     """
@@ -93,21 +107,21 @@ def skchemize(func, columns=None, *args, **kwargs):
     >>> df = skchem.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
     >>> df.structure.apply(f)
           0     1     2     3     4     5     6     7     8     9     ...   2038  \\
-    name                                                              ...          
-    297      0     0     0     0     0     0     0     0     0     0  ...      0   
-    6324     0     0     0     0     0     0     0     0     0     0  ...      0   
-    6334     0     0     0     0     0     0     0     0     0     0  ...      0   
+    name                                                              ...
+    297      0     0     0     0     0     0     0     0     0     0  ...      0
+    6324     0     0     0     0     0     0     0     0     0     0  ...      0
+    6334     0     0     0     0     0     0     0     0     0     0  ...      0
     <BLANKLINE>
-          2039  2040  2041  2042  2043  2044  2045  2046  2047  
-    name                                                        
-    297      0     0     0     0     0     0     0     0     0  
-    6324     0     0     0     0     0     0     0     0     0  
-    6334     0     0     0     0     0     0     0     0     0  
+          2039  2040  2041  2042  2043  2044  2045  2046  2047
+    name
+    297      0     0     0     0     0     0     0     0     0
+    6324     0     0     0     0     0     0     0     0     0
+    6334     0     0     0     0     0     0     0     0     0
     <BLANKLINE>
     [3 rows x 2048 columns]
 
     """
-
+    @wraps(func)
     def func_wrapper(m):
 
         """ Function that wraps an rdkit function allowing it to produce dataframes. """
@@ -119,45 +133,280 @@ def skchemize(func, columns=None, *args, **kwargs):
 
     return func_wrapper
 
+
 class Fingerprinter(object):
 
-    """ Fingerprinter class. """
+    """ Fingerprinter Base class. """
 
-    def __init__(self, columns, func):
-        self.columns = columns
+    def __init__(self, name, func):
+        self.NAME = name
         self.func = func
 
-    @classmethod
-    def from_rdkit_func(cls, func, columns=None, *args, **kwargs):
-
-        """ Construct a Fingerprinter from an rdkit function. """
-
-        return Fingerprinter(columns, func=skchemize(func, columns=columns, *args, **kwargs))
-
     def __call__(self, obj):
-        return self.calculate(obj)
+        return self.transform(obj)
 
-    def calculate(self, obj):
+    def __add__(self, other):
+        fpers = []
+        for fper in (self, other):
+            if isinstance(fper, FusionFingerprinter):
+                fpers += fper.fingerprinters
+            else:
+                fpers.append(fper)
+
+        return FusionFingerprinter(fpers)
+
+    def fit(self, X, y):
+        return self
+
+    def transform(self, obj):
 
         """ calculate the fingerprint for the given object. """
 
-        if isinstance(obj, skc.core.Mol):
-            return self._calculate_m(obj)
+        if isinstance(obj, skchem.Mol):
+            return self._transform(obj)
 
-        elif isinstance(obj, pd.DataFrame) or isinstance(obj, pd.Series):
-            return self._calculate_df(obj)
+        elif isinstance(obj, pd.DataFrame):
+            return obj.structure.apply(self.transform)
+
+        elif isinstance(obj, pd.Series):
+            return obj.apply(self.transform)
 
         else:
             raise NotImplementedError
 
-    def _calculate_m(self, m):
+    def _transform(self, mol):
 
-        """ calculate the fingerprint for a molecule. """
+        """ Calculate the fingerprint on a molecule. """
 
-        return self.func(m)
+        return pd.Series(list(self.func(mol)), name=mol.name)
 
-    def _calculate_df(self, df):
 
-        """ calculate a fingerprint for a dataframe of molecules """
+class FusionFingerprinter(Fingerprinter):
 
-        return df.structure.apply(self.func)
+    def __init__(self, fingerprinters):
+
+        self.fingerprinters = fingerprinters
+
+    def transform(self, obj):
+
+        if isinstance(obj, skchem.Mol):
+            return pd.concat([fp.transform(obj) for fp in self.fingerprinters],  keys=[fp.NAME for fp in self.fingerprinters])
+
+        elif isinstance(obj, pd.DataFrame):
+            return pd.concat([fp.transform(obj) for fp in self.fingerprinters], keys=[fp.NAME for fp in self.fingerprinters], axis=1)
+
+        elif isinstance(obj, pd.Series):
+            return pd.concat([fp.transform(obj.structure) for fp in self.fingerprinters],  keys=[fp.NAME for fp in self.fingerprinters], axis=1)
+
+        else:
+            raise NotImplementedError
+
+    def _transform(self, mol):
+
+        return pd.concat([fp.transform(mol) for fp in self.fingerprinters])
+
+class MorganFingerprinter(Fingerprinter):
+
+    """ Morgan Fingerprint Transformer. """
+
+    NAME = 'morgan'
+
+    def __init__(self, radius=2, n_feats=2048, as_bits=True,
+                 use_features=False, use_bond_types=True, use_chirality=False):
+
+        """
+        @param radius
+        @param n_feats
+        @param as_bits
+        @param use_features
+        @param use_bond_types
+        @param use_chirality
+        """
+        self.radius = radius
+        self.n_feats = n_feats
+        self.as_bits = as_bits
+        self.use_features = use_features
+        self.use_bond_types = use_bond_types
+        self.use_chirality = use_chirality
+
+    def _transform(self, mol):
+
+        """
+        @param mol
+
+        @returns pd.Series
+        """
+        if self.n_feats == -1:
+
+            res = GetMorganFingerprint(mol, self.radius,
+                                       useFeatures=self.use_features,
+                                       useBondTypes=self.use_bond_types,
+                                       useChirality=self.use_chirality)
+        else:
+            res = list(GetHashedMorganFingerprint(mol, self.radius,
+                                        nBits=self.n_feats,
+                                        useFeatures=self.use_features,
+                                        useBondTypes=self.use_bond_types,
+                                        useChirality=self.use_chirality))
+
+        res = pd.Series(res, name=mol.name)
+
+        if self.as_bits:
+            return (res > 0).astype(int)
+        else:
+            return res
+
+
+class AtomPairFingerprinter(Fingerprinter):
+
+    """ Atom Pair Tranformer. """
+
+    NAME = 'atom_pair'
+
+    def __init__(self, min_length=1, max_length=30, n_feats=2048, as_bits=False, use_chirality=False):
+        self.min_length = min_length
+        self.max_length = max_length
+        self.n_feats = n_feats
+        self.as_bits = as_bits
+        self.use_chirality = use_chirality
+
+    def _transform(self, mol):
+
+        """
+        @param molecules
+
+        @return pd.Series
+        """
+
+        if self.n_feats == -1:
+
+            res = GetAtomPairFingerprint(mol, minLength=self.min_length,
+                                         maxLength=self.max_length,
+                                         includeChirality=self.use_chirality)
+        else:
+            res = list(GetHashedAtomPairFingerprint(mol, minLength=self.min_length,
+                                         maxLength=self.max_length,
+                                         nBits=self.n_feats,
+                                         includeChirality=self.use_chirality))
+
+        res = pd.Series(res, name=mol.name)
+
+        if self.as_bits:
+            return (res > 0).astype(int)
+        else:
+            return res
+
+class TopologicalTorsionFingerprinter(Fingerprinter):
+
+    NAME = 'topological_torsion'
+
+    def __init__(self, target_size=4, n_feats=2048, as_bits=False,
+                 use_chirality=False):
+                 self.target_size = target_size
+                 self.n_feats = n_feats
+                 self.as_bits = as_bits
+                 self.use_chirality = use_chirality
+
+    def _transform(self, mol):
+
+        if self.n_feats == -1:
+
+            res = GetTopologicalTorsionFingerprint(mol, targetSize=self.targetSize,
+                                        includeChirality=self.use_chirality)
+
+        else:
+            res = list(GetHashedTopologicalTorsionFingerprint(mol,
+                                        targetSize=self.targetSize,
+                                        nBits=self.n_feats))
+
+        res = pd.Series(res, name=mol.name)
+
+        if self.as_bits:
+            return (res > 0).astype(int)
+        else:
+            return res
+
+
+class MACCSKeysFingerprinter(Fingerprinter):
+
+    """ MACCS Keys Fingerprints """
+
+    NAME = 'maccs'
+
+    def __init__(self):
+        pass
+
+    def _transform(self, mol):
+
+        return pd.Series(list(GetMACCSKeysFingerprint(mol)))
+
+class ErGFingerprinter(Fingerprinter):
+
+    """ ErG Fingerprints """
+
+    NAME = 'erg'
+
+    def __init__(self):
+        pass
+
+    def _transform(self, mol):
+
+        return pd.Series(GetErGFingerprint(mol))
+
+class FeatureInvariantsFingerprinter(Fingerprinter):
+
+    """ Feature invariant fingerprints. """
+
+    NAME = 'feat_inv'
+
+    def __init__(self):
+        pass
+
+    def _transform(self, mol):
+
+        return pd.Series(GetFeatureInvariants(mol))
+
+class ConnectivityInvariantsFingerprinter(Fingerprinter):
+
+    """ Connectiity invariant fingerprints """
+    
+    NAME = 'conn_inv'
+
+    def __init__(self):
+        pass
+
+    def _transform(self, mol):
+
+        return pd.Series(GetConnectivityInvariants(mol))
+
+class RDKFingerprinter(Fingerprinter):
+
+    """ RDKit fingerprint """
+
+    NAME = 'rdk'
+
+    def __init__(self, min_path=1, max_path=7, n_feats=2048, n_bits_per_hash=2,
+                 use_hs=True, target_density=0.0, min_size=128,
+                 branched_paths=True, use_bond_types=True):
+                 self.min_path = 1
+                 self.max_path = 7
+                 self.n_feats = 2048
+                 self.n_bits_per_hash = 2
+                 self.use_hs = True
+                 self.target_density = 0.0
+                 self.min_size = 128
+                 self.branched_paths = True
+                 self.use_bond_types = True
+
+    def _transform(self, mol):
+
+        return pd.Series(list(RDKFingerprint(mol, minPath=self.min_path,
+                                             maxPath=self.max_path,
+                                             fpSize=self.n_feats,
+                                             nBitsPerHash=self.n_bits_per_hash,
+                                             useHs=self.use_hs,
+                                             tgtDensity=self.target_density,
+                                             minSize=self.min_size,
+                                             branchedPaths=self.branched_paths,
+                                             useBondOrder=self.use_bond_types)),
+                        name=mol.name)

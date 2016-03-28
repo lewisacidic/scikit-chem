@@ -9,5 +9,8 @@ skchem.descriptors
 A module concerned with calculating molecular descriptors.
 """
 
-from .fingerprints import skchemize, Fingerprinter
+from .physicochemical import PhysicochemicalFingerprinter
+from .fingerprints import (skchemize, Fingerprinter, AtomPairFingerprinter,
+                           MorganFingerprinter, MACCSKeysFingerprinter,
+                           TopologicalTorsionFingerprinter)
 from .atom import AtomFeatureCalculator
