@@ -7,21 +7,27 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Crippen
 from rdkit.Chem import Lipinski
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors, rdPartialCharges
 from rdkit.Chem.rdchem import HybridizationType
 import skchem
 
 import functools
-from skchem.data import periodic_table
+from skchem.data import PERIODIC_TABLE
 
-from .filters import organic
+from .filters import ORGANIC
 
-def is_element(a, element=0):
+def element(a):
+
+    """ Return the element """
+
+    return a.GetSymbol()
+
+def is_element(a, symbol='C'):
 
     """ Is the atom of a given element """
-    return a.GetSymbol() == element
+    return element(a) == symbol
 
-element_features = {'is_{}'.format(e): functools.partial(is_element, element=e) for e in organic}
+element_features = {'is_{}'.format(e): functools.partial(is_element, symbol=e) for e in ORGANIC}
 
 def is_h_acceptor(a):
 
@@ -144,18 +150,40 @@ def labute_asa_contrib(a):
     m = a.GetOwningMol()
     return rdMolDescriptors._CalcLabuteASAContribs(m)[0][idx]
 
+def gasteiger_charge(a, force_calc=False):
+
+    """ Hacky way of getting gasteiger charge """
+
+    res = a.props.get('_GasteigerCharge', None)
+    if res and not force_calc:
+        return float(res)
+    else:
+        idx = a.GetIdx()
+        m = a.GetOwningMol()
+        rdPartialCharges.ComputeGasteigerCharges(m)
+        return float(a.props['_GasteigerCharge'])
+
+def electronegativity(a):
+
+    return PERIODIC_TABLE.loc[a.atomic_number, 'pauling_electronegativity']
+
+def first_ionization(a):
+
+    return PERIODIC_TABLE.loc[a.atomic_number, 'first_ionisation_energy']
+
+def group(a):
+
+    return PERIODIC_TABLE.loc[a.atomic_number, 'group']
+
+def period(a):
+
+    return PERIODIC_TABLE.loc[a.atomic_number, 'period']
+
 def is_hybridized(a, hybrid_type=HybridizationType.SP3):
 
     """ Hybridized as type hybrid_type, default SP3 """
 
-    return a.GetHybridization() is hybrid_type
-
-pt = periodic_table()
-
-def electronegativity(a):
-
-    return a.GetSymbol()
-
+    return str(a.GetHybridization()) is hybrid_type
 
 hybridization_features = {'is_' + n + '_hybridized': functools.partial(is_hybridized, hybrid_type=n) for n in HybridizationType.names}
 
@@ -163,6 +191,11 @@ atom_features = {
     'atomic_number': atomic_number,
     'atomic_mass': atomic_mass,
     'formal_charge': formal_charge,
+    'gasteiger_charge': gasteiger_charge,
+    'electronegativity': electronegativity,
+    'first_ionisation': first_ionization,
+    'group': group,
+    'period': period,
     'valence': valence,
     'is_aromatic': is_aromatic,
     'num_hydrogens': num_hydrogens,
@@ -180,24 +213,27 @@ atom_features.update(hybridization_features)
 
 class AtomFeatureCalculator(object):
 
-    def __init__(self, features=atom_features):
+    def __init__(self, features='all'):
+        if features == 'all':
+            features = atom_features
+
         self.features = pd.Series(features)
 
     @property
     def feature_names(self):
         return self.features.index
 
-    def calculate(self, obj):
+    def transform(self, obj):
         if isinstance(obj, skchem.core.Atom):
             return self._calculate_atom(obj)
         elif isinstance(obj, skchem.core.Mol):
             return self._calculate_mol(obj)
 
-    def _calculate_atom(self, atom):
+    def _transform_atom(self, atom):
         return self.features.apply(lambda f: f(atom))
 
-    def _calculate_mol(self, mol):
+    def _transform_mol(self, mol):
         return pd.DataFrame(self(a) for a in mol.atoms)
 
     def __call__(self, *args, **kwargs):
-        return self.calculate(*args, **kwargs)
+        return self.transform(*args, **kwargs)

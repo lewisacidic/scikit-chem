@@ -10,7 +10,7 @@ Chemical filters are defined.
 
 """
 
-organic = ['H', 'B', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
+ORGANIC = ['H', 'B', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
 
 def is_organic(m):
-    return all(atom.element in organic for atom in m.atoms)
+    return all(atom.element in ORGANIC for atom in m.atoms)

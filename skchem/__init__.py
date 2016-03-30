@@ -7,5 +7,10 @@
 
 __version__ = '0.0.1dev'
 
+from . import core
+from . import descriptors
+from . import io
+
 from .core import Mol
+from .descriptors import MorganFingerprinter
 from .io import read_sdf, read_smiles
