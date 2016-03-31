@@ -24,26 +24,44 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
 
         return self.GetSymbol()
 
-    @element.setter
-    def element(self, value):
+    @property
+    def atomic_number(self):
 
-        """ Set the element of the atom.  Not implemented. """
+        """ Get the atomic number of the atom as a float. """
 
-        raise NotImplementedError
+        return self.GetAtomicNum()
+
+    @property
+    def mass(self):
+
+        """ Get the mass of the atom as a float. """
+
+        return self.GetMass()
+
+    @property
+    def atomic_mass(self):
+
+        """ Get the mass of the atom as a float. """
+
+        return self.mass
 
     @property
     def props(self):
 
         """ Return a dictionary of properties of the atom. """
 
-        return {i: self.GetProp() for i in self.GetProps()}
+        # Some atom properties are inaccessible, but still give values.
+        #
 
-    @props.setter
-    def props(self, value):
+        props = {}
 
-        """ Set the properties of the Atom.  Not implemented. """
+        for prop in self.GetPropNames():
+            try:
+                props[prop] = self.GetProp(prop)
+            except RuntimeError:
+                pass
 
-        raise NotImplementedError
+        return props
 
     def __repr__(self):
 

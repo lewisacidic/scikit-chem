@@ -91,6 +91,19 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         raise NotImplementedError
 
     @property
+    def atom_props(self):
+
+        """ Return a dict of lists of properties on atoms of the molecule. """
+
+        if not hasattr(self, '_atom_prop_names'):
+            res = set()
+            for atom in self.atoms:
+                res = res.union(set(atom.props.keys()))
+            self._atom_prop_names = list(res)
+        return {prop: [atom.props.get(prop, None) for atom in self.atoms]
+                                        for prop in self._atom_prop_names}
+
+    @property
     def conformers(self):
 
         """ Return a list of conformers of the molecule. """
