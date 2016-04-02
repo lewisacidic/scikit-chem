@@ -26,9 +26,9 @@ try:
 except ImportError:
     import pickle
 
-from skchem.target_prediction import AbstractTargetPredictionAlgorithm
-from skchem.descriptors import skchemize
-from skchem.data import resource
+from .target_prediction import AbstractTargetPredictionAlgorithm
+from ..descriptors import skchemize
+from ..data import resource
 
 class PIDGIN(AbstractTargetPredictionAlgorithm):
 
