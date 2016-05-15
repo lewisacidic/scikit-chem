@@ -3,6 +3,12 @@
 # Copyright (C) 2015 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
+"""
+## skchem.descriptors.atom
+
+Module specifying atom based descriptor generators.
+"""
+
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Crippen
@@ -14,7 +20,7 @@ import skchem
 import functools
 from skchem.data import PERIODIC_TABLE
 
-from .filters import ORGANIC
+from ..filters import ORGANIC
 
 def element(a):
 
@@ -63,7 +69,7 @@ def atomic_mass(a):
 
     """ Atomic mass of atom """
 
-    return a.GetMass()
+    return a.mass
 
 def explicit_valence(a):
 
@@ -225,9 +231,9 @@ class AtomFeatureCalculator(object):
 
     def transform(self, obj):
         if isinstance(obj, skchem.core.Atom):
-            return self._calculate_atom(obj)
+            return self._transform_atom(obj)
         elif isinstance(obj, skchem.core.Mol):
-            return self._calculate_mol(obj)
+            return self._transform_mol(obj)
 
     def _transform_atom(self, atom):
         return self.features.apply(lambda f: f(atom))
