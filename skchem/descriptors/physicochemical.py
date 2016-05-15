@@ -4,7 +4,7 @@
 # License: 3-clause BSD
 
 """
-skchem.descriptors.physicochemical
+## skchem.descriptors.physicochemical
 
 Physicochemical descriptors and associated functions are defined.
 
@@ -16,16 +16,22 @@ import pandas as pd
 from .fingerprints import Fingerprinter
 from ..utils import camel_to_snail
 
-def molecular_weight(m):
-    return Descriptors.MolWt(m)
-
 DESCRIPTORS = [(camel_to_snail(s), f) for (s, f) in Descriptors.descList]
 
 class PhysicochemicalFingerprinter(Fingerprinter):
 
+    """ Physicochemical descriptor generator using RDKit descriptor """
+
     NAME = 'physchem'
-    
+
     def __init__(self, descriptors='all'):
+
+        """ Create a physicochemical descriptor generator.
+
+        Args:
+            descriptors (list<(str, func)> or 'all'):
+                Descriptors to calculate, or if 'all', use all descriptors."""
+
         if descriptors == 'all':
             self.descriptors = DESCRIPTORS
         else:
