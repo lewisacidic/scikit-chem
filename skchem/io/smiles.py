@@ -4,35 +4,65 @@
 # License: 3-clause BSD
 
 """
-skchem.io.smiles
+# skchem.io.smiles
 
 Defining input and output operations for smiles files.
 """
 
-import skchem
+import warnings
+from functools import wraps
+
 import pandas as pd
-from skchem.utils import Suppressor
+
+from ..utils import Suppressor
+from ..core import Mol
 
 def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
-                        title_line=False, force=False, *args, **kwargs):
+                title_line=False, error_bad_mol=False, warn_bad_mol=True,
+                drop_bad_mol=True, *args, **kwargs):
 
-    """
-    Read a smiles file into a pandas dataframe.  The class wraps the pandas read_csv function.
+    """Read a smiles file into a pandas dataframe.
 
-    @param smiles_file      A file path provided as a :str:, or a :file-like: object.
-    @param smiles_column    The column index as an :int: in which the smiles strings are provided.
-                            Defaults to _zero_.
-    @param name_column      The column index as an :int: in which compound names are provided,
-                            for use as the index in the dataframe.  Defaults to _None_.
-    @param delimiter        The delimiter used, specified as a :str:.
-                            Defaults to _<tab>_.
-    @param title_line       A :bool: specifying whether a title line is provided,
-                            to use as column titles.
-    @param force            A :bool: specifying whether poorly parsed molecules should be skipped,
-                            or an error thrown.
-    Additionally, pandas read_csv arguments may be provided.
+    The class wraps the pandas read_csv function.
 
-    @returns df             A dataframe of type :pandas.core.frame.DataFrame:.
+    smiles_file (str, file-like):
+        Location of data to load, specified as a string or passed directly as a
+        file-like object.  URLs may also be used, see the pandas.read_csv
+        documentation.
+    smiles_column (int):
+        The column index at which SMILES are provided.
+        Defaults to `0`.
+    name_column (int):
+        The column index at which compound names are provided, for use as the
+        index in the dataframe.  If None, use the default index.
+        Defaults to `None`.
+    delimiter (str):
+        The delimiter used.
+        Defaults to `\t`.
+    title_line (bool):
+        Whether a title line is provided, to use as column titles.
+        Defaults to `False`.
+    error_bad_mol (bool):
+        Whether an error should be raised when a molecule fails to parse.
+        Defaults to `False`.
+    warn_bad_mol (bool):
+        Whether a warning should be raised when a molecule fails to parse.
+        Defaults to `True`.
+    drop_bad_mol (bool):
+        If true, drop any column with smiles that failed to parse. Otherwise,
+        the field is None. Defaults to `True`.
+    *args, **kwargs:
+        Arguments will be passed to pandas read_csv arguments.
+
+    Returns:
+        pandas.DataFrame:
+            The loaded data frame, with Mols supplied in the `structure` field.
+
+    See Also:
+        pandas.read_csv
+        skchem.Mol.from_smiles
+        skchem.io.sdf
+
     """
 
     with Suppressor():
@@ -41,61 +71,51 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
         # we accept True as being line zero, as is usual for smiles
         # if user specifies a header already, then do nothing
 
-        header = kwargs.get('header', None)
+        header = kwargs.pop('header', None)
         if title_line is True:
             header = 0
         elif header is not None:
-            kwargs.pop('header') #remove from the kwargs to not pass it twice
+            pass #remove from the kwargs to not pass it twice
         else:
             header = None
 
-        # open file if not already open
-        if isinstance(smiles_file, str):
-            smiles_file = open(smiles_file, 'r')
-
         # read the smiles file
-        df = pd.read_csv(smiles_file, delimiter=delimiter, header=header, *args, **kwargs)
+        data = pd.read_csv(smiles_file, delimiter=delimiter, header=header,
+                           *args, **kwargs)
 
         # replace the smiles column with the structure column
-        lst = list(df.columns)
+        lst = list(data.columns)
         lst[smiles_column] = 'structure'
-        df.columns = lst
+        data.columns = lst
 
-        # apply the from smiles constructor
-        if force:
-            def parse(smiles):
+        def parse(row):
+            """ Parse smiles for row """
+            try:
+                return Mol.from_smiles(row.structure)
+            except ValueError:
+                msg = 'Molecule {} could not be decoded.'.format(row.name)
+                if warn_bad_mol:
+                    warnings.warn(msg)
+                elif error_bad_mol:
+                    raise ValueError(msg)
+                return None
 
-                """
-                Parse a molecule from smiles string and return None if it doesn't load
-                (restoring rdkit functionality)
-                """
+        data['structure'] = data['structure'].apply(str)
+        data['structure'] = data.apply(parse, axis=1)
 
-                try:
-                    return skchem.Mol.from_smiles(smiles)
-                except ValueError:
-                    return None
-        else:
-            def parse(smiles):
-                """
-                Parse a molecule from smiles string
-                """
-                return skchem.Mol.from_smiles(smiles)
-
-        df['structure'] = df['structure'].apply(str).apply(parse) #make sure is a string
-
-        if force:
-            df = df[df['structure'].notnull()]
+        if drop_bad_mol:
+            data = data[data['structure'].notnull()]
 
         # set index if passed
         if name_column is not None:
-            df = df.set_index(df.columns[name_column])
+            data = data.set_index(data.columns[name_column])
 
-        return df
+        return data
 
 @classmethod
-def from_smiles(_, *args, **kwargs):
-    """ Create a DataFrame from a smiles file """
+@wraps(read_smiles)
+def _from_smiles(_, *args, **kwargs):
     return read_smiles(*args, **kwargs)
 
 #set on pandas dataframe
-pd.DataFrame.from_smiles = from_smiles
+pd.DataFrame.from_smiles = _from_smiles
