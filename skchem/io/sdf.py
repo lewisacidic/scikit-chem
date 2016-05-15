@@ -50,18 +50,28 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
             The number of molecules to read. If `None`, read all molecules.
             Default is `None`.
         skipmols (int):
-            The number of molecules to skip at start. Default is `0`.
+            The number of molecules to skip at start.
+            Default is `0`.
         skipfooter (int):
-            The number of molecules to skip from the end. Default is `0`.
+            The number of molecules to skip from the end.
+            Default is `0`.
+        read_props (bool):
+            Whether to read the properties into the data frame.
+            Default is `True`.
         mol_props (bool):
             Whether to keep properties in the molecule dictionary after they are
-            extracted to the dataframe. Default is `False`.
+            extracted to the dataframe.
+            Default is `False`.
         *args, **kwargs:
             Arguments will be passed to rdkit's ForwardSDMolSupplier.
 
     Returns:
-        pd.DataFrame: A dataframe of type :pandas.core.frame.DataFrame:.
+        pandas.DataFrame:
+            The loaded data frame, with Mols supplied in the `structure` field.
 
+    See also:
+        rdkit.Chem.SDForwardMolSupplier
+        skchem.read_smiles
     """
 
     # nmols is actually the index to cutoff.  If we skip some at start, we need
@@ -112,10 +122,9 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
     if read_props:
         props = pd.DataFrame([mol.props for mol in mols])
         data = pd.concat([data, props], axis=1)
-
-    # now we have extracted the props, we can delete if required
-    if not mol_props:
-        data.apply(_drop_props, axis=1)
+        # now we have extracted the props, we can delete if required
+        if not mol_props:
+            data.apply(_drop_props, axis=1)
 
     data.index = idx
     return data
@@ -181,10 +190,15 @@ pd.DataFrame.to_sdf = _to_sdf_df
 
 
 @classmethod
+@wraps(read_sdf)
 def _from_sdf(_, *args, **kwargs):
-
-    """ Create a DataFrame from an sdf file """
 
     return read_sdf(*args, **kwargs)
 
 pd.DataFrame.from_sdf = _from_sdf
+
+@classmethod
+@wraps(read_sdf)
+def _from_sdf(_, *args, **kwargs):
+
+    return read_sdf(*args, **kwargs).structure
