@@ -5,16 +5,30 @@
 
 def bedroc_score(y_true, y_pred, decreasing=True, alpha=20.0):
 
-    """ BEDROC metric implemented according to Truchon and Bayley
-     (10.1021/ci600426e).
+    """BEDROC metric implemented according to Truchon and Bayley.
 
-     @param y_true      class labels, 1 for positive class, 0 otherwise
-     @param y_pred      prediction values
-     @param decreasing  :boolean: if high metric correlates to positive class
-     @param alpha       early recognition parameter
+    The Boltzmann Enhanced Descrimination of the Receiver Operator
+    Characteristic (BEDROC) score is a modification of the Receiver Operator
+    Characteristic (ROC) score that allows for a factor of *early recognition*.
 
-     @returns float between 0 and 1, indicating degree to which the predictive
-     technique employed detects (early) the positive class.
+    References:
+        The original paper by Truchon et al. is located at `10.1021/ci600426e
+        <http://dx.doi.org/10.1021/ci600426e>`_.
+
+    Args:
+        y_true (array_like):
+            Binary class labels. 1 for positive class, 0 otherwise.
+        y_pred (array_like):
+            Prediction values.
+        decreasing (bool):
+            True if high values of ``y_pred`` correlates to positive class.
+        alpha (float):
+            Early recognition parameter.
+
+    Returns:
+        float:
+            Value in interval [0, 1] indicating degree to which the predictive
+            technique employed detects (early) the positive class.
      """
 
     assert len(y_true) == len(y_pred), \
