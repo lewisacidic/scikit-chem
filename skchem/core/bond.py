@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 2015-2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 """
-skchem.core.bond
+## skchem.core.bond
 
 Defining chemical bonds in scikit-chem.
 """
 
 import rdkit.Chem
-from skchem.core import Atom
-from skchem.core import ChemicalObject
+from . import Atom
+from .base import ChemicalObject
 
 class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
 
@@ -23,47 +23,20 @@ class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
     @property
     def order(self):
 
-        """
-        The order of the bond.
-
-        Parameters
-        ----------
-
-        None
-
-        Returns
-        -------
-
-        bond :int
-
-        """
+        """ int: the order of the bond. """
 
         return self.GetBondTypeAsDouble()
-
-    @order.setter
-    def order(self, value):
-
-        """ Set the order of the bond.  Not implemented."""
-
-        raise NotImplementedError
 
     @property
     def atoms(self):
 
-        """ Return an iterable of the atoms involved in the bond. """
+        """ list[Atom]: list of atoms involved in the bond. """
 
         return [Atom.from_super(self.GetBeginAtom()), Atom.from_super(self.GetEndAtom())]
 
-    @atoms.setter
-    def atoms(self, value):
-
-        """ Set the atoms of the molecule.  Not implemented. """
-
-        raise NotImplementedError
-
     def draw(self):
 
-        """ Draw the bond inline. """
+        """ str: Draw the bond in ascii. """
 
         return '{}{}{}'.format(self.atoms[0].element, \
             '-' if self.order == 1 else self.GetSmarts(), \
@@ -71,7 +44,7 @@ class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
 
     def to_dict(self):
 
-        """ Convert to a dictionary representation. """
+        """ dict: Convert to a dictionary representation. """
 
         return {"b": self.GetBeginAtomIdx(), "e": self.GetEndAtomIdx(), "o": self.order}
 

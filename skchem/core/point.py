@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 2015-2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 """
-skchem.core.point
+## skchem.core.point
 
 Defining points in scikit-chem.
 """
@@ -13,7 +13,7 @@ Defining points in scikit-chem.
 # integration with the scientific python stack.
 
 import rdkit.Geometry.rdGeometry
-from skchem.core import ChemicalObject
+from .base import ChemicalObject
 
 class Point3D(rdkit.Geometry.rdGeometry.Point3D, ChemicalObject):
 
@@ -21,7 +21,15 @@ class Point3D(rdkit.Geometry.rdGeometry.Point3D, ChemicalObject):
 
     def to_dict(self, two_d=True):
 
-        """ Return a dictionary representation of the point """
+        """ Dictionary representation of the point.
+
+        Args:
+            two_d (bool):
+                Whether the point is in two dimensions or three.
+
+        Returns:
+            dict[str: float]: dictionary of coordinates to values.
+        """
 
         if two_d:
             return {"x": round(self.x), "y": round(self.y)}

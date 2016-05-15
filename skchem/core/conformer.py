@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 2015-2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 """
-skchem.core.conformer
+## skchem.core.conformer
 
 Defining conformers in scikit-chem.
 """
 
 import rdkit.Chem
-from skchem.core import Point3D
-from skchem.core import ChemicalObject
+from .point import Point3D
+from .base import ChemicalObject
 
 class Conformer(rdkit.Chem.rdchem.Conformer, ChemicalObject):
 
@@ -48,4 +48,3 @@ class Conformer(rdkit.Chem.rdchem.Conformer, ChemicalObject):
     def __repr__(self):
         return '<{klass} id="{id}" at {address}>'.format(klass=self.__class__.__name__, \
             id=self.GetId(), address=hex(id(self)))
-

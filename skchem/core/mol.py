@@ -1,36 +1,70 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 2015-2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 """
-skchem.core.mol
+## skchem.core.mol
 
 Defining molecules in scikit-chem.
 """
 
 import rdkit.Chem
+import rdkit.Chem.inchi
 from rdkit.Chem.rdDepictor import Compute2DCoords
-from rdkit.Chem.rdMolDescriptors import CalcMolFormula
+from rdkit.Chem.rdMolDescriptors import CalcMolFormula, CalcExactMolWt
 
 import json
 
-from skchem.core import ChemicalObject, Atom, Bond, Conformer
+from . import Atom, Bond, Conformer
+from .base import ChemicalObject, AtomView, PropertyView
+from ..utils import Suppressor
 
 class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
-    """
-    Class representing a Molecule in scikit-chem.
+    """Class representing a Molecule in scikit-chem.
+
+    Mol objects inherit directly from rdkit Mol objects.  Therefore, they
+    contain atom and bond information, and may also include properties and
+    atom bookmarks.
+
+    Example:
+        Constructors are implemented as class methods with the `from_` prefix.
+
+        ```python
+        m = Mol.from_smiles('c1ccccc1')
+        ```
+
+        Serializers are implemented as instance methods with the `to_` prefix.
+
+        ```python
+        m.to_smiles()
+        ```
+
     """
 
     def __init__(self, *args, **kwargs):
+
+        """
+        The default constructor.
+
+        Note:
+            This will be rarely used, as it can only create an empty molecule.
+
+        Args:
+            *args: Arguments to be passed to the rdkit Mol constructor.
+            **kwargs: Arguments to be passed to the rdkit Mol constructor.
+        """
         super(Mol, self).__init__(*args, **kwargs)
         self.__two_d = None #set in constructor
 
     @property
     def name(self):
 
-        """ Return the name of the molecule. """
+        """ str: The name of the molecule.
+
+        Raises:
+            KeyError"""
 
         try:
             return self.GetProp('_Name')
@@ -40,8 +74,6 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
     @name.setter
     def name(self, value):
 
-        """ Set the name of the molecule. """
-
         if value is None:
             self.ClearProp('_Name')
         else:
@@ -50,50 +82,40 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
     @property
     def atoms(self):
 
-        """ return an iterable over the atoms of the molecule. """
+        """ List[skchem.Atom]: An iterable over the atoms of the molecule. """
 
-        return [Atom.from_super(self.GetAtomWithIdx(i)) for i in range(self.GetNumAtoms())]
-
-    @atoms.setter
-    def atoms(self, value):
-
-        """ Set the atoms of a molecule.  Not implemented. """
-
-        raise NotImplementedError
+        if not hasattr(self, '_atoms'):
+            self._atoms = AtomView(self)
+        return self._atoms
 
     @property
     def bonds(self):
 
-        """ Return an iterable over the bonds of the molecule. """
+        """ List[skchem.Bond]: An iterable over the bonds of the molecule. """
 
-        return [Bond.from_super(self.GetBondWithIdx(i)) for i in range(self.GetNumBonds())]
+        return [Bond.from_super(self.GetBondWithIdx(i)) \
+                for i in range(self.GetNumBonds())]
 
-    @bonds.setter
-    def bonds(self, value):
+    @property
+    def mass(self):
 
-        """ Set the bonds of the molecule. Not implemented. """
+        """ float: the mass of the molecule. """
 
-        raise NotImplementedError
+        return CalcExactMolWt(self)
 
-    # use a view to easily set properties?
     @property
     def props(self):
 
-        """ Return a dictionary of the properties of the molecule. """
+        """ PropertyView: A dictionary of the properties of the molecule. """
 
-        return {i: self.GetProp(i) for i in self.GetPropNames()}
-
-    @props.setter
-    def props(self, value):
-
-        """ Set the properties of the molecule. Not implemented. """
-
-        raise NotImplementedError
+        if not hasattr(self, '_props'):
+            self._props = PropertyView(self)
+        return self._props
 
     @property
     def atom_props(self):
 
-        """ Return a dict of lists of properties on atoms of the molecule. """
+        """ Dict[str: list] properties on atoms of the molecule. """
 
         if not hasattr(self, '_atom_prop_names'):
             res = set()
@@ -106,23 +128,24 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
     @property
     def conformers(self):
 
-        """ Return a list of conformers of the molecule. """
+        """ List[Conformer]: conformers of the molecule. """
 
         return [Conformer.from_super(self.GetConformer(i)) \
             for i in range(len(self.GetConformers()))]
 
-    @conformers.setter
-    def conformers(self, value):
-
-        """ Set the conformers of the molecule.  Not implemented. """
-
-        raise NotImplementedError
-
     def to_formula(self):
 
-        """ Return the chemical formula of the molecule. """
+        """ str: the chemical formula of the molecule.
 
-        return CalcMolFormula(self)
+        Raises:
+            RuntimeError"""
+
+        # formula may be undefined if atoms are uncertainly typed
+        # e.g. if the molecule was initialize through SMARTS
+        try:
+            return CalcMolFormula(self)
+        except RuntimeError:
+            raise ValueError('Formula is undefined for {}'.format(self))
 
     def _two_d(self):
 
@@ -134,12 +157,17 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
     def to_dict(self, kind="chemdoodle"):
 
-        """
-        Return a dictionary representation of the molecule.
+        """ A dictionary representation of the molecule.
 
-        TODO
+        Args:
+            kind (str):
+                The type of representation to use.  Only `chemdoodle` is
+                currently supported.
+                Defaults to 'Chemdoodle'.
 
-        """
+        Returns:
+            dict:
+                dictionary representation of the molecule."""
 
         if kind == "chemdoodle":
             return self._to_dict_chemdoodle()
@@ -149,7 +177,9 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
     def _to_dict_chemdoodle(self):
 
-        """ Return a chemdoodle dict representation of the molecule. """
+        """ Chemdoodle dict representation of the molecule.
+
+        Documentation of the format may be found on the [chemdoodle website](https://web.chemdoodle.com/docs/chemdoodle-json-format/)"""
 
         atom_positions = [p.to_dict() for p in self._two_d().atom_positions]
         atom_elements = [a.element for a in self.atoms]
@@ -163,22 +193,56 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
     def to_json(self, kind='chemdoodle'):
 
-        """ Return a JSON representation of the molecule. """
+        """ Serialize a molecule using JSON.
+
+        Args:
+            kind (str):
+                The type of serialization to use.  Only `chemdoodle` is
+                currently supported.
+
+        Returns:
+            str: the json string. """
 
         return json.dumps(self.to_dict(kind=kind))
 
-    def to_inchi_key(self, *args, **kwargs):
+    def to_inchi_key(self):
 
-        """ Return the INCHI key of the molecule. """
+        """ The InChI key of the molecule.
 
-        return rdkit.Chem.InchiToInchiKey(self.to_inchi(), *args, **kwargs)
+        Returns:
+            str: the InChI key.
+
+        Raises:
+            RuntimeError"""
+
+        if not rdkit.Chem.inchi.INCHI_AVAILABLE:
+            raise ImportError("InChI module not available.")
+
+        res = rdkit.Chem.InchiToInchiKey(self.to_inchi())
+
+        if res is None:
+            raise RuntimeError("The molecule could not be encoded as InChI key.")
+
+        return res
 
     def __repr__(self):
+        try:
+            formula = self.to_formula()
+        except ValueError:
+            # if we can't generate the formula, just say it is unknown
+            formula = 'unknown'
+
         return '<{klass} name="{name}" formula="{formula}" at {address}>'.format(
             klass=self.__class__.__name__,
             name=self.name,
-            formula=self.to_formula(),
+            formula=formula,
             address=hex(id(self)))
+
+    def __contains__(self, item):
+        if isinstance(item, Mol):
+            return self.HasSubstructMatch(item)
+        else:
+            raise NotImplementedError('No way to check if {} contains {}'.format(self, item))
 
     def _repr_javascript(self):
 

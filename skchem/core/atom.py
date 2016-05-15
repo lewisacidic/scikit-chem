@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 2015-2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 
 """
-skchem.core.atom
+## skchem.core.atom
 
 Defining atoms in scikit-chem.
 """
 
 from rdkit import Chem
-from skchem.core import ChemicalObject
+from .base import ChemicalObject, PropertyView
 
 class Atom(Chem.rdchem.Atom, ChemicalObject):
 
@@ -20,48 +20,34 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
     @property
     def element(self):
 
-        """ Get the element of the atom as a string. """
+        """ str: the element symbol of the atom. """
 
         return self.GetSymbol()
 
     @property
     def atomic_number(self):
 
-        """ Get the atomic number of the atom as a float. """
+        """ int: the atomic number of the atom. """
 
         return self.GetAtomicNum()
 
     @property
     def mass(self):
 
-        """ Get the mass of the atom as a float. """
+        """ float: the mass of the atom.
+
+        Usually relative atomic mass unless explicitly set. """
 
         return self.GetMass()
 
     @property
-    def atomic_mass(self):
-
-        """ Get the mass of the atom as a float. """
-
-        return self.mass
-
-    @property
     def props(self):
 
-        """ Return a dictionary of properties of the atom. """
+        """ PropertyView: rdkit properties of the atom. """
 
-        # Some atom properties are inaccessible, but still give values.
-        #
-
-        props = {}
-
-        for prop in self.GetPropNames():
-            try:
-                props[prop] = self.GetProp(prop)
-            except RuntimeError:
-                pass
-
-        return props
+        if not hasattr(self, '_props'):
+            self._props = PropertyView(self)
+        return PropertyView(self)
 
     def __repr__(self):
 
@@ -72,4 +58,5 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
             )
 
     def __str__(self):
+
         return self.element
