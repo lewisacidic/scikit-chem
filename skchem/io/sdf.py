@@ -120,7 +120,7 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
     data = pd.DataFrame(mols, columns=['structure'])
 
     if read_props:
-        props = pd.DataFrame([mol.props for mol in mols])
+        props = pd.DataFrame([{k: v for (k, v) in mol.props.items()} for mol in mols])
         data = pd.concat([data, props], axis=1)
         # now we have extracted the props, we can delete if required
         if not mol_props:

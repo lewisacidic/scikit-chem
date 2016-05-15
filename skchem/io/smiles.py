@@ -94,10 +94,11 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
                 return Mol.from_smiles(row.structure)
             except ValueError:
                 msg = 'Molecule {} could not be decoded.'.format(row.name)
-                if warn_bad_mol:
-                    warnings.warn(msg)
-                elif error_bad_mol:
+                if error_bad_mol:
                     raise ValueError(msg)
+                elif warn_bad_mol:
+                    warnings.warn(msg)
+
                 return None
 
         data['structure'] = data['structure'].apply(str)

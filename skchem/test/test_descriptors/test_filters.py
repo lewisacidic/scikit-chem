@@ -7,7 +7,7 @@
 
 from skchem.data import resource
 import skchem as skc
-from skchem.descriptors import filters
+from skchem import filters
 
 class TestIsOrganic(object):
 

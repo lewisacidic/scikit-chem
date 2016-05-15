@@ -6,26 +6,32 @@
 """ Tests for sdf io functionality """
 
 from unittest import TestCase
-from skchem.data import resource
 
 #required for running test
 import pandas as pd
-import skchem as skc
-
+from skchem.io import read_sdf
+from skchem.data import resource
+import skchem
 # required for test
 # fix for python2 and 3 compatability
 
-SINGLE_MOLECULE_PROPS = {'PUBCHEM_IUPAC_INCHIKEY', 'PUBCHEM_COMPOUND_CANONICALIZED', \
-'PUBCHEM_IUPAC_INCHI', 'PUBCHEM_COMPOUND_CID', 'PUBCHEM_OPENEYE_ISO_SMILES', \
-'PUBCHEM_ATOM_UDEF_STEREO_COUNT', 'PUBCHEM_MOLECULAR_FORMULA', 'PUBCHEM_ISOTOPIC_ATOM_COUNT',\
-'PUBCHEM_CACTVS_COMPLEXITY', 'PUBCHEM_COORDINATE_TYPE', 'PUBCHEM_BOND_DEF_STEREO_COUNT', \
-'PUBCHEM_CACTVS_HBOND_DONOR', 'PUBCHEM_IUPAC_OPENEYE_NAME', 'PUBCHEM_EXACT_MASS', \
-'PUBCHEM_ATOM_DEF_STEREO_COUNT', 'PUBCHEM_IUPAC_TRADITIONAL_NAME', 'PUBCHEM_OPENEYE_CAN_SMILES',\
-'PUBCHEM_IUPAC_NAME', 'PUBCHEM_MOLECULAR_WEIGHT', 'PUBCHEM_CACTVS_TAUTO_COUNT',\
-'PUBCHEM_CACTVS_HBOND_ACCEPTOR', 'PUBCHEM_CACTVS_ROTATABLE_BOND', 'PUBCHEM_TOTAL_CHARGE',\
-'PUBCHEM_IUPAC_CAS_NAME', 'PUBCHEM_MONOISOTOPIC_WEIGHT', 'PUBCHEM_HEAVY_ATOM_COUNT', \
-'PUBCHEM_BOND_UDEF_STEREO_COUNT', 'PUBCHEM_CACTVS_SUBSKEYS', 'PUBCHEM_IUPAC_SYSTEMATIC_NAME',\
-'PUBCHEM_CACTVS_TPSA', 'PUBCHEM_XLOGP3_AA', 'PUBCHEM_COMPONENT_COUNT'}
+SINGLE_MOLECULE_PROPS = {
+    'PUBCHEM_IUPAC_INCHIKEY', 'PUBCHEM_COMPOUND_CANONICALIZED',
+    'PUBCHEM_IUPAC_INCHI', 'PUBCHEM_COMPOUND_CID', 'PUBCHEM_OPENEYE_ISO_SMILES',
+    'PUBCHEM_ATOM_UDEF_STEREO_COUNT', 'PUBCHEM_MOLECULAR_FORMULA',
+    'PUBCHEM_ISOTOPIC_ATOM_COUNT', 'PUBCHEM_CACTVS_COMPLEXITY',
+    'PUBCHEM_COORDINATE_TYPE', 'PUBCHEM_BOND_DEF_STEREO_COUNT',
+    'PUBCHEM_CACTVS_HBOND_DONOR', 'PUBCHEM_IUPAC_OPENEYE_NAME',
+    'PUBCHEM_EXACT_MASS', 'PUBCHEM_ATOM_DEF_STEREO_COUNT',
+    'PUBCHEM_IUPAC_TRADITIONAL_NAME', 'PUBCHEM_OPENEYE_CAN_SMILES',
+    'PUBCHEM_IUPAC_NAME', 'PUBCHEM_MOLECULAR_WEIGHT',
+    'PUBCHEM_CACTVS_TAUTO_COUNT', 'PUBCHEM_CACTVS_HBOND_ACCEPTOR',
+    'PUBCHEM_CACTVS_ROTATABLE_BOND', 'PUBCHEM_TOTAL_CHARGE',
+    'PUBCHEM_IUPAC_CAS_NAME', 'PUBCHEM_MONOISOTOPIC_WEIGHT',
+    'PUBCHEM_HEAVY_ATOM_COUNT', 'PUBCHEM_BOND_UDEF_STEREO_COUNT',
+    'PUBCHEM_CACTVS_SUBSKEYS', 'PUBCHEM_IUPAC_SYSTEMATIC_NAME',
+    'PUBCHEM_CACTVS_TPSA', 'PUBCHEM_XLOGP3_AA', 'PUBCHEM_COMPONENT_COUNT'
+}
 
 NON_SHARED_PROPS = {'DUMMY_PROPERTY_A', 'DUMMY_PROPERTY_B', 'DUMMY_PROPERTY_C'}
 SINGLE_MOLECULE_NAME = '297'
@@ -45,7 +51,7 @@ class TestSDF(TestCase):
         """ Can an sdf file be opened with a file-like object? """
 
         with open(resource('test_sdf', 'single_molecule-simple.sdf'), 'rb') as f:
-            df = skc.read_sdf(f)
+            df = skchem.read_sdf(f)
             self.assertTrue(len(df) == 1)
 
     def test_file_correct_structure(self):
@@ -54,21 +60,21 @@ class TestSDF(TestCase):
         Done by checking atom number (should be one, as rdkit ignores Hs by default """
 
         with open(resource('test_sdf', 'single_molecule-simple.sdf'), 'rb') as f:
-            df = skc.read_sdf(f)
+            df = skchem.read_sdf(f)
             self.assertTrue(df.structure[SINGLE_MOLECULE_NAME].GetNumAtoms() == 1)
 
     def test_opening_with_path(self):
 
         """ Do we find a molecule in example file? """
 
-        df = skc.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'))   
+        df = skchem.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'))
         self.assertTrue(len(df) == 1)
 
     def test_path_correct_structure(self):
 
         """ When opened with a path, is the structure correct? """
 
-        df = skc.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'))
+        df = skchem.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'))
         self.assertTrue(df.structure[SINGLE_MOLECULE_NAME].GetNumAtoms() \
             == SINGLE_MOLECULE_NUM_ATOMS)
 
@@ -76,7 +82,7 @@ class TestSDF(TestCase):
 
         """ Check that kwargs can still be parsed to the rdkit object """
 
-        df = skc.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'), removeHs=False)  
+        df = skchem.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'), removeHs=False)
         self.assertTrue(df.structure[SINGLE_MOLECULE_NAME].GetNumAtoms() \
             == SINGLE_MOLECULE_NUM_ATOMS_W_HS)
 
@@ -84,21 +90,21 @@ class TestSDF(TestCase):
 
         """ Does molecule have a name set to index? """
 
-        df = skc.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'))  
+        df = skchem.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'))
         self.assertFalse((df.index == pd.DataFrame(['dummy']).index).all())
 
     def test_single_index_correct(self):
 
         """ is name correct? """
 
-        single_molecule_df = skc.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'))  
+        single_molecule_df = skchem.read_sdf(resource('test_sdf', 'single_molecule-simple.sdf'))
         self.assertTrue(single_molecule_df.index[0] == SINGLE_MOLECULE_NAME)
 
     def test_single_properties_detected(self):
 
         """ Does the dataframe have properties? """
 
-        df = skc.read_sdf(resource('test_sdf', 'single_molecule-properties.sdf'))
+        df = skchem.read_sdf(resource('test_sdf', 'single_molecule-properties.sdf'))
         test = set(df.columns)
         test.remove('structure')
         self.assertTrue(len(test) > 1)
@@ -107,36 +113,36 @@ class TestSDF(TestCase):
 
         """ Are they the right properties? """
 
-        df = skc.read_sdf(resource('test_sdf', 'single_molecule-properties.sdf'))
+        df = skchem.read_sdf(resource('test_sdf', 'single_molecule-properties.sdf'))
         props = set(df.columns)
         props.remove('structure')
         self.assertTrue(props == SINGLE_MOLECULE_PROPS)
 
     def test_multi_parsed(self):
-        
+
         """ Do we find right number of molecules?"""
 
-        df = skc.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
+        df = skchem.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
         self.assertTrue(df.shape[0] == MULTI_MOLECULE_NUM_MOLECULES)
 
     def test_multi_index_detected(self):
 
         """ Is index set? """
 
-        df = skc.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
+        df = skchem.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
         dummy_df = pd.DataFrame(['dummy'] * MULTI_MOLECULE_NUM_MOLECULES)
         self.assertFalse((df.index == dummy_df.index).all())
 
     def test_multi_index_correct(self):
         '''is it the right index?'''
 
-        df = skc.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
+        df = skchem.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
         self.assertTrue((df.index == MULTI_MOLECULE_NAMES).all())
 
     def test_multi_diff_properties(self):
         '''if there are properties not common for all, are they all detected?'''
 
-        df = skc.read_sdf(resource('test_sdf', 'multi_molecule-properties.sdf'))
+        df = skchem.read_sdf(resource('test_sdf', 'multi_molecule-properties.sdf'))
         props = set(df.columns)
         props.remove('structure')
         self.assertTrue(props == MULTI_MOLECULE_PROPS)
@@ -145,4 +151,4 @@ class TestSDF(TestCase):
         """ Does it throw an error if bad structures are given? """
 
         with self.assertRaises(ValueError):
-            skc.read_sdf(resource('test_sdf', 'multi_molecule-bad_structure.sdf'))
+            skchem.read_sdf(resource('test_sdf', 'multi_molecule-bad_structure.sdf'), error_bad_mol=True)

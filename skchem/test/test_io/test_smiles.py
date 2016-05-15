@@ -60,14 +60,14 @@ class TestSmiles(object):
         assert list(map(lambda m: m.to_smiles(), df.structure)) == ['C', 'CC', 'CCC']
 
     def test_name_column(self):
-        
+
         """ Can it set the index? """
 
         df = read_smiles(resource('test_smiles', 'name_set.smiles'), name_column=1)
         assert list(df.index) == ['methane', 'ethane', 'propane']
 
     def test_properties(self):
-    
+
         """ Can we read other properties? """
 
         multi_molecule_props = {'TEST_PROPERTY_A', 'TEST_PROPERTY_B', 'TEST_PROPERTY_C'}
@@ -81,20 +81,18 @@ class TestSmiles(object):
         """ Does it throw an error for an improper smiles code?"""
 
         with pytest.raises(ValueError):
-            df = read_smiles(resource('test_smiles', 'multi_molecule-bad_smiles.smiles'), name_column=1, title_line=False, force=False)
+            df = read_smiles(resource('test_smiles', 'multi_molecule-bad_smiles.smiles'), name_column=1, title_line=False, error_bad_mol=True)
 
     def test_bad_chemistry(self):
 
         """ Does it throw an error without force?"""
 
         with pytest.raises(ValueError):
-            df = read_smiles(resource('test_smiles', 'multi_molecule-bad_chemistry.smiles'), name_column=1, title_line=False, force=False)
+            df = read_smiles(resource('test_smiles', 'multi_molecule-bad_chemistry.smiles'), name_column=1, title_line=False, error_bad_mol=True)
 
     def test_bad_chemistry_force(self):
 
         """ Can we force the parse? """
 
-        df = read_smiles(resource('test_smiles', 'multi_molecule-bad_chemistry.smiles'), name_column=1, title_line=False, force=True)
+        df = read_smiles(resource('test_smiles', 'multi_molecule-bad_chemistry.smiles'), name_column=1, title_line=False)
         assert len(df) == 5
-
-
