@@ -53,7 +53,7 @@ def is_organic(mol):
             >>> m1 = skchem.Mol.from_smiles('c1ccccc1', name='benzene')
             >>> skchem.filters.is_organic(m1)
             True
-            >>> m2 = skchem.Mol.from_smiles('[cH-]1cccc1.[cH-]1cccc1.[Fe+2]',
+            >>> m2 = skchem.Mol.from_smiles('[cH-]1cccc1.[cH-]1cccc1.[Fe+2]', \
                                             name='ferrocene')
             >>> skchem.filters.is_organic(m2)
             False
@@ -64,7 +64,7 @@ def is_organic(mol):
             >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
             >>> data = skchem.read_sdf(sdf)
             >>> data.structure.apply(skchem.filters.is_organic).value_counts()
-            True     4252
+            True     4253
             False      84
             Name: structure, dtype: int64
     """
@@ -107,7 +107,7 @@ def no_pains(mol):
             >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
             >>> data = skchem.read_sdf(sdf)
             >>> data.structure.apply(skchem.filters.no_pains).value_counts()
-            True     3854
+            True     3855
             False     482
             Name: structure, dtype: int64
     """
@@ -142,7 +142,6 @@ def n_atoms(mol, above=None, below=None, include_hydrogens=False):
         >>> import skchem
         >>> m = skchem.Mol.from_smiles('c1ccccc1') # benzene has 6 atoms.
 
-
         Lower threshold:
 
         >>> skchem.filters.n_atoms(m, above=3)
@@ -169,14 +168,21 @@ def n_atoms(mol, above=None, below=None, include_hydrogens=False):
         >>> skchem.filters.n_atoms(m, above=3, below=8)
         True
 
+        Can include hydrogens:
+
+        >>> skchem.filters.n_atoms(m, above=3, below=8, include_hydrogens=True)
+        False
+        >>> skchem.filters.n_atoms(m, above=9, below=14, include_hydrogens=True)
+        True
+
         More useful in combination with pandas data frames:
 
         >>> import gzip
         >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
         >>> data = skchem.read_sdf(sdf)
         >>> data.structure.apply(skchem.filters.n_atoms, above=5, below=50).value_counts()
-        True     4113
-        False     223
+        True     4211
+        False     126
         Name: structure, dtype: int64
 
     """
@@ -185,10 +191,9 @@ def n_atoms(mol, above=None, below=None, include_hydrogens=False):
     if not below:
         below = 1000000 # arbitrarily large number
 
-    if not include_hydrogens:
-        n_a = len([a for a in mol.atoms if a.element is not 'H'])
-    else:
-        n_a = len(mol.atoms)
+    n_a = len(mol.atoms)
+    if include_hydrogens:
+        n_a += sum(a.GetNumImplicitHs() for a in mol.atoms)
 
     assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
     return above <= n_a < below
@@ -219,15 +224,15 @@ def mass(mol, above=None, below=None):
 
         >>> import skchem
         >>> m = skchem.Mol.from_smiles('c1ccccc1') # benzene has M_r = 78.
-        >>> skchem.filters.n_atoms(m, above=70)
+        >>> skchem.filters.mass(m, above=70)
         True
-        >>> skchem.filters.n_atoms(m, above=80)
+        >>> skchem.filters.mass(m, above=80)
         False
-        >>> skchem.filters.n_atoms(m, below=80)
+        >>> skchem.filters.mass(m, below=80)
         True
-        >>> skchem.filters.n_atoms(m, below=70)
+        >>> skchem.filters.mass(m, below=70)
         False
-        >>> skchem.filters.n_atoms(m, above=70, below=80)
+        >>> skchem.filters.mass(m, above=70, below=80)
         True
 
         More useful in combination with pandas data frames:
@@ -236,7 +241,7 @@ def mass(mol, above=None, below=None):
         >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
         >>> data = skchem.read_sdf(sdf)
         >>> data.structure.apply(skchem.filters.mass, below=900).value_counts()
-        True     4311
+        True     4312
         False      25
         Name: structure, dtype: int64
     """
@@ -246,4 +251,5 @@ def mass(mol, above=None, below=None):
     if not below:
         below = 1000000
 
+    assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
     return above <= mol.mass < below

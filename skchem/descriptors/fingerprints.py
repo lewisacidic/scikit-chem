@@ -104,8 +104,8 @@ def skchemize(func, columns=None, *args, **kwargs):
     dtype: int64
     >>> from skchem.data import resource
     >>> df = skchem.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
-    >>> df.structure.apply(f)
-          0     1     2     3     4     5     6     7     8     9     ...   2038
+    >>> df.structure.apply(f) # doctest: +NORMALIZE_WHITESPACE
+          0     1     2     3     4     5     6     7     8     9     ...   2038  \\
     name                                                              ...
     297      0     0     0     0     0     0     0     0     0     0  ...      0
     6324     0     0     0     0     0     0     0     0     0     0  ...      0

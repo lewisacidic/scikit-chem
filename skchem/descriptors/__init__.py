@@ -4,7 +4,7 @@
 # License: 3-clause BSD
 
 """
-skchem.descriptors
+## skchem.descriptors
 
 A module concerned with calculating molecular descriptors.
 """

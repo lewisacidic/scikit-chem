@@ -29,12 +29,13 @@ class AtomView(object):
 
     def __init__(self, owner):
         self.owner = owner
-        self._current = 0
-        self._high = self.owner.GetNumAtoms()
 
     def __getitem__(self, index):
         from .atom import Atom
         return Atom.from_super(self.owner.GetAtomWithIdx(index))
+
+    def __len__(self):
+        return self.owner.GetNumAtoms()
 
     def __iter__(self):
         return AtomIterator(self.owner)
