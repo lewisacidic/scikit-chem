@@ -10,7 +10,7 @@ Target prediction base class
 """
 
 import pandas as pd
-from skchem import Mol
+from ..core import Mol
 
 class AbstractTargetPredictionAlgorithm(object):
 

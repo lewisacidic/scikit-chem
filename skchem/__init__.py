@@ -10,6 +10,9 @@ __version__ = '0.0.1dev'
 from . import core
 from . import descriptors
 from . import io
+from . import vis
+from . import data
+from . import target_prediction
 
 from .core import Mol
 from .descriptors import MorganFingerprinter
