@@ -10,6 +10,8 @@ Define base classes for scikit chem objects
 """
 
 import warnings
+import numpy as np
+
 
 class ChemicalObject(object):
 
@@ -29,6 +31,7 @@ class AtomView(object):
 
     def __init__(self, owner):
         self.owner = owner
+        self.props = AtomPropertyView(self)
 
     def __getitem__(self, index):
         from .atom import Atom
@@ -39,6 +42,15 @@ class AtomView(object):
 
     def __iter__(self):
         return AtomIterator(self.owner)
+
+    def __str__(self):
+        return str(list(str(atom) for atom in self))
+
+    def __repr__(self):
+        return '<{klass} values="{values}" at {address}>'.format(
+            klass=self.__class__.__name__,
+            values=str(self),
+            address=hex(id(self)))
 
 class AtomIterator(AtomView):
 
@@ -57,24 +69,15 @@ class AtomIterator(AtomView):
             return self[self._current - 1]
 
 
-class PropertyView(object):
+class View(object):
 
-    """ Property object wrapper """
+    """ View wrapper interface """
 
-    def __init__(self, owner):
-        self.owner = owner
+    def keys(self):
+        raise NotImplemented
 
-    def __getitem__(self, index):
-        return self.owner.GetProp(str(index))
-
-    def __setitem__(self, key, value):
-        if not isinstance(value, str):
-            warnings.warn("""RDKit property keys and values can only be
-                        `str`.  Using `{value}` as a `str`.""".format(value=value))
-        self.owner.SetProp(str(key), str(value))
-
-    def __iter__(self):
-        return iter(self.keys())
+    def remove(self):
+        raise NotImplemented
 
     def get(self, index, default=None):
         if index in self.keys():
@@ -90,24 +93,114 @@ class PropertyView(object):
         self.remove(index)
         return val
 
-    def remove(self, index):
-        self.owner.ClearProp(index)
-
     def clear(self):
         for idx in self.keys():
             self.remove(idx)
 
-    def keys(self):
-        return list(k for k in self.owner.GetPropNames() if k[:1] != '_')
-
     def items(self):
         return list((k, self[k]) for k in self.keys())
 
+    def remove(self, key):
+        self.__delitem__(key)
+
+    def __getitem__(self, key):
+        raise NotImplemented
+
+    def __setitem__(self, key, value):
+        raise NotImplemented
+
+    def __delitem__(self, key):
+        raise NotImplemented
+
+    def __iter__(self):
+        return iter(self.keys())
+
     def __str__(self):
         return str(dict(self))
+
+    def __len__(self):
+        return len(self.keys())
 
     def __repr__(self):
         return '<{klass} values="{values}" at {address}>'.format(
             klass=self.__class__.__name__,
             values=str(self),
             address=hex(id(self)))
+
+
+class PropertyView(View):
+
+    """ Property object wrapper """
+
+    def __init__(self, owner):
+        self._owner = owner
+
+    def keys(self):
+        return list(k for k in self._owner.GetPropNames() if k[:1] != '_')
+
+    def __getitem__(self, key):
+
+        # we manually work out if it was a float that was stored, as GetProp
+        # returns floats and ints set by SetDoubleProp and SetIntProp as strings
+        value = self._owner.GetProp(str(key))
+        try:
+            return int(value)
+        except ValueError:
+            try:
+                return float(value)
+            except ValueError:
+                return value
+
+
+    def __setitem__(self, key, value):
+
+        if not isinstance(key, str):
+            warnings.warn("""RDKit property keys can only be of type `str`.  Using `{key}` as a `str`.""".format(key=key))
+            key = str(key)
+
+        if key[0] == '_':
+            warnings.warn("""`{value}` is a private RDKit property key.  Using this may have unintended consequences.""".format(value=value))
+
+        if isinstance(value, str):
+            self._owner.SetProp(key, value)
+        elif isinstance(value, (int, np.int64, np.int32)):
+            self._owner.SetIntProp(key, value)
+        elif isinstance(value, (float, np.float64, np.float32)):
+            self._owner.SetDoubleProp(key, value)
+        else:
+            warnings.warn("""RDKit property keys can only be `str`, `int` or `float`.
+                          Using `{value}` as a `str`.""".format(value=value))
+            self._owner.SetProp(key, str(value))
+
+    def __delitem__(self, index):
+        self._owner.ClearProp(index)
+
+class AtomPropertyView(View):
+
+    """ Atom property wrapper """
+
+    def __init__(self, atom_view):
+        self._atom_view = atom_view
+
+    def keys(self):
+        res = set()
+        for atom in self._atom_view:
+            res = res.union(set(atom.props.keys()))
+        return list(res)
+
+    def get(self, key, default=None):
+        return [a.props.get(key, default) for a in self._atom_view]
+
+    def __getitem__(self, key):
+        if key not in self.keys():
+            raise KeyError('No atoms have the property set.')
+        return self.get(key, None)
+
+    def __setitem__(self, key, value):
+        assert len(self._atom_view) == len(value), "Must pass same number of values as atoms."
+        for atom, val in zip(self._atom_view, value):
+            atom.props[key] = val
+
+    def __delitem__(self, key):
+        for atom in self._atom_view:
+            atom.props.remove(key)

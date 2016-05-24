@@ -113,19 +113,6 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         return self._props
 
     @property
-    def atom_props(self):
-
-        """ Dict[str: list] properties on atoms of the molecule. """
-
-        if not hasattr(self, '_atom_prop_names'):
-            res = set()
-            for atom in self.atoms:
-                res = res.union(set(atom.props.keys()))
-            self._atom_prop_names = list(res)
-        return {prop: [atom.props.get(prop, None) for atom in self.atoms]
-                                        for prop in self._atom_prop_names}
-
-    @property
     def conformers(self):
 
         """ List[Conformer]: conformers of the molecule. """
@@ -224,6 +211,35 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
             raise RuntimeError("The molecule could not be encoded as InChI key.")
 
         return res
+
+    def to_binary(self):
+
+        """  Serialize the molecule to binary encoding.
+
+        Args:
+            None
+
+        Returns:
+            bytes: the molecule in bytes.
+
+        Notes:
+            Due to limitations in RDKit, not all data is serialized.  Notably,
+            properties are not, so e.g. compound names are not saved."""
+
+        return self.ToBinary()
+
+    @classmethod
+    def from_binary(cls, binary):
+
+        """ Decode a molecule from a binary serialization.
+
+        Args:
+            binary: The bytes string to decode.
+
+        Returns:
+            skchem.Mol: The molecule encoded in the binary."""
+
+        return cls(binary)
 
     def __repr__(self):
         try:
