@@ -10,15 +10,19 @@ Fingerprinting classes and associated functions are defined.
 """
 
 from functools import wraps
-
+from collections import Iterable
 import pandas as pd
 from rdkit.Chem import DataStructs, GetDistanceMatrix
+from rdkit.DataStructs import ConvertToNumpyArray
 from rdkit.Chem.rdMolDescriptors import (GetMorganFingerprint,
                                          GetHashedMorganFingerprint,
+                                         GetMorganFingerprintAsBitVect,
                                          GetAtomPairFingerprint,
                                          GetHashedAtomPairFingerprint,
+                                         GetHashedAtomPairFingerprintAsBitVect,
                                          GetTopologicalTorsionFingerprint,
                                          GetHashedTopologicalTorsionFingerprint,
+                                         GetHashedTopologicalTorsionFingerprintAsBitVect,
                                          GetMACCSKeysFingerprint,
                                          GetFeatureInvariants,
                                          GetConnectivityInvariants)
@@ -105,7 +109,7 @@ def skchemize(func, columns=None, *args, **kwargs):
     >>> from skchem.data import resource
     >>> df = skchem.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
     >>> df.structure.apply(f) # doctest: +NORMALIZE_WHITESPACE
-          0     1     2     3     4     5     6     7     8     9     ...   2038  \\
+          0     1     2     3     4     5     6     7     8     9     ...   2038
     name                                                              ...
     297      0     0     0     0     0     0     0     0     0     0  ...      0
     6324     0     0     0     0     0     0     0     0     0     0  ...      0
@@ -137,7 +141,7 @@ class Fingerprinter(object):
 
     """ Fingerprinter Base class. """
 
-    def __init__(self, func, name=None):
+    def __init__(self, func, sparse=False, name=None):
 
         """ A generic fingerprinter.  Create with a function.
 
@@ -150,6 +154,7 @@ class Fingerprinter(object):
 
         self.NAME = name
         self.func = func
+        self.sparse = sparse
 
     def __call__(self, obj):
 
@@ -181,16 +186,71 @@ class Fingerprinter(object):
 
     def transform(self, obj):
 
-        """ calculate the fingerprint for the given object. """
+        """ Calculate a fingerprint for the given object.
+
+        Args:
+            obj (skchem.Mol or pd.Series or pd.DataFrame or iterable):
+                The object to be transformed.
+
+        Returns:
+            pd.DataFrame:
+                The produced features.
+        """
+
+        if self.sparse:
+            return self._transform_sparse(obj)
+        else:
+            return self._transform_dense(obj)
+
+    def _transform_dense(self, obj):
+
+        """ calculate a dense fingerprint for the given object. """
 
         if isinstance(obj, skchem.Mol):
-            return self._transform(obj)
+            return pd.Series(self._transform(obj), index=self.index)
 
         elif isinstance(obj, pd.DataFrame):
-            return obj.structure.apply(self.transform)
+            return self.transform(obj.structure)
 
         elif isinstance(obj, pd.Series):
-            return obj.apply(self.transform)
+            res_0 = self._transform(obj.ix[0])
+            res = np.zeros((len(obj), len(res_0)))
+            for i, mol in enumerate(obj):
+                res[i] = self._transform(mol)
+            return pd.DataFrame(res, index=obj.index, columns=self.index)
+
+        elif isinstance(obj, (tuple, list)):
+            res_0 = self._transform(obj[0])
+            res = np.zeros((len(obj), len(res_0)))
+            for i, mol in enumerate(obj):
+                res[i] = self._transform(mol)
+
+            idx = pd.Index([mol.name for mol in obj], name='name')
+            return pd.DataFrame(res, index=idx, columns=self.index)
+
+        else:
+            raise NotImplementedError
+
+    def _transform_sparse(self, obj):
+
+        """ Calculate a sparse fingerprint for the given object. """
+
+        if isinstance(obj, skchem.Mol):
+            return pd.Series(self._transform(obj), index=self.index)
+
+        elif isinstance(obj, pd.DataFrame):
+            return self.transform(obj.structure)
+
+        elif isinstance(obj, pd.Series):
+            return pd.DataFrame([self.transform(m) for m in obj],
+                                index=obj.idx,
+                                columns=self.index).fillna(0)
+
+        elif isinstance(obj, (tuple, list)):
+            idx = pd.Index([mol.name for mol in obj], name='name')
+            return pd.DataFrame([self.transform(m) for m in obj],
+                                index=idx,
+                                columns=self.index)
 
         else:
             raise NotImplementedError
@@ -201,6 +261,12 @@ class Fingerprinter(object):
 
         return pd.Series(list(self.func(mol)), name=mol.name)
 
+    @property
+    def index(self):
+
+        """ The index to use. """
+
+        return None
 
 class FusionFingerprinter(Fingerprinter):
 
@@ -238,7 +304,7 @@ class MorganFingerprinter(Fingerprinter):
 
     NAME = 'morgan'
 
-    def __init__(self, radius=2, n_feats=2048, as_bits=False,
+    def __init__(self, radius=2, n_feats=2048, as_bits=True,
                  use_features=False, use_bond_types=True, use_chirality=False):
 
         """
@@ -262,10 +328,14 @@ class MorganFingerprinter(Fingerprinter):
             use_chirality (bool):
                 Whether to use chirality to differentiate environments.
                 Default is `False`.
+
+        Notes:
+            Currently, folded bits are by far the fastest implementation.
         """
 
         self.radius = radius
         self.n_feats = n_feats
+        self.sparse = self.n_feats < 0
         self.as_bits = as_bits
         self.use_features = use_features
         self.use_bond_types = use_bond_types
@@ -275,37 +345,47 @@ class MorganFingerprinter(Fingerprinter):
 
         """Private method to transform a skchem molecule.
 
-        Use transform` for the public method, which genericizes the argument to
+        Use `transform` for the public method, which genericizes the argument to
         iterables of mols.
 
         Args:
             mol (skchem.Mol): Molecule to calculate fingerprint for.
 
         Returns:
-            pandas.Series:
-                Fingerprint as a series.
+            np.array or dict:
+                Fingerprint as an array (or a dict if sparse).
         """
 
-        if self.n_feats < 0:
+        if self.as_bits and self.n_feats > 0:
 
-            res = GetMorganFingerprint(mol, self.radius,
-                                       useFeatures=self.use_features,
-                                       useBondTypes=self.use_bond_types,
-                                       useChirality=self.use_chirality).GetNonzeroElements()
-            idx = pd.Index(list(res.keys()), name='features')
+            fp = GetMorganFingerprintAsBitVect(mol, self.radius,
+                                           useFeatures=self.use_features,
+                                           useBondTypes=self.use_bond_types,
+                                           useChirality=self.use_chirality)
+            res = np.array(0)
+            ConvertToNumpyArray(fp, res).astype(np.uint8)
 
         else:
-            res = list(GetHashedMorganFingerprint(mol, self.radius,
-                                        nBits=self.n_feats,
-                                        useFeatures=self.use_features,
-                                        useBondTypes=self.use_bond_types,
-                                        useChirality=self.use_chirality))
-            idx = pd.Index(range(self.n_feats), name='features')
 
-        res = pd.Series(res, name=mol.name, index=idx).astype(int)
+            if self.n_feats <= 0:
 
-        if self.as_bits:
-            res = (res > 0).astype(np.uint8) #smallest memory size
+                res = GetMorganFingerprint(mol, self.radius,
+                                           useFeatures=self.use_features,
+                                           useBondTypes=self.use_bond_types,
+                                           useChirality=self.use_chirality)
+                res = res.GetNonzeroElements()
+                if self.as_bits:
+                    res = {k: int(v > 0) for k, v in res.items()}
+
+            else:
+                res = GetHashedMorganFingerprint(mol, self.radius,
+                                                 nBits=self.n_feats,
+                                                 useFeatures=self.use_features,
+                                                 useBondTypes=self.use_bond_types,
+                                                 useChirality=self.use_chirality)
+                res = np.array(list(res))
+
+
 
         return res
 
@@ -400,6 +480,7 @@ class AtomPairFingerprinter(Fingerprinter):
         self.min_length = min_length
         self.max_length = max_length
         self.n_feats = n_feats
+        self.sparse = self.n_feats < 0
         self.as_bits = as_bits
         self.use_chirality = use_chirality
 
@@ -414,28 +495,40 @@ class AtomPairFingerprinter(Fingerprinter):
             mol (skchem.Mol): Molecule to calculate fingerprint for.
 
         Returns:
-            pandas.Series:
-                Fingerprint as a series.
+            np.array or dict:
+                Fingerprint as an array (or a dict if sparse).
         """
 
-        if self.n_feats == -1:
 
-            res = GetAtomPairFingerprint(mol, minLength=self.min_length,
-                                         maxLength=self.max_length,
-                                         includeChirality=self.use_chirality)
+        if self.as_bits and self.n_feats > 0:
+
+            fp = GetHashedAtomPairFingerprintAsBitVect(mol, nBits=self.n_feats,
+                                           minLength=self.min_length,
+                                           maxLength=self.max_length,
+                                           includeChirality=self.use_chirality)
+            res = np.array(0)
+            ConvertToNumpyArray(fp, res).astype(np.uint8)
+
         else:
-            res = list(GetHashedAtomPairFingerprint(mol,
-                                        minLength=self.min_length,
-                                         maxLength=self.max_length,
-                                         nBits=self.n_feats,
-                                         includeChirality=self.use_chirality))
 
-        res = pd.Series(res, name=mol.name)
+            if self.n_feats <= 0:
 
-        if self.as_bits:
-            return (res > 0).astype(int)
-        else:
-            return res
+                res = GetAtomPairFingerprint(mol, nBits=self.n_feats,
+                                               minLength=self.min_length,
+                                               maxLength=self.max_length,
+                                               includeChirality=self.use_chirality)
+                res = res.GetNonzeroElements()
+                if self.as_bits:
+                    res = {k: int(v > 0) for k, v in res.items()}
+
+            else:
+                res = GetHashedAtomPairFingerprint(mol, nBits=self.n_feats,
+                                               minLength=self.min_length,
+                                               maxLength=self.max_length,
+                                               includeChirality=self.use_chirality)
+                res = np.array(list(res))
+
+        return res
 
 class TopologicalTorsionFingerprinter(Fingerprinter):
 
@@ -462,28 +555,46 @@ class TopologicalTorsionFingerprinter(Fingerprinter):
 
         self.target_size = target_size
         self.n_feats = n_feats
+        self.sparse = self.n_feats < 0
         self.as_bits = as_bits
         self.use_chirality = use_chirality
 
     def _transform(self, mol):
+        """ Private method to transform a skchem molecule.
+        Args:
+            mol (skchem.Mol): Molecule to calculate fingerprint for.
 
-        if self.n_feats == -1:
+        Returns:
+            np.array or dict:
+                Fingerprint as an array (or a dict if sparse).
+        """
 
-            res = GetTopologicalTorsionFingerprint(mol,
-                                        targetSize=self.targetSize,
-                                        includeChirality=self.use_chirality)
+        if self.as_bits and self.n_feats > 0:
+
+            fp = GetHashedTopologicalTorsionFingerprintAsBitVect(mol, nBits=self.n_feats,
+                                           targetSize=self.target_size,
+                                           includeChirality=self.use_chirality)
+            res = np.array(0)
+            ConvertToNumpyArray(fp, res).astype(np.uint8)
 
         else:
-            res = list(GetHashedTopologicalTorsionFingerprint(mol,
-                                        targetSize=self.targetSize,
-                                        nBits=self.n_feats))
 
-        res = pd.Series(res, name=mol.name)
+            if self.n_feats <= 0:
 
-        if self.as_bits:
-            return (res > 0).astype(int)
-        else:
-            return res
+                res = GetTopologicalTorsionFingerprint(mol, nBits=self.n_feats,
+                                               targetSize=self.target_size,
+                                               includeChirality=self.use_chirality)
+                res = res.GetNonzeroElements()
+                if self.as_bits:
+                    res = {k: int(v > 0) for k, v in res.items()}
+
+            else:
+                res = GetHashedTopologicalTorsionFingerprint(mol, nBits=self.n_feats,
+                                               targetSize=self.target_size,
+                                               includeChirality=self.use_chirality)
+                res = np.array(list(res))
+
+        return res
 
 
 class MACCSKeysFingerprinter(Fingerprinter):
@@ -493,11 +604,11 @@ class MACCSKeysFingerprinter(Fingerprinter):
     NAME = 'maccs'
 
     def __init__(self):
-        pass
+        self.sparse = False
 
     def _transform(self, mol):
 
-        return pd.Series(list(GetMACCSKeysFingerprint(mol)))
+        return np.array(list(GetMACCSKeysFingerprint(mol)))
 
 class ErGFingerprinter(Fingerprinter):
 
@@ -506,11 +617,11 @@ class ErGFingerprinter(Fingerprinter):
     NAME = 'erg'
 
     def __init__(self):
-        pass
+        self.sparse = False
 
     def _transform(self, mol):
 
-        return pd.Series(GetErGFingerprint(mol))
+        return np.array(GetErGFingerprint(mol))
 
 class FeatureInvariantsFingerprinter(Fingerprinter):
 
@@ -519,11 +630,11 @@ class FeatureInvariantsFingerprinter(Fingerprinter):
     NAME = 'feat_inv'
 
     def __init__(self):
-        pass
+        self.sparse = False
 
     def _transform(self, mol):
 
-        return pd.Series(GetFeatureInvariants(mol))
+        return np.array(GetFeatureInvariants(mol))
 
 class ConnectivityInvariantsFingerprinter(Fingerprinter):
 
@@ -532,11 +643,11 @@ class ConnectivityInvariantsFingerprinter(Fingerprinter):
     NAME = 'conn_inv'
 
     def __init__(self):
-        pass
+        self.sparse = False
 
     def _transform(self, mol):
 
-        return pd.Series(GetConnectivityInvariants(mol))
+        return np.array(GetConnectivityInvariants(mol))
 
 class RDKFingerprinter(Fingerprinter):
 
@@ -549,8 +660,6 @@ class RDKFingerprinter(Fingerprinter):
                  branched_paths=True, use_bond_types=True):
 
         """ RDK fingerprints
-
-        # TODO
 
         Args:
             min_path (int):
@@ -578,6 +687,7 @@ class RDKFingerprinter(Fingerprinter):
         self.min_path = 1
         self.max_path = 7
         self.n_feats = 2048
+        self.sparse = False
         self.n_bits_per_hash = 2
         self.use_hs = True
         self.target_density = 0.0
@@ -587,7 +697,7 @@ class RDKFingerprinter(Fingerprinter):
 
     def _transform(self, mol):
 
-        return pd.Series(list(RDKFingerprint(mol, minPath=self.min_path,
+        return np.array(list(RDKFingerprint(mol, minPath=self.min_path,
                                              maxPath=self.max_path,
                                              fpSize=self.n_feats,
                                              nBitsPerHash=self.n_bits_per_hash,

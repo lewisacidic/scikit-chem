@@ -12,6 +12,7 @@ Physicochemical descriptors and associated functions are defined.
 
 from rdkit.Chem import Descriptors
 import pandas as pd
+import numpy as np
 
 from .fingerprints import Fingerprinter
 from ..utils import camel_to_snail
@@ -38,6 +39,10 @@ class PhysicochemicalFingerprinter(Fingerprinter):
             self.descriptors = descriptors
         self.descriptor_names, _ = zip(*self.descriptors)
 
+    @property
+    def index(self):
+        return self.descriptor_names
+
     def _transform(self, mol):
 
-        return pd.Series({n: f(mol) for (n, f) in self.descriptors}, name=mol.name)
+        return np.array([f(mol) for (n, f) in self.descriptors])

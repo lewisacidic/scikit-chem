@@ -13,4 +13,4 @@ from .physicochemical import PhysicochemicalFingerprinter
 from .fingerprints import (skchemize, Fingerprinter, AtomPairFingerprinter,
                            MorganFingerprinter, MACCSKeysFingerprinter,
                            TopologicalTorsionFingerprinter)
-from .atom import AtomFeatureCalculator
+from .atom import (AtomFeatureCalculator, GraphDistanceCalculator)
