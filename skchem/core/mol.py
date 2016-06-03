@@ -260,6 +260,10 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         else:
             raise NotImplementedError('No way to check if {} contains {}'.format(self, item))
 
+    def __equals__(self, item):
+        if isinstance(item, Mol):
+            return (self in item) and (item in self)
+
     def _repr_javascript(self):
 
         """ Rich printing in javascript. """
