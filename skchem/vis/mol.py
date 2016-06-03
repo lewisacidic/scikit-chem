@@ -1,3 +1,13 @@
+#! /usr/bin/env python
+#
+# Copyright (C) 2016 Rich Lewis <rl403@cam.ac.uk>
+# License: 3-clause BSD
+
+"""
+## skchem.vis.mol
+
+Module for drawing molecules.
+"""
 
 from matplotlib import pyplot as plt
 from rdkit.Chem.Draw import DrawingOptions, MolToImage
