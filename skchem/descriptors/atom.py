@@ -10,16 +10,18 @@ Module specifying atom based descriptor generators.
 """
 
 import pandas as pd
+import numpy as np
+
 from rdkit import Chem
 from rdkit.Chem import Crippen
 from rdkit.Chem import Lipinski
 from rdkit.Chem import rdMolDescriptors, rdPartialCharges
 from rdkit.Chem.rdchem import HybridizationType
-import skchem
 
 import functools
-from skchem.data import PERIODIC_TABLE
 
+from .. import core
+from ..data import PERIODIC_TABLE
 from ..filters import ORGANIC
 
 def element(a):
@@ -219,27 +221,70 @@ atom_features.update(hybridization_features)
 
 class AtomFeatureCalculator(object):
 
-    def __init__(self, features='all'):
+    def __init__(self, features='all', max_atoms=50):
         if features == 'all':
             features = atom_features
-
         self.features = pd.Series(features)
+        self.max_atoms = max_atoms
 
     @property
     def feature_names(self):
         return self.features.index
 
     def transform(self, obj):
-        if isinstance(obj, skchem.core.Atom):
+        if isinstance(obj, core.Atom):
             return self._transform_atom(obj)
-        elif isinstance(obj, skchem.core.Mol):
+        elif isinstance(obj, core.Mol):
             return self._transform_mol(obj)
+        elif isinstance(obj, pd.Series):
+            return self._transform_series(obj)
+        elif isinstance(obj, pd.DataFrame):
+            return sefl._transform_series(obj.structure)
+        elif isinstance(obj, (tuple, list)):
+            return self._transform_series(obj)
+        else:
+            raise NotImplementedError
 
     def _transform_atom(self, atom):
         return self.features.apply(lambda f: f(atom))
 
     def _transform_mol(self, mol):
-        return pd.DataFrame(self(a) for a in mol.atoms)
+        return pd.DataFrame(self.transform(a) for a in mol.atoms)
+
+    def _transform_series(self, data):
+        X = np.repeat(np.nan,
+                      len(self.feature_names) * self.max_atoms * len(data))\
+                      .reshape((len(data), self.max_atoms, len(self.feature_names)))
+        for i, mol in enumerate(data):
+            X[i, :len(mol.atoms), :] = self._transform_mol(mol)
+        return X
 
     def __call__(self, *args, **kwargs):
         return self.transform(*args, **kwargs)
+
+class GraphDistanceCalculator(object):
+
+    def __init__(self, max_atoms=50):
+        self.max_atoms = max_atoms
+
+    def transform(self, obj):
+        if isinstance(obj, core.Atom):
+            return self._transform_atom(obj)
+        elif isinstance(obj, core.Mol):
+            return self._transform_mol(obj)
+        elif isinstance(obj, pd.Series):
+            return self._transform_series(obj)
+        elif isinstance(obj, pd.DataFrame):
+            return self._transform_series(obj.structure)
+        elif isinstance(obj, (tuple, list)):
+            return self._transform_series(obj)
+        else:
+            raise NotImplementedError
+
+    def _transform_mol(self, mol):
+        res = np.repeat(np.nan, self.max_atoms ** 2).reshape(self.max_atoms, self.max_atoms)
+        res[:len(mol.atoms), :len(mol.atoms)] = Chem.GetDistanceMatrix(mol)
+        return res
+
+    def _transform_series(self, ser):
+        return np.array([self.transform(mol) for mol in ser])
