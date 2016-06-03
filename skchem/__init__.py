@@ -5,7 +5,7 @@
 
 """ A cheminformatics library aiming to integrate into the Scientific Python Stack """
 
-__version__ = '0.0.1dev'
+__version__ = '0.0.5'
 
 from . import core
 from . import descriptors
@@ -13,6 +13,7 @@ from . import io
 from . import vis
 from . import data
 from . import target_prediction
+from . import cross_validation
 
 from .core import Mol
 from .descriptors import MorganFingerprinter
