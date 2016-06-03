@@ -10,7 +10,22 @@ A module concerned with calculating molecular descriptors.
 """
 
 from .physicochemical import PhysicochemicalFingerprinter
-from .fingerprints import (skchemize, Fingerprinter, AtomPairFingerprinter,
+from .fingerprints import (Fingerprinter, AtomPairFingerprinter,
                            MorganFingerprinter, MACCSKeysFingerprinter,
-                           TopologicalTorsionFingerprinter)
+                           TopologicalTorsionFingerprinter, RDKFingerprinter,
+                           ErGFingerprinter, ConnectivityInvariantsFingerprinter,
+                           FeatureInvariantsFingerprinter)
 from .atom import (AtomFeatureCalculator, GraphDistanceCalculator)
+
+def get(name):
+    defaults = {
+        'morgan': MorganFingerprinter(),
+        'atom_pair': AtomPairFingerprinter(),
+        'topological_torsion': TopologicalTorsionFingerprinter(),
+        'rdk': RDKFingerprinter(),
+        'erg': ErGFingerprinter(),
+        'conn_inv': ConnectivityInvariantsFingerprinter(),
+        'feat_inv': FeatureInvariantsFingerprinter(),
+        'physicochemical': PhysicochemicalFingerprinter()
+    }
+    return defaults[name]

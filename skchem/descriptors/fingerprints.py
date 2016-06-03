@@ -32,111 +32,6 @@ from rdkit.Chem.rdmolops import RDKFingerprint
 import numpy as np
 import skchem
 
-def skchemize(func, columns=None, *args, **kwargs):
-    """
-
-    transform an RDKit fingerprinting function to work well with pandas
-
-    >>> from rdkit import Chem
-    >>> import skchem
-    >>> from skchem.descriptors import skchemize
-    >>> from skchem.core import Mol
-    >>> f = skchemize(Chem.RDKFingerprint)
-    >>> m = Mol.from_smiles('c1ccccc1')
-    >>> f(m)
-    0       0
-    1       0
-    2       0
-    3       0
-    4       0
-    5       0
-    6       0
-    7       0
-    8       0
-    9       0
-    10      0
-    11      0
-    12      0
-    13      0
-    14      0
-    15      0
-    16      0
-    17      0
-    18      0
-    19      0
-    20      0
-    21      0
-    22      0
-    23      0
-    24      0
-    25      0
-    26      0
-    27      0
-    28      0
-    29      0
-           ..
-    2018    0
-    2019    0
-    2020    0
-    2021    0
-    2022    0
-    2023    0
-    2024    0
-    2025    0
-    2026    0
-    2027    0
-    2028    0
-    2029    0
-    2030    0
-    2031    0
-    2032    0
-    2033    0
-    2034    0
-    2035    0
-    2036    0
-    2037    0
-    2038    0
-    2039    0
-    2040    0
-    2041    0
-    2042    0
-    2043    0
-    2044    0
-    2045    0
-    2046    0
-    2047    0
-    dtype: int64
-    >>> from skchem.data import resource
-    >>> df = skchem.read_sdf(resource('test_sdf', 'multi_molecule-simple.sdf'))
-    >>> df.structure.apply(f) # doctest: +NORMALIZE_WHITESPACE
-          0     1     2     3     4     5     6     7     8     9     ...   2038
-    name                                                              ...
-    297      0     0     0     0     0     0     0     0     0     0  ...      0
-    6324     0     0     0     0     0     0     0     0     0     0  ...      0
-    6334     0     0     0     0     0     0     0     0     0     0  ...      0
-    <BLANKLINE>
-          2039  2040  2041  2042  2043  2044  2045  2046  2047
-    name
-    297      0     0     0     0     0     0     0     0     0
-    6324     0     0     0     0     0     0     0     0     0
-    6334     0     0     0     0     0     0     0     0     0
-    <BLANKLINE>
-    [3 rows x 2048 columns]
-
-    """
-    @wraps(func)
-    def func_wrapper(m):
-
-        """ Function that wraps an rdkit function allowing it to produce dataframes. """
-
-        arr = np.array(0)
-        DataStructs.ConvertToNumpyArray(func(m, *args, **kwargs), arr)
-
-        return pd.Series(arr, index=columns)
-
-    return func_wrapper
-
-
 class Fingerprinter(object):
 
     """ Fingerprinter Base class. """
@@ -363,7 +258,8 @@ class MorganFingerprinter(Fingerprinter):
                                            useBondTypes=self.use_bond_types,
                                            useChirality=self.use_chirality)
             res = np.array(0)
-            ConvertToNumpyArray(fp, res).astype(np.uint8)
+            ConvertToNumpyArray(fp, res)
+            res = res.astype(np.uint8)
 
         else:
 
@@ -507,7 +403,8 @@ class AtomPairFingerprinter(Fingerprinter):
                                            maxLength=self.max_length,
                                            includeChirality=self.use_chirality)
             res = np.array(0)
-            ConvertToNumpyArray(fp, res).astype(np.uint8)
+            ConvertToNumpyArray(fp, res)
+            res = res.astype(np.uint8)
 
         else:
 
@@ -575,7 +472,8 @@ class TopologicalTorsionFingerprinter(Fingerprinter):
                                            targetSize=self.target_size,
                                            includeChirality=self.use_chirality)
             res = np.array(0)
-            ConvertToNumpyArray(fp, res).astype(np.uint8)
+            ConvertToNumpyArray(fp, res)
+            res = res.astype(np.uint8)
 
         else:
 
