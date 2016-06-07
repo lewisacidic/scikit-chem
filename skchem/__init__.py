@@ -14,6 +14,7 @@ from . import vis
 from . import data
 from . import target_prediction
 from . import cross_validation
+from . import standardizers
 
 from .core import Mol
 from .descriptors import MorganFingerprinter

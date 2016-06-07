@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--This file is created with ChemAxon's Configuration Builder-->
+<!--This is a configuration file for ChemAxon's Standardizer-->
+<StandardizerConfiguration>
+  <Actions>
+    <Removal ID="RemoveFragment" Method="keepLargest" Measure="atomCount"/>
+    <Neutralize ID="Neutralize"/>
+    <RemoveExplicitH ID="RemoveExplicitH" Lonely="true" Charged="true" Mapped="true" Isotopic="true" Radical="true" Wedged="true" Hconnected="true" Polymerendgroup="true" Sgroupend="true" Sgroup="true" Valenceerror="true" Bridgehead="true"/>
+    <Clean ID="Clean2D" Dim="2" Type="RemoveZCoordinate"/>
+    <Mesomerize ID="Mesomerize"/>
+    <Tautomerize ID="Tautomerize"/>
+  </Actions>
+</StandardizerConfiguration>
