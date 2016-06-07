@@ -260,9 +260,11 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         else:
             raise NotImplementedError('No way to check if {} contains {}'.format(self, item))
 
-    def __equals__(self, item):
-        if isinstance(item, Mol):
+    def __eq__(self, item):
+        if isinstance(item, self.__class__):
             return (self in item) and (item in self)
+        else:
+            return False
 
     def _repr_javascript(self):
 
@@ -306,7 +308,7 @@ def bind_serializer(serializer_name, name_to_bind=None):
 
 CONSTRUCTORS = ['Inchi', 'Smiles', 'Mol2Block', 'Mol2File', 'MolBlock', \
                     'MolFile', 'PDBBlock', 'PDBFile', 'Smarts', 'TPLBlock', 'TPLFile']
-SERIALIZERS = ['Inchi', 'Smiles', 'MolBlock', 'PDBBlock', 'Smarts', 'TPLBlock', 'TPLFile']
+SERIALIZERS = ['Inchi', 'Smiles', 'MolBlock', 'MolFile', 'PDBBlock', 'Smarts', 'TPLBlock', 'TPLFile']
 
 list(map(bind_constructor, CONSTRUCTORS))
 list(map(bind_serializer, SERIALIZERS))
