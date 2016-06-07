@@ -27,7 +27,7 @@ except ImportError:
     import pickle
 
 from .target_prediction import AbstractTargetPredictionAlgorithm
-from ..descriptors import skchemize
+from ..descriptors import MorganFingerprinter
 from ..data import resource
 
 class PIDGIN(AbstractTargetPredictionAlgorithm):
@@ -40,8 +40,7 @@ class PIDGIN(AbstractTargetPredictionAlgorithm):
 
         with gzip.open(resource('PIDGIN', filename), 'rb') as f:
             self.models = pickle.load(f)
-        self.fingerprint = skchemize(GetMorganFingerprintAsBitVect, \
-                                        radius=2, nBits=2048)
+        self.fingerprint = MorganFingerprinter()
         self.targets = self.models.keys()
 
     def __call__(self, m):
