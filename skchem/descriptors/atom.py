@@ -239,7 +239,7 @@ class AtomFeatureCalculator(object):
         elif isinstance(obj, pd.Series):
             return self._transform_series(obj)
         elif isinstance(obj, pd.DataFrame):
-            return sefl._transform_series(obj.structure)
+            return self._transform_series(obj.structure)
         elif isinstance(obj, (tuple, list)):
             return self._transform_series(obj)
         else:
@@ -257,7 +257,11 @@ class AtomFeatureCalculator(object):
                       .reshape((len(data), self.max_atoms, len(self.feature_names)))
         for i, mol in enumerate(data):
             X[i, :len(mol.atoms), :] = self._transform_mol(mol)
-        return X
+        res = pd.Panel(X, items=data.index)
+        res.minor_axis = self.features.index
+        res.major_axis.name = 'atom_idx'
+        return res
+
 
     def __call__(self, *args, **kwargs):
         return self.transform(*args, **kwargs)
@@ -287,4 +291,8 @@ class GraphDistanceCalculator(object):
         return res
 
     def _transform_series(self, ser):
-        return np.array([self.transform(mol) for mol in ser])
+        res = pd.Panel(np.array([self.transform(mol) for mol in ser]), items=ser.index)
+        res.major_axis.name = res.minor_axis.name = 'atom_idx'
+
+    def __call__(self, *args, **kwargs):
+        return self.transform(*args, **kwargs)

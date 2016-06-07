@@ -24,7 +24,8 @@ class PhysicochemicalFingerprinter(Fingerprinter):
     """ Physicochemical descriptor generator using RDKit descriptor """
 
     NAME = 'physchem'
-
+    sparse = False
+    
     def __init__(self, descriptors='all'):
 
         """ Create a physicochemical descriptor generator.
