@@ -113,10 +113,43 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
 
         return data
 
+
+def write_smiles(data, smiles_path):
+
+    """ Write a dataframe to a smiles file.
+
+    Args:
+        data (pd.Series or pd.DataFrame):
+            The dataframe to write.
+        smiles_path (str):
+            The path to write the dataframe to.
+    """
+
+    if isinstance(data, pd.Series):
+        data = data.to_frame(name='structure')
+    data['structure'] = data.structure.apply(lambda m: m.to_smiles())
+    data = data.reset_index()
+    cols = list(data.columns)
+    cols.insert(0, cols.pop(cols.index('structure')))
+    data = data.reindex(columns=cols)[cols]
+    data.to_csv(smiles_path, sep='\t', header=None, index=None)
+
+
 @classmethod
 @wraps(read_smiles)
-def _from_smiles(_, *args, **kwargs):
+def _from_smiles_df(_, *args, **kwargs):
     return read_smiles(*args, **kwargs)
 
-#set on pandas dataframe
-pd.DataFrame.from_smiles = _from_smiles
+@classmethod
+@wraps(read_smiles)
+def _from_smiles_series(_, *args, **kwargs):
+    return read_smiles(*args, **kwargs).structure
+
+@wraps(write_smiles)
+def _to_smiles_df(self, *args, **kwargs):
+    return write_smiles(self, *args, **kwargs)
+
+pd.DataFrame.from_smiles = _from_smiles_df
+pd.Series.from_smiles = _from_smiles_series
+pd.Series.to_smiles = _to_smiles_df
+pd.DataFrame.to_smiles = _to_smiles_df

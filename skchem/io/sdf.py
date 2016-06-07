@@ -191,14 +191,16 @@ pd.DataFrame.to_sdf = _to_sdf_df
 
 @classmethod
 @wraps(read_sdf)
-def _from_sdf(_, *args, **kwargs):
+def _from_sdf_df(_, *args, **kwargs):
 
     return read_sdf(*args, **kwargs)
 
-pd.DataFrame.from_sdf = _from_sdf
+pd.DataFrame.from_sdf = _from_sdf_df
 
 @classmethod
 @wraps(read_sdf)
-def _from_sdf(_, *args, **kwargs):
+def _from_sdf_series(_, *args, **kwargs):
 
     return read_sdf(*args, **kwargs).structure
+
+pd.Series.from_sdf = _from_sdf_series
