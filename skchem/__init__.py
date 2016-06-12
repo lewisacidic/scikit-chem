@@ -7,6 +7,8 @@
 
 __version__ = '0.0.5'
 
+import logging
+
 from . import core
 from . import descriptors
 from . import io
@@ -19,3 +21,6 @@ from . import standardizers
 from .core import Mol
 from .descriptors import MorganFingerprinter
 from .io import read_sdf, read_smiles
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
