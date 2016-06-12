@@ -9,10 +9,12 @@
 Similarity threshold dataset partitioning functionality.
 """
 
+import logging
+logger = logging.getLogger(__name__)
 
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.sparse import dok_matrix, triu
 
@@ -21,7 +23,7 @@ from .. import descriptors
 
 class SimThresholdSplit(object):
 
-    def __init__(self, inp, threshold=0.5, fper='morgan',
+    def __init__(self, inp, threshold=0.4, fper='morgan',
                  similarity_metric='jaccard', memory_optimized=False,
                  fingerprints=None, similarity_matrix=None):
         """ Threshold similarity split for chemical datasets.
@@ -38,17 +40,10 @@ class SimThresholdSplit(object):
         threshold set) this effect, making the problem harder.
 
         Args:
-            inp (scipy.sparse.dok, pd.Series or pd.DataFrame):
+            inp (pd.Series or pd.DataFrame):
                 Either:
                 - a series of skchem.Mols
                 - dataframe of precalculated fingerprints
-
-            n_splits (int):
-                The number of splits to give.  This will be overridden if ratio
-                is passed.
-
-            ratio (list[floats]):
-                Split ratios to use.
 
             threshold (float):
                 The similarity threshold, above which, compounds will all be
@@ -73,7 +68,7 @@ class SimThresholdSplit(object):
             fper = descriptors.get(fper)
 
         self.fper = fper
-        fps = inp if fingerprints else self.fper.transform(inp)
+        self.fps = inp if fingerprints else self.fper.transform(inp)
 
         self.n_instances = len(inp)
 
@@ -82,10 +77,10 @@ class SimThresholdSplit(object):
         self.memory_optimized = memory_optimized
 
         if not similarity_matrix:
-            similarity_matrix = self.similarity_matrix(fps)
+            similarity_matrix = self._similarity_matrix(self.fps)
 
         self.clusters = pd.Series(self._cluster(similarity_matrix),
-                                  index=fps.index,
+                                  index=self.fps.index,
                                   name='clusters')
 
     def _cluster_cumsum(self, shuffled=True):
@@ -112,7 +107,7 @@ class SimThresholdSplit(object):
             train, valid, test = st.split(ratio=(70, 15, 15))
         """
 
-        ratio = self.split_sizes(ratio)
+        ratio = self._split_sizes(ratio)
         nums = self._cluster_cumsum()
         res = pd.Series(np.nan, index=nums.index, name='split')
 
@@ -142,21 +137,22 @@ class SimThresholdSplit(object):
         return ((~fold, fold) for fold in folds)
 
 
-    def split_sizes(self, ratio):
+    def _split_sizes(self, ratio):
         """ Calculate the sizes of the splits """
 
         tot = sum(ratio)
         return [self.n_instances * rat / tot for rat in ratio]
 
 
-    def similarity_matrix(self, fps):
+    def _similarity_matrix(self, fps):
         """ Calculate the similarity matrix for fingerprints. """
+
+        logger.info('Generating similarity matrix of size (%s, %s).', len(fps), len(fps))
 
         if self.memory_optimized:
             return self._sim_low_mem(fps)
         else:
             return self._sim(fps)
-
 
     def _sim(self, fps):
         """ Fast but memory intensive implementation of similarity matrix
@@ -168,17 +164,18 @@ class SimThresholdSplit(object):
 
     def _sim_low_mem(self, fps):
         """ Slow but memory efficient implementation of similarity matrix
-        calculation """
-
-        S = dok_matrix(len(fps), len(fps))
-        for i, fp in enumerate(fps):
-            D = cdist(fp[np.newaxis, :], fps[i + 1:], self.similarity_metric)
+        calculation. """
+        S = dok_matrix((len(fps), len(fps)))
+        for i, fp in enumerate(fps.values):
+            D = cdist(fp[np.newaxis, :], fps.values[i + 1:], self.similarity_metric)
             D = 1 - D
-            S[i, i + 1:] = dok_matrix(D >= threshold)
+            S[i, i + 1:] = dok_matrix(D >= self.threshold)
         return S
 
     def _cluster(self, S):
         """ Assign instances to clusters. """
+
+        logger.info('Clustering instances according to similarity matrix.')
 
         pairs = sorted(S.keys(), key=lambda x: x[0]) # sort pairs by first index
         clustered = np.arange(self.n_instances)
@@ -187,3 +184,32 @@ class SimThresholdSplit(object):
             clustered[j] = clustered[i]
 
         return clustered
+
+    def visualize_similarities(self, subsample=5000, ax=None):
+
+        """ Plot a histogram of similarities, with the threshold plotted.
+
+        Args:
+            subsample (int):
+                For a large dataset, subsample the number of compounds to
+                consider.
+            ax (matplotlib.axis):
+                Axis to make the plot on.
+        Returns:
+            matplotlib.axes
+        """
+
+        if not ax:
+            ax = plt.gca()
+
+        if subsample and len(self.fps) > subsample:
+            fps = self.fps.sample(n=subsample)
+        else:
+            fps = self.fps
+
+        dists = 1 - squareform(pdist(fps, self.similarity_metric))
+        dists = (dists - np.identity(dists.shape[0])).flatten()
+        hist = ax.hist(dists, bins=50)
+        ax.vlines(self.threshold, 0, max(hist[0]))
+        ax.set_xlabel('similarity')
+        return ax
