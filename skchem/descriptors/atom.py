@@ -221,7 +221,7 @@ atom_features.update(hybridization_features)
 
 class AtomFeatureCalculator(object):
 
-    def __init__(self, features='all', max_atoms=50):
+    def __init__(self, features='all', max_atoms=75):
         if features == 'all':
             features = atom_features
         self.features = pd.Series(features)
@@ -268,7 +268,7 @@ class AtomFeatureCalculator(object):
 
 class GraphDistanceCalculator(object):
 
-    def __init__(self, max_atoms=50):
+    def __init__(self, max_atoms=75):
         self.max_atoms = max_atoms
 
     def transform(self, obj):
@@ -293,6 +293,7 @@ class GraphDistanceCalculator(object):
     def _transform_series(self, ser):
         res = pd.Panel(np.array([self.transform(mol) for mol in ser]), items=ser.index)
         res.major_axis.name = res.minor_axis.name = 'atom_idx'
+        return res
 
     def __call__(self, *args, **kwargs):
         return self.transform(*args, **kwargs)
