@@ -108,7 +108,7 @@ class Fingerprinter(object):
             return self.transform(obj.structure)
 
         elif isinstance(obj, pd.Series):
-            res_0 = self._transform(obj.ix[0])
+            res_0 = self._transform(obj.iloc[0])
             res = np.zeros((len(obj), len(res_0)))
             for i, mol in enumerate(obj):
                 res[i] = self._transform(mol)
