@@ -25,7 +25,7 @@ class PhysicochemicalFingerprinter(Fingerprinter):
 
     NAME = 'physchem'
     sparse = False
-    
+
     def __init__(self, descriptors='all'):
 
         """ Create a physicochemical descriptor generator.
@@ -45,5 +45,12 @@ class PhysicochemicalFingerprinter(Fingerprinter):
         return self.descriptor_names
 
     def _transform(self, mol):
+        res = []
+        for (n, f) in self.descriptors:
+            try:
+                res.append(f(mol))
+            except ValueError:
+                print(mol)
+                return res.append(np.NaN)
 
-        return np.array([f(mol) for (n, f) in self.descriptors])
+        return np.array(res)

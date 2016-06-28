@@ -19,13 +19,13 @@ from .atom import (AtomFeatureCalculator, GraphDistanceCalculator)
 
 def get(name):
     defaults = {
-        'morgan': MorganFingerprinter(),
-        'atom_pair': AtomPairFingerprinter(),
-        'topological_torsion': TopologicalTorsionFingerprinter(),
-        'rdk': RDKFingerprinter(),
-        'erg': ErGFingerprinter(),
-        'conn_inv': ConnectivityInvariantsFingerprinter(),
-        'feat_inv': FeatureInvariantsFingerprinter(),
-        'physicochemical': PhysicochemicalFingerprinter()
+        'morgan': MorganFingerprinter,
+        'atom_pair': AtomPairFingerprinter,
+        'topological_torsion': TopologicalTorsionFingerprinter,
+        'rdk': RDKFingerprinter,
+        'erg': ErGFingerprinter,
+        'conn_inv': ConnectivityInvariantsFingerprinter,
+        'feat_inv': FeatureInvariantsFingerprinter,
+        'physicochemical': PhysicochemicalFingerprinter
     }
-    return defaults[name]
+    return defaults[name]()

@@ -22,7 +22,7 @@ import functools
 
 from .. import core
 from ..data import PERIODIC_TABLE
-from ..filters import ORGANIC
+from ..filters import OrganicFilter
 
 def element(a):
 
@@ -35,7 +35,7 @@ def is_element(a, symbol='C'):
     """ Is the atom of a given element """
     return element(a) == symbol
 
-element_features = {'is_{}'.format(e): functools.partial(is_element, symbol=e) for e in ORGANIC}
+element_features = {'is_{}'.format(e): functools.partial(is_element, symbol=e) for e in OrganicFilter.elements}
 
 def is_h_acceptor(a):
 
