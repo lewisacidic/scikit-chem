@@ -4,33 +4,39 @@
 # License: 3-clause BSD
 
 """
-# skchem.filters
 
-Chemical filters are defined.
+# skchem.filters.simple
+
+Simple filters for compounds.
 
 """
 
-import os
-
-from rdkit import RDConfig
+from .base import Filter
 import pandas as pd
 
-from .core import Mol
+
+class ElementFilter(Filter):
+
+    """ Filter by elements.
+
+    Args:
+        elements: A list of elements to filter with.  If an element not in
+        the list is found in a molecule, return False, else return True.
+    """
+    def __init__(self, elements, **kwargs):
+
+        self.elements = elements
+
+        super(ElementFilter, self).__init__(self.func)
+
+    def func(self, mol):
+
+        return all(atom.element in self.elements for atom in mol.atoms)
 
 
-def _load_pains():
+class OrganicFilter(ElementFilter):
 
-    """ Load PAINS included in rdkit into a pandas dataframe """
-
-    path = os.path.join(RDConfig.RDDataDir, 'Pains', 'wehi_pains.csv')
-    pains = pd.read_csv(path, names=['pains', 'names'])
-    pains['names'] = pains.names.str.lstrip('<regId=').str.rstrip('>')
-    return pains.set_index('names').pains.apply(Mol.from_smarts, mergeHs=True)
-
-PAINS = _load_pains()
-ORGANIC = ['H', 'B', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
-
-def is_organic(mol):
+    # TODO: rewrite the docs
 
     """ Whether a molecule is organic.
 
@@ -51,11 +57,12 @@ def is_organic(mol):
 
             >>> import skchem
             >>> m1 = skchem.Mol.from_smiles('c1ccccc1', name='benzene')
-            >>> skchem.filters.is_organic(m1)
+            >>> is_organic = skchem.filters.OrganicFilter()
+            >>> is_organic(m1)
             True
             >>> m2 = skchem.Mol.from_smiles('[cH-]1cccc1.[cH-]1cccc1.[Fe+2]', \
                                             name='ferrocene')
-            >>> skchem.filters.is_organic(m2)
+            >>> is_organic(m2)
             False
 
             More useful in combination with pandas data frames:
@@ -63,59 +70,24 @@ def is_organic(mol):
             >>> import gzip
             >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
             >>> data = skchem.read_sdf(sdf)
-            >>> data.structure.apply(skchem.filters.is_organic).value_counts()
+            >>> is_organic.apply(data).value_counts()
             True     4253
             False      84
             Name: structure, dtype: int64
+
+            >>> len(is_organic.filter(data))
+            4253
+            >>> len(is_organic.filter(data, neg=True))
+            84
     """
 
-    return all(atom.element in ORGANIC for atom in mol.atoms)
+    elements = ['H', 'B', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
+
+    def __init__(self):
+        super(OrganicFilter, self).__init__(self.elements)
 
 
-def no_pains(mol):
-
-    """ Whether a molecule passes the Pan Assay INterference (PAINS) filters.
-
-    These are supplied with RDKit, and were originally proposed by Baell et al.
-
-    Args:
-        mol: (skchem.Mol):
-            The molecule to be tested.
-
-    Returns:
-        bool:
-            Whether the molecule passes all the pains filters.
-
-    References:
-        [The original paper](http://dx.doi.org/10.1021/jm901137j)
-
-    Examples:
-
-            Basic usage as a function on molecules:
-
-            >>> import skchem
-            >>> m1 = skchem.Mol.from_smiles('c1ccccc1', name='benzene')
-            >>> skchem.filters.no_pains(m1)
-            True
-            >>> m2 = skchem.Mol.from_smiles('Oc1c(O)cccc1', name='catechol')
-            >>> skchem.filters.no_pains(m2)
-            False
-
-            More useful in combination with pandas data frames:
-
-            >>> import gzip
-            >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
-            >>> data = skchem.read_sdf(sdf)
-            >>> data.structure.apply(skchem.filters.no_pains).value_counts()
-            True     3855
-            False     482
-            Name: structure, dtype: int64
-    """
-
-    return all(PAINS.apply(lambda pains: pains not in mol))
-
-
-def n_atoms(mol, above=None, below=None, include_hydrogens=False):
+def n_atoms(mol, above=2, below=75, include_hydrogens=False):
 
     """ Whether the number of atoms in a molecule falls in a defined interval.
 
@@ -175,31 +147,61 @@ def n_atoms(mol, above=None, below=None, include_hydrogens=False):
         >>> skchem.filters.n_atoms(m, above=9, below=14, include_hydrogens=True)
         True
 
-        More useful in combination with pandas data frames:
-
-        >>> import gzip
-        >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
-        >>> data = skchem.read_sdf(sdf)
-        >>> data.structure.apply(skchem.filters.n_atoms, above=5, below=50).value_counts()
-        True     4211
-        False     126
-        Name: structure, dtype: int64
-
     """
-    if not above:
-        above = 0
-    if not below:
-        below = 1000000 # arbitrarily large number
+
+    assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
 
     n_a = len(mol.atoms)
     if include_hydrogens:
-        n_a += sum(a.GetNumImplicitHs() for a in mol.atoms)
+        n_a += sum(atom.GetNumImplicitHs() for atom in mol.atoms)
 
-    assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
     return above <= n_a < below
 
+class AtomNumberFilter(Filter):
 
-def mass(mol, above=None, below=None):
+    """Filter for whether the number of atoms in a molecule falls in a defined interval.
+
+    ``above <= n_atoms < below``
+
+    Args:
+        above (int):
+            The lower threshold number of atoms (exclusive).
+            Defaults to None.
+        below (int):
+            The higher threshold number of atoms (inclusive).
+            Defaults to None.
+
+    Args:
+        >>> import skchem
+        >>> import gzip
+        >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
+        >>> data = skchem.read_sdf(sdf)
+        >>> f_natom = skchem.filters.AtomNumberFilter(above=3, below=60)
+        >>> f_natom.apply(data).value_counts()
+        True     4306
+        False      31
+        Name: structure, dtype: int64
+
+        >>> len(f_natom.filter(data))
+        4306
+        >>> len(f_natom.filter(data, neg=True))
+        31
+    """
+
+    def __init__(self, above=3, below=60, include_hydrogens=False, **kwargs):
+
+        assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
+        self.above = above
+        self.below = below
+        self.include_hydrogens = include_hydrogens
+
+        super(AtomNumberFilter, self).__init__(n_atoms, above=self.above,
+                                below=self.below,
+                                include_hydrogens=self.include_hydrogens,
+                                **kwargs)
+
+
+def mass(mol, above=10, below=900):
 
     """ Whether a the molecular weight of a molecule is lower than a threshold.
 
@@ -234,22 +236,49 @@ def mass(mol, above=None, below=None):
         False
         >>> skchem.filters.mass(m, above=70, below=80)
         True
+    """
 
-        More useful in combination with pandas data frames:
+    return above <= mol.mass < below
 
+
+class MassFilter(Filter):
+    """ Filter whether a the molecular weight of a molecule is lower than a threshold.
+
+    ``above <= mass < below``
+
+    Args:
+        mol: (skchem.Mol):
+            The molecule to be tested.
+        above (float):
+            The lower threshold on the mass.
+            Defaults to None.
+        below (float):
+            The higher threshold on the mass.
+            Defaults to None.
+
+    Examples:
+
+        >>> import skchem
         >>> import gzip
         >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
         >>> data = skchem.read_sdf(sdf)
-        >>> data.structure.apply(skchem.filters.mass, below=900).value_counts()
+        >>> f_mass = skchem.filters.MassFilter(above=10, below=900)
+        >>> f_mass.apply(data).value_counts()
         True     4312
         False      25
         Name: structure, dtype: int64
+
+        >>> len(f_mass.filter(data))
+        4312
+        >>> len(f_mass.filter(data, neg=True))
+        25
     """
 
-    if not above:
-        above = 0
-    if not below:
-        below = 1000000
+    def __init__(self, above=3, below=900, **kwargs):
 
-    assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
-    return above <= mol.mass < below
+        assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
+        self.above = above
+        self.below = below
+
+        super(MassFilter, self).__init__(mass, above=self.above,
+                                below=self.below, **kwargs)
