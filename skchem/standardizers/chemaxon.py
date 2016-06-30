@@ -34,6 +34,14 @@ class ChemAxonStandardizer(object):
     Args:
         config_path (str):
             The path of the config_file. If None, use the default one.
+
+    Note:
+        ChemAxon Standardizer must be installed and accessible as `standardize`
+        from the shell launching the program.
+
+    Warn:
+        When using standardizer on smiles, it is currently unsupported if any
+        of the compounds fail to subsequently parse.
     """
     def __init__(self, config_path=None, warn_on_fail=True, error_on_fail=False,
                     keep_failed=False):
@@ -86,8 +94,10 @@ class ChemAxonStandardizer(object):
     def _transform_smis(self, X):
         with NamedTemporaryFile() as f_in, NamedTemporaryFile() as f_out:
             X.to_csv(f_in.name, header=None, index=None)
+            logger.debug('Input file length: %s', len(X))
             errs = self._transform_file(f_in.name, f_out.name)
             out = io.read_sdf(f_out.name).structure
+            logger.debug('Output file length: %s', len(out))
         return out, errs
 
     def _transform_file(self, f_in, f_out):
