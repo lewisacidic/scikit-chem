@@ -1,4 +1,3 @@
-nose
 pytest
-yanc
-
+pytest-cov
+coverage

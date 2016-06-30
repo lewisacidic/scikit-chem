@@ -3,21 +3,19 @@ package:
   version: 0.0.4
 
 source:
-  path: . 
+  path: .
 
 build:
   number: 0
-  script: $PYTHON setup.py install --single-version-externally-managed --record=/tmp/record.txt # [not-win] # [not-win] # [not-win] 
+  script: $PYTHON setup.py install --single-version-externally-managed --record=/tmp/record.txt # [not-win]
   script: "%PYTHON%" setup.py install # [win]
- 
+
 requirements:
   build:
     - python
     - setuptools
-    - nose
-    - pytest
     - scikit-learn
- 
+
   run:
     - python
     - numpy
@@ -31,13 +29,13 @@ test:
   requires:
     - nose
     - pytest
+    - coverage
+    - pytest-cov
 
   commands:
-    - nosetests
-
+    - py.test
 
 about:
   home: https://github.com/richlewis42/scikit-chem
   license: MIT
   summary: Scientific Python Stack compatible cheminformatics library, using RDKit
-  
