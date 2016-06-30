@@ -39,7 +39,7 @@ class SMARTSFilter(Filter):
         >>> m3 = skchem.Mol.from_smiles('c1ccccc1-c2c(C=O)ccnc2')
         >>> ms = pd.Series({'ethane': m1, 'benzene': m2, 'big': m3})
         >>> f = skchem.filters.SMARTSFilter({'benzene': 'c1ccccc1', 'pyridine': 'c1ccccn1', 'acetyl': 'C=O'})
-        >>> f.apply(ms)
+        >>> f.transform(ms)
                 acetyl benzene pyridine
         benzene  False    True    False
         big       True    True     True
@@ -101,7 +101,7 @@ class PAINSFilter(SMARTSFilter):
         >>> import gzip
         >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
         >>> data = skchem.read_sdf(sdf)
-        >>> no_pains.apply(data).value_counts()
+        >>> no_pains.transform(data).value_counts()
         True     3855
         False     482
         dtype: int64

@@ -14,6 +14,11 @@ import pandas as pd
 
 from ..utils import method_takes_mol_series, method_takes_pandas
 
+def _identity(x):
+    return x
+
+def _identity_meth(_, x):
+    return x
 
 class Filter(object):
 
@@ -32,23 +37,23 @@ class Filter(object):
         Initialize the filter with a function:
         >>> is_named = skchem.filters.Filter(lambda m: m.name is not None)
 
-        Filter results can be found with `apply`:
+        Filter results can be found with `transform`:
         >>> ethane = skchem.Mol.from_smiles('CC', name='ethane')
-        >>> is_named.apply(ethane)
+        >>> is_named.transform(ethane)
         True
 
         >>> anonymous = skchem.Mol.from_smiles('c1ccccc1')
-        >>> is_named.apply(anonymous)
+        >>> is_named.transform(anonymous)
         False
 
         The filter can also be used as a function:
         >>> ethane = skchem.Mol.from_smiles('CC', name='ethane')
-        >>> is_named.apply(ethane)
+        >>> is_named.transform(ethane)
         True
 
         Apply can take a series or dataframe:
         >>> mols = pd.Series({'anonymous': anonymous, 'ethane': ethane})
-        >>> is_named.apply(mols)
+        >>> is_named.transform(mols)
         anonymous    False
         ethane        True
         dtype: bool
@@ -64,27 +69,64 @@ class Filter(object):
         dtype: object
     """
 
-    def __init__(self, func,  agg=None, neg=None, **kwargs):
+    _DEFAULT_AGG = _identity_meth
+    _DEFAULT_IS_NEG = False
+
+    def __init__(self, func,  agg=None, neg=False, **kwargs):
 
         self.func = func
-        if agg == None:
-            agg = lambda x: x
-        self.agg = agg
+        self.agg = self._get_agg(agg) if agg is not None else self._DEFAULT_AGG
         self.neg = neg
         self.kwargs = kwargs
+
+    @property
+    def agg(self):
+        return self._agg
+
+    @agg.setter
+    def agg(self, val):
+        self._agg = self._get_agg(val)
+
+    def _get_agg(self, val):
+        if val is True:
+            return self._DEFAULT_AGG
+        elif val is False:
+            return _identity
+        elif val is None:
+            return self.agg
+        else:
+            return val
+
+    @property
+    def neg(self):
+        return self._get_neg(self._neg)
+
+    @neg.setter
+    def neg(self, val):
+
+        # xor
+        self._neg = self._get_neg(val)
+
+
+    def _get_neg(self, val):
+        if self._DEFAULT_IS_NEG:
+            return not val
+        else:
+            return val
 
     @method_takes_mol_series
     def transform(self, mols, agg=None, neg=None):
 
         """ Apply the function and return the boolean values. """
 
-        if agg is None:
-            agg = self.agg
+        agg = self._get_agg(agg)
 
         if neg is None:
-            neg = self.neg
+            neg = self._neg
+        else:
+            neg = self._get_neg(neg)
 
-        res = mols.apply(self.func, **self.kwargs)
+        res = self._transform(mols)
 
         if isinstance(res, pd.DataFrame):
             res = res.apply(agg, axis=1)
@@ -93,6 +135,9 @@ class Filter(object):
             res = ~res
 
         return res
+
+    def _transform(self, ser):
+        return ser.apply(self.func, **self.kwargs)
 
     @method_takes_pandas
     def filter(self, X, y=None, agg=None, neg=None):
@@ -106,8 +151,7 @@ class Filter(object):
         if neg is None:
             neg = self.neg
 
-        if agg is None:
-            agg = self.agg
+        agg = self._get_agg(agg)
 
         res = self.transform(X, neg=neg, agg=agg)
 
@@ -118,4 +162,4 @@ class Filter(object):
 
     def __call__(self, *args, **kwargs):
 
-        return self.apply(*args, **kwargs)
+        return self.transform(*args, **kwargs)

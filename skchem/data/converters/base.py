@@ -39,13 +39,11 @@ DEFAULT_FEATURES = (
             key='G',
             axis_names=['batch', 'atom_idx', 'atom_idx']))
 
-Filter = namedtuple('Filter', ['filter', 'kwargs'])
-
-DEFAULT_FILTERS = (
-    Filter(filters.is_organic, {}),
-    Filter(filters.n_atoms, {'above': 5, 'below': 75}),
-    Filter(filters.mass, {'below': 1000})
-)
+DEFAULT_FILTERS = [
+    filters.OrganicFilter(),
+    filters.AtomNumberFilter(above=5, below=75),
+    filters.MassFilter(below=1000)
+]
 
 DEFAULT_STANDARDIZER = standardizers.ChemAxonStandardizer(keep_failed=True)
 
@@ -102,15 +100,15 @@ class Converter(object):
     def filter(self, data, filters=DEFAULT_FILTERS):
 
         """ Filter the compounds according to the usual filters. """
-        logger.info('Filtering %s compounds', len(data))
-        if isinstance(data, pd.DataFrame):
-            ms = data.structure
-        else:
-            ms = data
-        filt = functools.reduce(lambda a, b: a & b, (ms.apply(filt.filter, **filt.kwargs) for filt in filters))
-        logger.info('Filtered out %s compounds', (~filt).sum())
+        n_initial = len(data)
+        logger.info('Filtering %s compounds', n_initial)
 
-        return data[filt]
+        for filt in DEFAULT_FILTERS:
+            data = filt.filter(data)
+
+        logger.info('Filtered out %s compounds', n_initial - len(data))
+
+        return data
 
 
     def standardize(self, data, standardizer=DEFAULT_STANDARDIZER):

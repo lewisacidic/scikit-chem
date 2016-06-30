@@ -30,7 +30,7 @@ from rdkit.Chem.rdReducedGraphs import GetErGFingerprint
 from rdkit.Chem.rdmolops import RDKFingerprint
 
 import numpy as np
-import skchem
+from .. import core
 
 class Fingerprinter(object):
 
@@ -101,7 +101,7 @@ class Fingerprinter(object):
 
         """ calculate a dense fingerprint for the given object. """
 
-        if isinstance(obj, skchem.Mol):
+        if isinstance(obj, core.Mol):
             return pd.Series(self._transform(obj), index=self.index)
 
         elif isinstance(obj, pd.DataFrame):
@@ -130,7 +130,7 @@ class Fingerprinter(object):
 
         """ Calculate a sparse fingerprint for the given object. """
 
-        if isinstance(obj, skchem.Mol):
+        if isinstance(obj, core.Mol):
             return pd.Series(self._transform(obj), index=self.index)
 
         elif isinstance(obj, pd.DataFrame):
@@ -171,7 +171,7 @@ class FusionFingerprinter(Fingerprinter):
 
     def transform(self, obj):
 
-        if isinstance(obj, skchem.Mol):
+        if isinstance(obj, core.Mol):
             return pd.concat([fp.transform(obj) for fp in self.fingerprinters],
                              keys=[fp.NAME for fp in self.fingerprinters])
 

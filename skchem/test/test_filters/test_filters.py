@@ -26,14 +26,14 @@ def f():
 def test_takes_mol(m, f):
     assert f(m) == True
 
-def test_takes_mol_apply(m, f):
-    assert f.apply(m) == True
+def test_takes_mol_transform(m, f):
+    assert f.transform(m) == True
 
 def test_takes_dict(m, f):
-    assert np.array_equal(f.apply({'name': m}), [True])
+    assert np.array_equal(f.transform({'name': m}), [True])
 
 def test_takes_ser(m, f):
-    assert np.array_equal(f.apply(pd.Series({'name': m})), [True])
+    assert np.array_equal(f.transform(pd.Series({'name': m})), [True])
 
 def test_filter(ms, f):
     assert len(f.filter(ms)) == 2

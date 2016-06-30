@@ -35,7 +35,7 @@ def is_element(a, symbol='C'):
     """ Is the atom of a given element """
     return element(a) == symbol
 
-element_features = {'is_{}'.format(e): functools.partial(is_element, symbol=e) for e in OrganicFilter.elements}
+element_features = {'is_{}'.format(e): functools.partial(is_element, symbol=e) for e in OrganicFilter.organic}
 
 def is_h_acceptor(a):
 

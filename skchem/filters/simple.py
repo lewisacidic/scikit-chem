@@ -11,32 +11,145 @@ Simple filters for compounds.
 
 """
 
-from .base import Filter
+from collections import Counter
 import pandas as pd
+import numpy as np
 
+from .base import Filter
+from ..data import PERIODIC_TABLE
+
+ELEMENTS = pd.Index(PERIODIC_TABLE.symbol, name='element')
 
 class ElementFilter(Filter):
 
     """ Filter by elements.
 
     Args:
-        elements: A list of elements to filter with.  If an element not in
-        the list is found in a molecule, return False, else return True.
+        elements (list[str]):
+            A list of elements to filter with.  If an element not in the list is
+            found in a molecule, return False, else return True.
+        as_bits (bool):
+            Whether to return integer counts or booleans for atoms.
+        not_in (bool):
+            Whether to use the element list as elements not to check.
+
+    Examples:
+
+        Basic usage on molecules:
+
+        >>> import skchem
+        >>> has_halogen = skchem.filters.ElementFilter(['F', 'Cl', 'Br', 'I'])
+
+        Molecules without any of the atoms transform to `True`.
+
+        >>> m1 = skchem.Mol.from_smiles('ClC(Cl)Cl', name='chloroform')
+        >>> has_halogen.transform(m1)
+        True
+
+        Molecules with the atom transform to `False`.
+
+        >>> m2 = skchem.Mol.from_smiles('CC', name='ethane')
+        >>> has_halogen.transform(m2)
+        False
+
+        Can see the atom breakdown by passing `agg` == `False`:
+        >>> has_halogen.transform(m1, agg=False)
+        element
+        F     0
+        Cl    3
+        Br    0
+        I     0
+        Name: chloroform, dtype: int64
+
+        Or setting it as a property on the filter:
+        >>> has_halogen.agg = False
+        >>> has_halogen.transform(m1)
+        element
+        F     0
+        Cl    3
+        Br    0
+        I     0
+        Name: chloroform, dtype: int64
+
+        Or even at instantiation:
+        >>> has_halogen = skchem.filters.ElementFilter(['F', 'Cl', 'Br', 'I'], agg=False)
+        >>> has_halogen.transform(m1)
+        element
+        F     0
+        Cl    3
+        Br    0
+        I     0
+        Name: chloroform, dtype: int64
+
+        Can transform series.
+
+        >>> has_halogen.agg = any
+        >>> ms = pd.Series({m.name: m for m in (m1, m2)}, name='structure')
+        >>> has_halogen.transform(ms)
+        chloroform     True
+        ethane        False
+        dtype: bool
+
+        >>> has_halogen.transform(ms, agg=False)
+        element     F  Cl  Br  I
+        chloroform  0   3   0  0
+        ethane      0   0   0  0
+
+        Can also filter series for organic.
+
+        >>> has_halogen.filter(ms)
+        chloroform    <Mol: ClC(Cl)Cl>
+        Name: structure, dtype: object
+
+        >>> has_halogen.filter(ms, neg=True)
+        ethane    <Mol: CC>
+        Name: structure, dtype: object
+
     """
-    def __init__(self, elements, **kwargs):
 
+    _DEFAULT_AGG = any
+
+    def __init__(self, elements=None, as_bits=False, not_in=False, **kwargs):
+        self.not_in = not_in
         self.elements = elements
+        self.as_bits = as_bits
+        super(ElementFilter, self).__init__(self.func, **kwargs)
 
-        super(ElementFilter, self).__init__(self.func)
+    @property
+    def elements(self):
+        return self._elements
+
+    @elements.setter
+    def elements(self, value):
+        if self.not_in:
+            self._elements = ELEMENTS.drop(value)
+        else:
+            self._elements = pd.Index(value, name='element')
+
+    @property
+    def index(self):
+        return self.elements
 
     def func(self, mol):
 
-        return all(atom.element in self.elements for atom in mol.atoms)
+        cntr = Counter()
+        for atom in mol.atoms:
+            cntr[atom.element] += 1
+        res = pd.Series(cntr)
+        if self.elements is not None:
+            res = res[self.elements]
+        if self.as_bits:
+            res = (res > 0).astype(np.uint8)
+        return res
+
+    def _transform(self, ser, **kwargs):
+        res = ser.apply(self.func, **kwargs).fillna(0)
+        if not self.as_bits:
+            res = res.astype(np.int)
+        return res
 
 
 class OrganicFilter(ElementFilter):
-
-    # TODO: rewrite the docs
 
     """ Whether a molecule is organic.
 
@@ -70,10 +183,10 @@ class OrganicFilter(ElementFilter):
             >>> import gzip
             >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
             >>> data = skchem.read_sdf(sdf)
-            >>> is_organic.apply(data).value_counts()
+            >>> is_organic.transform(data).value_counts()
             True     4253
             False      84
-            Name: structure, dtype: int64
+            dtype: int64
 
             >>> len(is_organic.filter(data))
             4253
@@ -81,11 +194,12 @@ class OrganicFilter(ElementFilter):
             84
     """
 
-    elements = ['H', 'B', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
+    organic = ['H', 'B', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
+    _DEFAULT_IS_NEG = True
 
     def __init__(self):
-        super(OrganicFilter, self).__init__(self.elements)
-
+        super(OrganicFilter, self).__init__(self.organic, not_in=True, agg=any,
+                                            as_bits=True)
 
 def n_atoms(mol, above=2, below=75, include_hydrogens=False):
 
@@ -177,7 +291,7 @@ class AtomNumberFilter(Filter):
         >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
         >>> data = skchem.read_sdf(sdf)
         >>> f_natom = skchem.filters.AtomNumberFilter(above=3, below=60)
-        >>> f_natom.apply(data).value_counts()
+        >>> f_natom.transform(data).value_counts()
         True     4306
         False      31
         Name: structure, dtype: int64
@@ -263,7 +377,7 @@ class MassFilter(Filter):
         >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
         >>> data = skchem.read_sdf(sdf)
         >>> f_mass = skchem.filters.MassFilter(above=10, below=900)
-        >>> f_mass.apply(data).value_counts()
+        >>> f_mass.transform(data).value_counts()
         True     4312
         False      25
         Name: structure, dtype: int64

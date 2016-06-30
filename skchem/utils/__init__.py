@@ -11,3 +11,9 @@ Module providing utility functions for scikit-chem
 
 from .suppress import Suppressor
 from .string import camel_to_snail
+from .decorators import (
+    takes_mol_series,
+    method_takes_mol_series,
+    takes_pandas,
+    method_takes_pandas
+)
