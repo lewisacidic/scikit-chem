@@ -37,7 +37,13 @@ class Dataset(H5PYDataset):
             tuple[np.array]
                 The requested sources for the requested set.
         """
-        return cls(which_sets=(set_name,), sources=sources, load_in_memory=True).data_sources
+        if set_name == 'all':
+            set_name = cls.set_names
+        else:
+            set_name = (set_name,)
+        if sources == 'all':
+            sources = cls.sources_names
+        return cls(which_sets=set_name, sources=sources, load_in_memory=True).data_sources
 
     @classmethod
     def load_data(cls, sets=(), sources=()):
@@ -78,7 +84,7 @@ class Dataset(H5PYDataset):
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            data = pd.read_hdf(cls.filename, key, *args, **kwargs)
+            data = pd.read_hdf(find_in_data_path(cls.filename), key, *args, **kwargs)
         if isinstance(data, pd.Panel):
             data = data.transpose(2, 1, 0)
         return data
