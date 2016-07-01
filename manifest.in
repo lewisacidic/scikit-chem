@@ -1,3 +1,0 @@
-include README.md
-include skchem/data/atom_data.csv
-include skchem/standardizers/default_config.xml
