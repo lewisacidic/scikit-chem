@@ -24,8 +24,6 @@ import pandas as pd
 from .. import core
 from .. import io
 
-# ideally we will programatically build this file, but for now just use it.
-DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), 'default_config.xml')
 
 class ChemAxonStandardizer(object):
 
@@ -43,11 +41,15 @@ class ChemAxonStandardizer(object):
         When using standardizer on smiles, it is currently unsupported if any
         of the compounds fail to subsequently parse.
     """
+
+    # ideally we will programatically build this file, but for now just use it.
+    DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), 'default_config.xml')
+
     def __init__(self, config_path=None, warn_on_fail=True, error_on_fail=False,
                     keep_failed=False):
 
         if not config_path:
-            config_path = DEFAULT_CONFIG
+            config_path = self.DEFAULT_CONFIG
         self.config_path = config_path
         self.keep_failed = keep_failed
         self.error_on_fail = error_on_fail
