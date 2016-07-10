@@ -217,7 +217,7 @@ class Converter(object):
             print('valid', valid_split)
             print('test', test_split)
             def min_max(split):
-                return min(split), max(split)
+                return min(split), max(split) + 1
 
             splits = {
                 'train': min_max(train_split),

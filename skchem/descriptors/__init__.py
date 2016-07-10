@@ -17,15 +17,20 @@ from .fingerprints import (Fingerprinter, AtomPairFingerprinter,
                            FeatureInvariantsFingerprinter)
 from .atom import (AtomFeatureCalculator, GraphDistanceCalculator)
 
+DEFAULTS = {
+    'morgan': MorganFingerprinter,
+    'atom_pair': AtomPairFingerprinter,
+    'topological_torsion': TopologicalTorsionFingerprinter,
+    'rdk': RDKFingerprinter,
+    'erg': ErGFingerprinter,
+    'conn_inv': ConnectivityInvariantsFingerprinter,
+    'feat_inv': FeatureInvariantsFingerprinter,
+    'physicochemical': PhysicochemicalFingerprinter
+}
 def get(name):
-    defaults = {
-        'morgan': MorganFingerprinter,
-        'atom_pair': AtomPairFingerprinter,
-        'topological_torsion': TopologicalTorsionFingerprinter,
-        'rdk': RDKFingerprinter,
-        'erg': ErGFingerprinter,
-        'conn_inv': ConnectivityInvariantsFingerprinter,
-        'feat_inv': FeatureInvariantsFingerprinter,
-        'physicochemical': PhysicochemicalFingerprinter
-    }
-    return defaults[name]()
+    """ Retrieve a descriptor calculator by name."""
+
+    if isinstance(name, str):
+        return DEFAULTS[name]()
+    else:
+        return name

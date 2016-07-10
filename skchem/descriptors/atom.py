@@ -11,18 +11,22 @@ Module specifying atom based descriptor generators.
 
 import pandas as pd
 import numpy as np
+import progressbar
 
 from rdkit import Chem
 from rdkit.Chem import Crippen
 from rdkit.Chem import Lipinski
 from rdkit.Chem import rdMolDescriptors, rdPartialCharges
 from rdkit.Chem.rdchem import HybridizationType
+from rdkit.Chem.rdDistGeom import EmbedMolecule
 
 import functools
+import warnings
 
 from .. import core
 from ..data import PERIODIC_TABLE
 from ..filters import OrganicFilter
+from .. import forcefields
 
 def element(a):
 
@@ -266,10 +270,15 @@ class AtomFeatureCalculator(object):
     def __call__(self, *args, **kwargs):
         return self.transform(*args, **kwargs)
 
-class GraphDistanceCalculator(object):
-
+class DistanceCalculator(object):
     def __init__(self, max_atoms=75):
         self.max_atoms = max_atoms
+
+    def _transform_series(self, ser):
+        bar = progressbar.ProgressBar()
+        res = pd.Panel(np.array([self.transform(mol) for mol in bar(ser)]), items=ser.index)
+        res.major_axis.name = res.minor_axis.name = 'atom_idx'
+        return res
 
     def transform(self, obj):
         if isinstance(obj, core.Atom):
@@ -285,15 +294,37 @@ class GraphDistanceCalculator(object):
         else:
             raise NotImplementedError
 
+    def __call__(self, *args, **kwargs):
+        return self.transform(*args, **kwargs)
+
+class GraphDistanceCalculator(DistanceCalculator):
+
     def _transform_mol(self, mol):
         res = np.repeat(np.nan, self.max_atoms ** 2).reshape(self.max_atoms, self.max_atoms)
         res[:len(mol.atoms), :len(mol.atoms)] = Chem.GetDistanceMatrix(mol)
         return res
 
-    def _transform_series(self, ser):
-        res = pd.Panel(np.array([self.transform(mol) for mol in ser]), items=ser.index)
-        res.major_axis.name = res.minor_axis.name = 'atom_idx'
-        return res
+class SpaceDistanceCalculator(DistanceCalculator):
 
-    def __call__(self, *args, **kwargs):
-        return self.transform(*args, **kwargs)
+    def __init__(self, max_atoms=75, warn_on_fail=True, error_on_fail=False, forcefield='uff'):
+        self.forcefield = forcefields.get(forcefield)
+        self.warn_on_fail = warn_on_fail
+        self.error_on_fail = error_on_fail
+        super(SpaceDistanceCalculator, self).__init__(max_atoms=max_atoms)
+
+    def _transform_mol(self, mol):
+        res = np.repeat(np.nan, self.max_atoms ** 2).reshape(self.max_atoms, self.max_atoms)
+        success = EmbedMolecule(mol)
+        if success == -1:
+            msg = 'Failed to Embed Molecule {}'.format(mol.name)
+            if self.error_on_fail:
+                raise RuntimeError(msg)
+            elif self.warn_on_fail:
+                warnings.warn(msg)
+                return res
+            else:
+                pass
+        m_new = Chem.AddHs(mol, addCoords=True)
+        self.forcefield.optimize(mol)
+        res[:len(mol.atoms), :len(mol.atoms)] = Chem.Get3DDistanceMatrix(mol)
+        return res

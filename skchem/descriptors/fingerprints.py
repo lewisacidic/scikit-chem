@@ -12,6 +12,7 @@ Fingerprinting classes and associated functions are defined.
 from functools import wraps
 from collections import Iterable
 import pandas as pd
+import progressbar
 from rdkit.Chem import DataStructs, GetDistanceMatrix
 from rdkit.DataStructs import ConvertToNumpyArray
 from rdkit.Chem.rdMolDescriptors import (GetMorganFingerprint,
@@ -110,14 +111,16 @@ class Fingerprinter(object):
         elif isinstance(obj, pd.Series):
             res_0 = self._transform(obj.iloc[0])
             res = np.zeros((len(obj), len(res_0)))
-            for i, mol in enumerate(obj):
+            bar = progressbar.ProgressBar()
+            for i, mol in enumerate(bar(obj)):
                 res[i] = self._transform(mol)
             return pd.DataFrame(res, index=obj.index, columns=self.index)
 
         elif isinstance(obj, (tuple, list)):
             res_0 = self._transform(obj[0])
             res = np.zeros((len(obj), len(res_0)))
-            for i, mol in enumerate(obj):
+            bar = progressbar.ProgressBar()
+            for i, mol in enumerate(bar(obj)):
                 res[i] = self._transform(mol)
 
             idx = pd.Index([mol.name for mol in obj], name='name')

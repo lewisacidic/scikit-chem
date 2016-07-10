@@ -64,12 +64,11 @@ def setup_package():
     setup(
         packages=find_packages(),
         package_data = {
-		'skchem.target_prediction': ['data/PIDGIN_models.pkl.gz'],
-		'skchem.data': ['atom_data.csv'],
-		'skchem.standardizers': ['default_config.xml']
-	},
+            'skchem.target_prediction': ['data/PIDGIN_models.pkl.gz'],
+            'skchem.data': ['atom_data.csv'],
+            'skchem.standardizers': ['default_config.xml']},
         include_package_data=True,
-	install_requires=REQUIREMENTS,
+        install_requires=REQUIREMENTS,
         test_suite='nose.collector',
         tests_require=TEST_REQUIREMENTS,
         zip_safe=False,
