@@ -11,6 +11,7 @@ Defining molecules in scikit-chem.
 
 import rdkit.Chem
 import rdkit.Chem.inchi
+from rdkit.Chem import AddHs, RemoveHs
 from rdkit.Chem.rdDepictor import Compute2DCoords
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula, CalcExactMolWt
 
@@ -141,6 +142,49 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         if not hasattr(self, '__two_d'):
             self.__two_d = Compute2DCoords(self)
         return self.conformers[self.__two_d]
+
+    def add_hs(self, inplace=False, add_coords=True, explicit_only=False, only_on_atoms=False):
+        """
+
+        Args:
+            inplace (bool):
+                Whether to add Hs to `Mol`, or return a new `Mol`. Default is `False`, return a new `Mol`.
+            add_coords (bool):
+                Whether to set 3D coordinate for added  Hs. Default is `True`.
+            explicit_only (bool):
+                Whether to add only explicit Hs, or also implicit ones. Default is `False`.
+            only_on_atoms (iterable<bool>):
+                An iterable specifying the atoms to add Hs.
+        Returns:
+            skchem.Mol:
+                `Mol` with Hs added.
+        """
+        if inplace:
+            raise NotImplementedError('Inplace addition of Hs is not yet supported.')
+        return self.__class__.from_super(AddHs(self, addCoords=add_coords,
+                                           onlyOnAtoms=only_on_atoms, explicitOnly=explicit_only))
+
+    def remove_hs(self, inplace=False, sanitize=True, update_explicit=False, implicit_only=False):
+
+        """
+
+        Args:
+            inplace (bool):
+                Whether to add Hs to `Mol`, or return a new `Mol`. Default is `False`, return a new `Mol`.
+            sanitize (bool):
+                Whether to sanitize after Hs are removed. Default is `True`.
+            update_explicit (bool):
+                Whether to update explicit count after the removal. Default is `False`.
+            implicit_only (bool):
+                Whether to remove explict and implicit Hs, or Hs only. Default is `False`.
+        Returns:
+            skchem.Mol:
+                `Mol` with Hs removed.
+        """
+        if inplace:
+            raise NotImplementedError('Inplace removed of Hs is not yet supported.')
+        return self.__class__.from_super(RemoveHs(self, implicitOnly=implicit_only,
+                                              updateExplicitCount=update_explicit, sanitize=sanitize))
 
     def to_dict(self, kind="chemdoodle"):
 
