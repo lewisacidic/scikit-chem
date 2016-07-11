@@ -16,19 +16,8 @@ from rdkit.Chem.rdForceFieldHelpers import UFFOptimizeMolecule
 
 class UFF(ForceField):
 
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        super(UFF, self).__init__(**kwargs)
 
-    def optimize(self, mol):
-        res = UFFOptimizeMolecule(mol)
-
-        if res == -1:
-            msg = 'Failed to optimize molecule \'{}\' using MMFF'.format(mol.name)
-            if self.error_on_fail:
-                raise RuntimeError(msg)
-            elif self.warn_on_fail:
-                warnings.warn(msg)
-            else:
-                pass
-
-        return mol
+    def _optimize(self, mol):
+        return UFFOptimizeMolecule(mol)

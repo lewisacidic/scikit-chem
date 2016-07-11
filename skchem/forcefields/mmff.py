@@ -15,16 +15,10 @@ from .base import ForceField
 
 
 class MMFF(ForceField):
-    def optimize(self, mol):
-        res = MMFFOptimizeMolecule(mol)
 
-        if res == -1:
-            msg = 'Failed to optimize molecule \'{}\' using MMFF'.format(mol.name)
-            if self.error_on_fail:
-                raise RuntimeError(msg)
-            elif self.warn_on_fail:
-                warnings.warn(msg)
-            else:
-                pass
+    def __init__(self, **kwargs):
+        super(MMFF, self).__init__(**kwargs)
 
-        return mol
+    def _optimize(self, mol):
+
+        return MMFFOptimizeMolecule(mol)
