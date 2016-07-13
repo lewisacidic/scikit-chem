@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2015 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 """
@@ -8,8 +8,6 @@
 
 Module specifying the Merck Molecular Force Field.
 """
-import warnings
-
 from rdkit.Chem.rdForceFieldHelpers import MMFFOptimizeMolecule
 from .base import ForceField
 

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2015 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 """
@@ -38,9 +38,9 @@ class ForceField(object):
                 pass
 
         if self.add_hs:
-            mol = mol.add_hs(add_coords=True)
-
-        return mol
+            return mol.add_hs(add_coords=True)
+        else:
+            return mol
 
 
     def optimize(self, mol):
@@ -50,7 +50,7 @@ class ForceField(object):
         if self.preembed:
             mol = self.embed(mol)
 
-        if mol is None:
+        if mol is None: # embedding failed
             return None
 
         res = self._optimize(mol)
@@ -70,15 +70,13 @@ class ForceField(object):
 
     def transform(self, obj):
         if isinstance(obj, core.Mol):
-            self.optimize(obj)
-            return obj
+            return self.optimize(obj)
         elif isinstance(obj, pd.Series):
             bar = progressbar.ProgressBar()
-            for i, mol in enumerate(bar(obj)):
-                res = self.optimize(mol)
-                if res is None and self.drop_failed:
-                    obj = obj.drop(obj.index[i])
-            return obj
+            res = pd.Series([self.optimize(mol) for mol in bar(obj)], index=obj.index, name=obj.name)
+            if self.drop_failed:
+                res = res[res.notnull()]
+            return res
         elif isinstance(obj, pd.DataFrame):
             res = self.transform(obj.structure)
             return obj.ix[res.index]
