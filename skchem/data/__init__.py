@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 2015-2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 """
@@ -22,4 +22,9 @@ def resource(*args):
 PERIODIC_TABLE = pd.read_csv(resource('atom_data.csv'), index_col=0)
 
 # must go below periodic table
-from .datasets import BursiAmes
+from .datasets import (
+    BursiAmes,
+    MullerAmes,
+    BradleyOpenMP,
+    Tox21
+)
