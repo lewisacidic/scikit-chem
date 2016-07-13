@@ -10,10 +10,10 @@ Module specifying base class for forcefields.
 """
 import warnings
 import pandas as pd
-import progressbar
 from rdkit.Chem.rdDistGeom import EmbedMolecule
 
 from .. import core
+from ..utils import NamedProgressBar
 
 class ForceField(object):
     def __init__(self, embed=True, warn_on_fail=True, error_on_fail=False, drop_failed=True, add_hs=True):
@@ -72,14 +72,15 @@ class ForceField(object):
         if isinstance(obj, core.Mol):
             return self.optimize(obj)
         elif isinstance(obj, pd.Series):
-            bar = progressbar.ProgressBar()
+            bar = NamedProgressBar(name=self.__class__.__name__)
             res = pd.Series([self.optimize(mol) for mol in bar(obj)], index=obj.index, name=obj.name)
             if self.drop_failed:
                 res = res[res.notnull()]
             return res
         elif isinstance(obj, pd.DataFrame):
             res = self.transform(obj.structure)
-            return obj.ix[res.index]
+            res = res.to_frame().join(obj.drop('structure', axis=1))
+            return res
         elif isinstance(obj, (tuple, list)):
             return self.transform(pd.Series(obj, [mol.name for mol in obj]))
         else:

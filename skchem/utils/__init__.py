@@ -17,3 +17,4 @@ from .decorators import (
     takes_pandas,
     method_takes_pandas
 )
+from .progressbar import NamedProgressBar

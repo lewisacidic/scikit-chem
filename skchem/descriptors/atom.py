@@ -11,7 +11,6 @@ Module specifying atom based descriptor generators.
 
 import pandas as pd
 import numpy as np
-import progressbar
 
 from rdkit import Chem
 from rdkit.Chem import Crippen
@@ -20,12 +19,12 @@ from rdkit.Chem import rdMolDescriptors, rdPartialCharges
 from rdkit.Chem.rdchem import HybridizationType
 
 import functools
-import warnings
 
 from .. import core
 from ..data import PERIODIC_TABLE
 from ..filters import OrganicFilter
 from .. import forcefields
+from ..utils import NamedProgressBar
 
 def element(a):
 
@@ -258,13 +257,13 @@ class AtomFeatureCalculator(object):
         X = np.repeat(np.nan,
                       len(self.feature_names) * self.max_atoms * len(data))\
                       .reshape((len(data), self.max_atoms, len(self.feature_names)))
-        for i, mol in enumerate(data):
+        bar = NamedProgressBar(self.__class__.__name__)
+        for i, mol in enumerate(bar(data)):
             X[i, :len(mol.atoms), :] = self._transform_mol(mol)
         res = pd.Panel(X, items=data.index)
         res.minor_axis = self.features.index
         res.major_axis.name = 'atom_idx'
         return res
-
 
     def __call__(self, *args, **kwargs):
         return self.transform(*args, **kwargs)
@@ -274,7 +273,7 @@ class DistanceCalculator(object):
         self.max_atoms = max_atoms
 
     def _transform_series(self, ser):
-        bar = progressbar.ProgressBar()
+        bar = NamedProgressBar(self.__class__.__name__)
         res = pd.Panel(np.array([self.transform(mol) for mol in bar(ser)]), items=ser.index)
         res.major_axis.name = res.minor_axis.name = 'atom_idx'
         return res
