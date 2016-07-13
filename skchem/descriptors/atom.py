@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2015 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 2015-2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 """
@@ -18,7 +18,6 @@ from rdkit.Chem import Crippen
 from rdkit.Chem import Lipinski
 from rdkit.Chem import rdMolDescriptors, rdPartialCharges
 from rdkit.Chem.rdchem import HybridizationType
-from rdkit.Chem.rdDistGeom import EmbedMolecule
 
 import functools
 import warnings
@@ -314,17 +313,6 @@ class SpaceDistanceCalculator(DistanceCalculator):
 
     def _transform_mol(self, mol):
         res = np.repeat(np.nan, self.max_atoms ** 2).reshape(self.max_atoms, self.max_atoms)
-        success = EmbedMolecule(mol)
-        if success == -1:
-            msg = 'Failed to Embed Molecule {}'.format(mol.name)
-            if self.error_on_fail:
-                raise RuntimeError(msg)
-            elif self.warn_on_fail:
-                warnings.warn(msg)
-                return res
-            else:
-                pass
-        m_new = Chem.AddHs(mol, addCoords=True)
         self.forcefield.optimize(mol)
         res[:len(mol.atoms), :len(mol.atoms)] = Chem.Get3DDistanceMatrix(mol)
         return res

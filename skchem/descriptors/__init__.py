@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
+# Copyright (C) 20015-2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
 """
@@ -15,6 +15,7 @@ from .fingerprints import (Fingerprinter, AtomPairFingerprinter,
                            TopologicalTorsionFingerprinter, RDKFingerprinter,
                            ErGFingerprinter, ConnectivityInvariantsFingerprinter,
                            FeatureInvariantsFingerprinter)
+from .chemaxon import (ChemAxonAtomFeatureCalculator, ChemAxonFeatureCalculator)
 from .atom import (AtomFeatureCalculator, GraphDistanceCalculator)
 
 DEFAULTS = {
@@ -25,8 +26,11 @@ DEFAULTS = {
     'erg': ErGFingerprinter,
     'conn_inv': ConnectivityInvariantsFingerprinter,
     'feat_inv': FeatureInvariantsFingerprinter,
-    'physicochemical': PhysicochemicalFingerprinter
+    'physicochemical': PhysicochemicalFingerprinter,
+    'chemaxon': ChemAxonFeatureCalculator,
+    'chemaxon_atom': ChemAxonAtomFeatureCalculator
 }
+
 def get(name):
     """ Retrieve a descriptor calculator by name."""
 
