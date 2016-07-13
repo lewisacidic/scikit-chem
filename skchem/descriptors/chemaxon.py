@@ -240,6 +240,6 @@ class ChemAxonAtomFeatureCalculator(object):
             res[:len(ans)] = ans
             return res
         res = np.array([[to_padded(i) for k, i in val.items()] for idx, val in finished.T.items()])
-        res = pd.Panel(res, items=series.index, major_axis=pd.Index(finished.columns,
+        res = pd.Panel(res, items=series.index, major_axis=pd.Index(finished.columns, name='cx_atom_desc'),
                         minor_axis=pd.Index(range(self.max_atoms), name='atom_idx'))
         return res.swapaxes(1, 2) # to be consistent with AtomFeatureCalculator
