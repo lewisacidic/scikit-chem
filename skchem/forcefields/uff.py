@@ -8,9 +8,9 @@
 
 Module specifying the universal force field.
 """
+from rdkit.Chem.rdForceFieldHelpers import UFFOptimizeMolecule
 
 from .base import ForceField
-from rdkit.Chem.rdForceFieldHelpers import UFFOptimizeMolecule
 
 
 class UFF(ForceField):
@@ -19,4 +19,7 @@ class UFF(ForceField):
         super(UFF, self).__init__(**kwargs)
 
     def _optimize(self, mol):
-        return UFFOptimizeMolecule(mol)
+        try:
+            return UFFOptimizeMolecule(mol)
+        except RuntimeError:
+            return None

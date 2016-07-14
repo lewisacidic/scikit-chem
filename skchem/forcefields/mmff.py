@@ -9,6 +9,7 @@
 Module specifying the Merck Molecular Force Field.
 """
 from rdkit.Chem.rdForceFieldHelpers import MMFFOptimizeMolecule
+
 from .base import ForceField
 
 

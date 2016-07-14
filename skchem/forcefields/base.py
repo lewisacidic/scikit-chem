@@ -13,7 +13,7 @@ import pandas as pd
 from rdkit.Chem.rdDistGeom import EmbedMolecule
 
 from .. import core
-from ..utils import NamedProgressBar
+from ..utils import NamedProgressBar, Suppressor
 
 class ForceField(object):
     def __init__(self, embed=True, warn_on_fail=True, error_on_fail=False, drop_failed=True, add_hs=True):
@@ -33,9 +33,7 @@ class ForceField(object):
                 raise RuntimeError(msg)
             elif self.warn_on_fail:
                 warnings.warn(msg)
-                return None
-            else:
-                pass
+            return None
 
         if self.add_hs:
             return mol.add_hs(add_coords=True)
@@ -47,13 +45,14 @@ class ForceField(object):
 
         # TODO: likely need to handle which conformer here
 
-        if self.preembed:
-            mol = self.embed(mol)
+        with Suppressor():
+            if self.preembed:
+                mol = self.embed(mol)
 
-        if mol is None: # embedding failed
-            return None
+            if mol is None: # embedding failed
+                return None
 
-        res = self._optimize(mol)
+            res = self._optimize(mol)
 
         if res == -1:
             msg = 'Failed to optimize molecule \'{}\' using {}'.format(mol.name, self.__class__)

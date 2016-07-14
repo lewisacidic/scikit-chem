@@ -42,3 +42,6 @@ class Suppressor(object):
         # Re-assign the real stdout/stderr back to (1) and (2)
         os.dup2(self.save_fds[0], 1)
         os.dup2(self.save_fds[1], 2)
+        os.close(self.save_fds[0])
+        os.close(self.save_fds[1])
+
