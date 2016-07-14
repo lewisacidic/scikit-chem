@@ -15,18 +15,13 @@ import tempfile
 
 import pandas as pd
 import numpy as np
+import time
+
+from ..io import write_sdf
+from .. import core
+from ..utils import NamedProgressBar, line_count
 
 LOGGER = logging.getLogger(__file__)
-from ..io import write_sdf, read_sdf
-from .. import core
-
-atom_feats = ['acceptormultiplicity', 'aliphaticatom', 'aromaticatom', 'aromaticelectrophilicityorder',
-              'asymmetricatom', 'atomicpolarizability', 'chainatom', 'chargedensity', 'chiralcenter', 'distancedegree',
-              'donormultiplicity', 'eccentricity', 'electrondensity', 'electrophiliclocalizationenergy', 'hindrance',
-              'hmochargedensity', 'hmoelectrondensity', 'hmoelectrophilicityorder', 'hmoelectrophiliclocalizationenergy',
-              'hmonucleophilicityorder', 'hmonucleophiliclocalizationenergy', 'ioncharge', 'largestatomringsize', 'nucleophilicityorder',
-              'nucleophiliclocalizationenergy', 'oen', 'pichargedensity', 'ringatom', 'ringcountofatom', 'stericeffectindex',
-              'totalchargedensity']
 
 # TODO: fix averagemicrospeciescharge
 # TODO: fix logd logp logs
@@ -90,7 +85,7 @@ class ChemAxonFeatureCalculator(object):
                   'totalchargedensity', 'tpol', 'tpolarizability', 'vdwsa', 'volume', 'wateraccessiblesurfacearea',
                   'wienerindex', 'wienerpolarity']
 
-    def __init__(self, feat_set='all'):
+    def __init__(self, feat_set='optimal'):
         if feat_set == 'all':
             self.index = self._all_feats
         elif feat_set == 'optimal':
@@ -129,7 +124,16 @@ class ChemAxonFeatureCalculator(object):
             LOGGER.info('Running: ' + ' '.join(args))
 
             # call command line
-            subprocess.call(args)
+            bar = NamedProgressBar(name=self.__class__.__name__, max_value=len(series))
+            p = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            # monitor
+            while p.poll() is None:
+                bar.update(line_count(out_file.name))
+                time.sleep(1)
+            bar.update(len(series))
+            p.wait()
+
             try:
                 finished = pd.read_table(out_file.name).set_index('id')
             except Exception:
@@ -220,7 +224,14 @@ class ChemAxonAtomFeatureCalculator(object):
             LOGGER.info('Running: ' + ' '.join(args))
 
             # call command line
-            subprocess.call(args)
+            p = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            bar = NamedProgressBar(name=self.__class__.__name__, max_value=len(series))
+
+            while p.poll() is None:
+                bar.update(line_count(out_file.name))
+                time.sleep(1)
+            bar.update(len(series))
+            p.wait()
             finished = pd.read_table(out_file.name).set_index('id')
 
         def to_padded(s):
