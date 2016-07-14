@@ -10,19 +10,19 @@ Module wrapping ChemAxon Standardizer.  Must have standardizer installed and
 license activated.
 """
 
+import time
 import os
 import re
 from tempfile import NamedTemporaryFile
 import subprocess
 import logging
 
-logger = logging.getLogger(__name__)
-
-import numpy as np
 import pandas as pd
 
 from .. import core
 from .. import io
+from ..utils import NamedProgressBar, sdf_count
+logger = logging.getLogger(__name__)
 
 
 class ChemAxonStandardizer(object):
@@ -89,7 +89,7 @@ class ChemAxonStandardizer(object):
 
         with NamedTemporaryFile() as f_in, NamedTemporaryFile() as f_out:
             getattr(io, 'write_' + by)(X, f_in.name)
-            errs = self._transform_file(f_in.name, f_out.name)
+            errs = self._transform_file(f_in.name, f_out.name, length=len(X))
             out = io.read_sdf(f_out.name).structure
         return out, errs
 
@@ -97,20 +97,29 @@ class ChemAxonStandardizer(object):
         with NamedTemporaryFile() as f_in, NamedTemporaryFile() as f_out:
             X.to_csv(f_in.name, header=None, index=None)
             logger.debug('Input file length: %s', len(X))
-            errs = self._transform_file(f_in.name, f_out.name)
+            errs = self._transform_file(f_in.name, f_out.name, length=len(X))
             out = io.read_sdf(f_out.name).structure
             logger.debug('Output file length: %s', len(out))
         return out, errs
 
-    def _transform_file(self, f_in, f_out):
+    def _transform_file(self, f_in, f_out, length=None):
         args = ['standardize', f_in,
                          '-c', self.config_path,
                          '-f', 'sdf',
                          '-o', f_out,
                          '--ignore-error']
         logger.debug('Running %s', ' '.join(args))
-        sub = subprocess.Popen(args, stderr=subprocess.PIPE)
-        errs = sub.stderr.read().decode('ascii')
+        p = subprocess.Popen(args, stderr=subprocess.PIPE)
+
+        if length is not None:
+            bar = NamedProgressBar(name=self.__class__.__name__, max_value=length)
+            while p.poll() is None:
+                bar.update(sdf_count(f_out))
+                time.sleep(1)
+            bar.update(length)
+        p.wait()
+
+        errs = p.stderr.read().decode('ascii')
         if len(errs):
             logger.debug('stderr from Standardizer: \n%s', errs)
             errs = errs.strip().split('\n')

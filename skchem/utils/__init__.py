@@ -18,4 +18,4 @@ from .decorators import (
     method_takes_pandas
 )
 from .progressbar import NamedProgressBar
-from .io import line_count
+from .io import line_count, sdf_count
