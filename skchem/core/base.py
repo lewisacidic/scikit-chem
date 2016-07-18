@@ -11,7 +11,7 @@ Define base classes for scikit chem objects
 
 import warnings
 import numpy as np
-
+import pandas as pd
 
 class ChemicalObject(object):
 
@@ -45,6 +45,22 @@ class AtomView(object):
 
     def __str__(self):
         return str(list(str(atom) for atom in self))
+
+    @property
+    def elements(self):
+        return pd.Series((atom.element for atom in self), index=self.index)
+
+    @property
+    def atomic_number(self):
+        return pd.Series((atom.atomic_number for atom in self), index=self.index)
+
+    @property
+    def atomic_mass(self):
+        return pd.Series((atom.mass for atom in self), index=self.index)
+
+    @property
+    def index(self):
+        return pd.RangeIndex(len(self), name='atom_idx')
 
     def __repr__(self):
         return '<{klass} values="{values}" at {address}>'.format(
