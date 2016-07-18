@@ -9,4 +9,4 @@ def camel_to_snail(s):
     return re.sub('(?!^)([A-Z]+)', r'_\1', s).lower()
 
 def free_to_snail(s):
-    return s.replace(' ', '_').lower()
+    return s.strip().lower().replace(' ', '_')

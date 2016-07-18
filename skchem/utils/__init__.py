@@ -10,7 +10,7 @@ Module providing utility functions for scikit-chem
 """
 
 from .suppress import Suppressor
-from .string import camel_to_snail
+from .string import camel_to_snail, free_to_snail
 from .decorators import (
     takes_mol_series,
     method_takes_mol_series,
