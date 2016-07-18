@@ -85,10 +85,10 @@ class ChemAxonStandardizer(object):
         mol = pd.DataFrame([mol], index=[mol.name], columns=['structure'])
         return self.transform(mol).structure.iloc[0]
 
-    def _transform_mols(self, X, by='sdf'):
+    def _transform_mols(self, X):
 
-        with NamedTemporaryFile() as f_in, NamedTemporaryFile() as f_out:
-            getattr(io, 'write_' + by)(X, f_in.name)
+        with NamedTemporaryFile(suffix='.sdf') as f_in, NamedTemporaryFile() as f_out:
+            io.write_sdf(X, f_in.name)
             errs = self._transform_file(f_in.name, f_out.name, length=len(X))
             out = io.read_sdf(f_out.name).structure
         return out, errs
@@ -110,30 +110,37 @@ class ChemAxonStandardizer(object):
                          '--ignore-error']
         logger.debug('Running %s', ' '.join(args))
         p = subprocess.Popen(args, stderr=subprocess.PIPE)
-
-        if length is not None:
-            bar = NamedProgressBar(name=self.__class__.__name__, max_value=length)
-            while p.poll() is None:
-                bar.update(sdf_count(f_out))
-                time.sleep(1)
-            bar.update(length)
+        if length is None:
+            length = sdf_count(f_in)
+        bar = NamedProgressBar(name=self.__class__.__name__, max_value=length)
+        while p.poll() is None:
+            bar.update(sdf_count(f_out))
+            time.sleep(1)
+        bar.update(length)
         p.wait()
 
-        errs = p.stderr.read().decode('ascii')
+        errs = p.stderr.read().decode()
         if len(errs):
             logger.debug('stderr from Standardizer: \n%s', errs)
             errs = errs.strip().split('\n')
             errs = [re.findall('No. ([0-9]+):', err) for err in errs]
             errs = [int(err[0]) - 1 for err in errs if len(err)]
+        else:
+            logger.debug('no errors')
         return errs
 
     def _transform_ser(self, X, y=None):
 
         # TODO: try using different serializations
+
+        logger.info('X type %s', type(X))
+        logger.info('X.iloc[0] type %s', type(X.iloc[0]))
         if isinstance(X.iloc[0], core.Mol):
             out, errs = self._transform_mols(X)
         elif isinstance(X.iloc[0], str):
             out, errs = self._transform_smis(X)
+        else:
+            raise RuntimeError('Failed.')
         if errs:
             out.index = X.index.delete(errs)
             for err in errs:
