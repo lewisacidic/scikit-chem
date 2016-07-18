@@ -121,7 +121,7 @@ class ChemAxonFeatureCalculator(object):
             write_sdf(series, in_file.name)
             args = ['cxcalc', in_file.name, '-o', out_file.name] + self.index
 
-            LOGGER.info('Running: ' + ' '.join(args))
+            LOGGER.debug('Running: ' + ' '.join(args))
 
             # call command line
             bar = NamedProgressBar(name=self.__class__.__name__, max_value=len(series))
@@ -209,10 +209,10 @@ class ChemAxonAtomFeatureCalculator(object):
         raise NotImplementedError('Cannot calculate atom wise with Chemaxon')
 
     def _transform_mol(self, mol):
+        # make into series then use self._transform_mol
         ser = pd.Series([mol], name=mol.name)
         res = self._transform_series(ser)
         return res.iloc[0]
-        # make into series then use self._transform_mol
 
     def _transform_series(self, series):
 
@@ -221,7 +221,7 @@ class ChemAxonAtomFeatureCalculator(object):
             write_sdf(series, in_file.name)
             args = ['cxcalc', in_file.name, '-o', out_file.name] + self.index
 
-            LOGGER.info('Running: ' + ' '.join(args))
+            LOGGER.debug('Running: ' + ' '.join(args))
 
             # call command line
             p = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

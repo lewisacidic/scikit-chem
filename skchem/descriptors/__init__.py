@@ -17,6 +17,7 @@ from .fingerprints import (Fingerprinter, AtomPairFingerprinter,
                            FeatureInvariantsFingerprinter)
 from .chemaxon import (ChemAxonAtomFeatureCalculator, ChemAxonFeatureCalculator)
 from .atom import (AtomFeatureCalculator, GraphDistanceCalculator, SpaceDistanceCalculator)
+from .nmr import (ChemAxonNMRPredictor)
 
 DEFAULTS = {
     'morgan': MorganFingerprinter,
