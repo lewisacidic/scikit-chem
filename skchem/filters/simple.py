@@ -269,7 +269,7 @@ def n_atoms(mol, above=2, below=75, include_hydrogens=False):
 
     n_a = len(mol.atoms)
     if include_hydrogens:
-        n_a += sum(atom.GetNumImplicitHs() for atom in mol.atoms)
+        n_a += sum(atom.GetNumImplicitHs() + atom.GetNumExplicitHs() for atom in mol.atoms)
 
     return above <= n_a < below
 
