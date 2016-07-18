@@ -7,7 +7,7 @@ import os
 import zipfile
 import logging
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 import numpy as np
 
@@ -29,6 +29,7 @@ class BursiAmesConverter(Converter):
         data['is_mutagen'] = (data['Ames test categorisation'] == 'mutagen').astype(np.uint8)
 
         data = self.standardize(data)
+        data = self.optimize(data)
         data = self.filter(data)
 
         ms, y = data.structure, data.is_mutagen
@@ -36,4 +37,5 @@ class BursiAmesConverter(Converter):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    LOGGER.info('Converting Bursi Ames Dataset...')
     BursiAmesConverter.convert()

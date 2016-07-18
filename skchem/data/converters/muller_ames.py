@@ -6,7 +6,7 @@
 import os
 import zipfile
 import logging
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 import pandas as pd
 import numpy as np
@@ -82,14 +82,14 @@ class MullerAmesConverter(Converter):
         """ Patch smiles in a DataFrame with rewritten ones that specify diazo
         groups in rdkit friendly way. """
 
-        logger.info('Patching data...')
+        LOGGER.info('Patching data...')
         for cas, smiles in patches.items():
             data.loc[cas, 'structure'] = smiles
 
         return data
 
     def parse_splits(self, f_path):
-        logger.info('Parsing splits...')
+        LOGGER.info('Parsing splits...')
         with open(f_path) as f:
             splits = [split for split in f.read().strip().splitlines()]
 
@@ -98,7 +98,7 @@ class MullerAmesConverter(Converter):
         return [np.array(split) - 1 for split in splits] # zero based indexing
 
     def drop_indices(self, splits, indices):
-        logger.info('Dropping failed compounds from split indices...')
+        LOGGER.info('Dropping failed compounds from split indices...')
         for i, split in enumerate(splits):
             split = split - sum(split > ix for ix in indices)
             splits[i] = np.delete(split, indices)
@@ -111,4 +111,5 @@ class MullerAmesConverter(Converter):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    LOGGER.info('Converting Muller Ames Dataset...')
     MullerAmesConverter.convert()

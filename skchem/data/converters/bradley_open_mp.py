@@ -39,5 +39,6 @@ class BradleyOpenMPConverter(Converter):
         return data.mpC + 278.15
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
+    LOGGER.info('Converting Bradley Open Melting Point Dataset...')
     BradleyOpenMPConverter.convert()

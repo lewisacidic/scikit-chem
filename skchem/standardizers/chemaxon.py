@@ -22,7 +22,7 @@ import pandas as pd
 from .. import core
 from .. import io
 from ..utils import NamedProgressBar, sdf_count
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class ChemAxonStandardizer(object):
@@ -96,10 +96,10 @@ class ChemAxonStandardizer(object):
     def _transform_smis(self, X):
         with NamedTemporaryFile() as f_in, NamedTemporaryFile() as f_out:
             X.to_csv(f_in.name, header=None, index=None)
-            logger.debug('Input file length: %s', len(X))
+            LOGGER.debug('Input file length: %s', len(X))
             errs = self._transform_file(f_in.name, f_out.name, length=len(X))
             out = io.read_sdf(f_out.name).structure
-            logger.debug('Output file length: %s', len(out))
+            LOGGER.debug('Output file length: %s', len(out))
         return out, errs
 
     def _transform_file(self, f_in, f_out, length=None):
@@ -108,7 +108,7 @@ class ChemAxonStandardizer(object):
                          '-f', 'sdf',
                          '-o', f_out,
                          '--ignore-error']
-        logger.debug('Running %s', ' '.join(args))
+        LOGGER.debug('Running %s', ' '.join(args))
         p = subprocess.Popen(args, stderr=subprocess.PIPE)
         if length is None:
             length = sdf_count(f_in)
@@ -121,20 +121,20 @@ class ChemAxonStandardizer(object):
 
         errs = p.stderr.read().decode()
         if len(errs):
-            logger.debug('stderr from Standardizer: \n%s', errs)
+            LOGGER.debug('stderr from Standardizer: \n%s', errs)
             errs = errs.strip().split('\n')
             errs = [re.findall('No. ([0-9]+):', err) for err in errs]
             errs = [int(err[0]) - 1 for err in errs if len(err)]
         else:
-            logger.debug('no errors')
+            LOGGER.debug('no errors')
         return errs
 
     def _transform_ser(self, X, y=None):
 
         # TODO: try using different serializations
 
-        logger.info('X type %s', type(X))
-        logger.info('X.iloc[0] type %s', type(X.iloc[0]))
+        LOGGER.info('X type %s', type(X))
+        LOGGER.info('X.iloc[0] type %s', type(X.iloc[0]))
         if isinstance(X.iloc[0], core.Mol):
             out, errs = self._transform_mols(X)
         elif isinstance(X.iloc[0], str):
@@ -148,7 +148,7 @@ class ChemAxonStandardizer(object):
                 if self.error_on_fail:
                     raise ValueError('{} failed to standardize'.format(err))
                 if self.warn_on_fail:
-                    logger.warn('%s failed to standardize', err)
+                    LOGGER.warn('%s failed to standardize', err)
         else:
             out.index = X.index
         if self.keep_failed:

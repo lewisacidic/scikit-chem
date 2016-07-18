@@ -12,17 +12,14 @@ Module defining transformation techniques for tox21.
 import zipfile
 import os
 import logging
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 import numpy as np
 import pandas as pd
 
 from .base import Converter
-
-from ... import filters
 from ... import io
 from ... import core
-from ... import standardizers
 
 class Tox21Converter(Converter):
 
@@ -137,4 +134,5 @@ class Tox21Converter(Converter):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    LOGGER.info('Converting Tox21 Dataset...')
     Tox21Converter.convert()
