@@ -17,6 +17,7 @@ import numpy as np
 
 from .base import Filter
 from ..data import PERIODIC_TABLE
+from ..utils import NamedProgressBar
 
 ELEMENTS = pd.Index(PERIODIC_TABLE.symbol, name='element')
 
@@ -143,7 +144,8 @@ class ElementFilter(Filter):
         return res
 
     def _transform(self, ser, **kwargs):
-        res = ser.apply(self.func, **kwargs).fillna(0)
+        bar = NamedProgressBar(name=self.__class__.__name__)
+        res = pd.DataFrame((self.func(ele, **kwargs) for ele in bar(ser)), index=ser.index).fillna(0)
         if not self.as_bits:
             res = res.astype(np.int)
         return res

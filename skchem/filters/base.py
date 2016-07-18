@@ -12,7 +12,7 @@ Chemical filters are defined.
 
 import pandas as pd
 
-from ..utils import method_takes_mol_series, method_takes_pandas
+from ..utils import method_takes_mol_series, method_takes_pandas, NamedProgressBar
 
 def _identity(x):
     return x
@@ -137,7 +137,8 @@ class Filter(object):
         return res
 
     def _transform(self, ser):
-        return ser.apply(self.func, **self.kwargs)
+        bar = NamedProgressBar(name=self.__class__.__name__)
+        return pd.Series((self.func(ele, **self.kwargs) for ele in bar(ser)), index=ser.index)
 
     @method_takes_pandas
     def filter(self, X, y=None, agg=None, neg=None):
