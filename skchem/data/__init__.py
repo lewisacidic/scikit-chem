@@ -25,6 +25,8 @@ PERIODIC_TABLE = pd.read_csv(resource('atom_data.csv'), index_col=0)
 from .datasets import (
     BursiAmes,
     MullerAmes,
+    PhysProp,
     BradleyOpenMP,
+    NMRShiftDB2,
     Tox21
 )

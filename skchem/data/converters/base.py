@@ -6,15 +6,14 @@
 import warnings
 import logging
 import os
-import functools
 from collections import namedtuple
 
 import numpy as np
 import pandas as pd
-
 import h5py
 from fuel.datasets import H5PYDataset
 
+from ... import forcefields
 from ... import filters
 from ... import descriptors
 from ... import cross_validation
@@ -32,20 +31,32 @@ DEFAULT_FEATURES = (
     Feature(fper=descriptors.PhysicochemicalFingerprinter(),
             key='X_pc',
             axis_names=['batch', 'features']),
-    Feature(fper=descriptors.AtomFeatureCalculator(),
+    Feature(fper=descriptors.AtomFeatureCalculator(max_atoms=100),
             key='A',
             axis_names=['batch', 'atom_idx', 'features']),
-    Feature(fper=descriptors.GraphDistanceCalculator(),
+    Feature(fper=descriptors.GraphDistanceCalculator(max_atoms=100),
             key='G',
-            axis_names=['batch', 'atom_idx', 'atom_idx']))
+            axis_names=['batch', 'atom_idx', 'atom_idx']),
+    Feature(fper=descriptors.SpaceDistanceCalculator(max_atoms=100),
+            key='G_d',
+            axis_names=['batch', 'atom_idx', 'atom_idx']),
+    Feature(fper=descriptors.ChemAxonFeatureCalculator(feat_set='optimal'),
+            key='X_cx',
+            axis_names=['batch', 'features']),
+    Feature(fper=descriptors.ChemAxonAtomFeatureCalculator(feat_set='all', max_atoms=),
+            key='A_cx',
+            axis_names=['batch', 'atom_idx', 'features'])
+)
 
-DEFAULT_FILTERS = [
+DEFAULT_FILTERS = (
     filters.OrganicFilter(),
-    filters.AtomNumberFilter(above=5, below=75),
+    filters.AtomNumberFilter(above=5, below=100, include_hydrogens=True),
     filters.MassFilter(below=1000)
-]
+)
 
-DEFAULT_STANDARDIZER = standardizers.ChemAxonStandardizer(keep_failed=True)
+DEFAULT_STANDARDIZER = standardizers.ChemAxonStandardizer(keep_failed=True, warn_on_fail=False)
+
+DEFAULT_FORCEFIELD = forcefields.UFF(add_hs=True, warn_on_fail=False)
 
 class Converter(object):
     """ Create a fuel dataset from molecules and targets.
@@ -110,13 +121,18 @@ class Converter(object):
 
         return data
 
-
     def standardize(self, data, standardizer=DEFAULT_STANDARDIZER):
 
         """ Standardize the compounds. """
         logger.info('Standardizing %s compounds', len(data))
         return standardizer.transform(data)
 
+    def optimize(self, data, optimizer=DEFAULT_FORCEFIELD):
+
+        """ Opimize 3D geometry of the comopunds. """
+
+        logger.info('Optimizing the geometry of %s compounds with %s', len(data), DEFAULT_FORCEFIELD.__class__)
+        return optimizer.transform(data)
 
     def save_molecules(self, mols):
 
@@ -213,9 +229,7 @@ class Converter(object):
             train_split = bool_to_index(dset == 0)
             valid_split = bool_to_index(dset == 1)
             test_split = bool_to_index(dset == 2)
-            print('train', train_split)
-            print('valid', valid_split)
-            print('test', test_split)
+
             def min_max(split):
                 return min(split), max(split) + 1
 

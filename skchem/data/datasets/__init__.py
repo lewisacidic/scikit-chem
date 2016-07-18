@@ -11,5 +11,5 @@ from .muller_ames import MullerAmes
 from .bursi_ames import BursiAmes
 from .tox21 import Tox21
 from .physprop import PhysProp
-#from .nmrshiftdb2 import NMRShiftDB2
+from .nmrshiftdb2 import NMRShiftDB2
 from .bradley_open_mp import BradleyOpenMP
