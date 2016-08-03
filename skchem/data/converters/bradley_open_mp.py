@@ -19,8 +19,11 @@ class BradleyOpenMPConverter(Converter):
         output_path = os.path.join(output_directory, output_filename)
         data = self.parse_data(os.path.join(directory, 'bradley_melting_point_dataset.xlsx'))
         data = self.filter_bad(data)
+
         data['structure'] = self.standardize(data.smiles)
+        data = self.optimize(data)
         data = self.filter(data)
+
         ms, y = data.structure, self.fix_mp(data)
         self.run(ms, y, output_path=output_path)
 

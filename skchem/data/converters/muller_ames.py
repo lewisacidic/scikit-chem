@@ -60,8 +60,7 @@ class MullerAmesConverter(Converter):
         data['structure'] = data.structure.apply(skchem.Mol.from_smiles)
 
         data = self.standardize(data)
-
-        # filter step
+        data = self.optimize(data)
         keep = self.filter(data)
 
         ms, ys = keep.structure, keep.is_mutagen

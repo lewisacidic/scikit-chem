@@ -25,33 +25,33 @@ logger = logging.getLogger(__name__)
 Feature = namedtuple('Feature', ['fper', 'key', 'axis_names'])
 
 DEFAULT_FEATURES = (
-    Feature(fper=descriptors.MorganFingerprinter(),
+    Feature(fper=descriptors.MorganFeaturizer(),
             key='X_morg',
             axis_names=['batch', 'features']),
-    Feature(fper=descriptors.PhysicochemicalFingerprinter(),
+    Feature(fper=descriptors.PhysicochemicalFeaturizer(),
             key='X_pc',
             axis_names=['batch', 'features']),
-    Feature(fper=descriptors.AtomFeatureCalculator(max_atoms=100),
+    Feature(fper=descriptors.AtomFeaturizer(max_atoms=100),
             key='A',
             axis_names=['batch', 'atom_idx', 'features']),
-    Feature(fper=descriptors.GraphDistanceCalculator(max_atoms=100),
+    Feature(fper=descriptors.GraphDistanceTransformer(max_atoms=100),
             key='G',
             axis_names=['batch', 'atom_idx', 'atom_idx']),
-    Feature(fper=descriptors.SpaceDistanceCalculator(max_atoms=100),
+    Feature(fper=descriptors.SpacialDistanceTransformer(max_atoms=100),
             key='G_d',
             axis_names=['batch', 'atom_idx', 'atom_idx']),
-    Feature(fper=descriptors.ChemAxonFeatureCalculator(feat_set='optimal'),
-            key='X_cx',
-            axis_names=['batch', 'features']),
-    Feature(fper=descriptors.ChemAxonAtomFeatureCalculator(feat_set='all', max_atoms=),
-            key='A_cx',
-            axis_names=['batch', 'atom_idx', 'features'])
+#    Feature(fper=descriptors.ChemAxonFeaturizer(features='all'),
+#            key='X_cx',
+#            axis_names=['batch', 'features']),
+#    Feature(fper=descriptors.ChemAxonAtomFeaturizer(features='all', max_atoms=100),
+#            key='A_cx',
+#            axis_names=['batch', 'atom_idx', 'features'])
 )
 
 DEFAULT_FILTERS = (
-    filters.OrganicFilter(),
-    filters.AtomNumberFilter(above=5, below=100, include_hydrogens=True),
-    filters.MassFilter(below=1000)
+     filters.OrganicFilter(),
+     filters.AtomNumberFilter(above=5, below=100, include_hydrogens=True),
+     filters.MassFilter(below=1000)
 )
 
 DEFAULT_STANDARDIZER = standardizers.ChemAxonStandardizer(keep_failed=True, warn_on_fail=False)
@@ -132,7 +132,7 @@ class Converter(object):
         """ Opimize 3D geometry of the comopunds. """
 
         logger.info('Optimizing the geometry of %s compounds with %s', len(data), DEFAULT_FORCEFIELD.__class__)
-        return optimizer.transform(data)
+        return optimizer.transform_filter(data)
 
     def save_molecules(self, mols):
 
@@ -213,7 +213,7 @@ class Converter(object):
         """
 
         logger.info('Creating Similarity Threshold splits...')
-        cv = cross_validation.SimThresholdSplit(ms, memory_optimized=True)
+        cv = cross_validation.SimThresholdSplit(ms, memory_optimized=True, block_width=1000, n_jobs=-1, min_threshold=0.5)
         train, valid, test = cv.split((70, 15, 15))
 
         def bool_to_index(ser):

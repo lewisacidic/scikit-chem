@@ -9,27 +9,29 @@
 A module concerned with calculating molecular descriptors.
 """
 
-from .physicochemical import PhysicochemicalFingerprinter
-from .fingerprints import (Fingerprinter, AtomPairFingerprinter,
-                           MorganFingerprinter, MACCSKeysFingerprinter,
-                           TopologicalTorsionFingerprinter, RDKFingerprinter,
-                           ErGFingerprinter, ConnectivityInvariantsFingerprinter,
-                           FeatureInvariantsFingerprinter)
-from .chemaxon import (ChemAxonAtomFeatureCalculator, ChemAxonFeatureCalculator)
-from .atom import (AtomFeatureCalculator, GraphDistanceCalculator, SpaceDistanceCalculator)
-from .nmr import (ChemAxonNMRPredictor)
+from .physicochemical import PhysicochemicalFeaturizer
+from .fingerprints import (AtomPairFeaturizer,
+                           MorganFeaturizer, MACCSFeaturizer,
+                           TopologicalTorsionFeaturizer, RDKFeaturizer,
+                           ErGFeaturizer, ConnectivityInvariantsFeaturizer,
+                           FeatureInvariantsFeaturizer)
+from .chemaxon import (ChemAxonAtomFeaturizer, ChemAxonFeaturizer, ChemAxonNMRPredictor)
+from .atom import (AtomFeaturizer, GraphDistanceTransformer, SpacialDistanceTransformer)
 
 DEFAULTS = {
-    'morgan': MorganFingerprinter,
-    'atom_pair': AtomPairFingerprinter,
-    'topological_torsion': TopologicalTorsionFingerprinter,
-    'rdk': RDKFingerprinter,
-    'erg': ErGFingerprinter,
-    'conn_inv': ConnectivityInvariantsFingerprinter,
-    'feat_inv': FeatureInvariantsFingerprinter,
-    'physicochemical': PhysicochemicalFingerprinter,
-    'chemaxon': ChemAxonFeatureCalculator,
-    'chemaxon_atom': ChemAxonAtomFeatureCalculator
+    'atom': AtomFeaturizer,
+    'graph_distance': GraphDistanceTransformer,
+    'spacial_distance': SpacialDistanceTransformer,
+    'morgan': MorganFeaturizer,
+    'atom_pair': AtomPairFeaturizer,
+    'topological_torsion': TopologicalTorsionFeaturizer,
+    'rdk': RDKFeaturizer,
+    'erg': ErGFeaturizer,
+    'conn_inv': ConnectivityInvariantsFeaturizer,
+    'feat_inv': FeatureInvariantsFeaturizer,
+    'physicochemical': PhysicochemicalFeaturizer,
+    'chemaxon': ChemAxonFeaturizer,
+    'chemaxon_atom': ChemAxonAtomFeaturizer
 }
 
 def get(name):

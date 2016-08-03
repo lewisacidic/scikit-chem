@@ -7,11 +7,24 @@
 
  Tools for adding a default attribute to pandas objects."""
 
+from sklearn.manifold import TSNE, MDS
+from sklearn.decomposition import PCA
+
+from matplotlib import pyplot as plt
+import pandas as pd
+
 from pandas.core.base import NoNewAttributesMixin, AccessorProperty
 from pandas.core.series import Series
 from pandas.core.index import Index
 
 from .. import core
+from .. import descriptors
+
+DIM_RED = {
+    'tsne': TSNE,
+    'pca': PCA,
+    'mds': MDS
+}
 
 class StructureMethods(NoNewAttributesMixin):
     def __init__(self, data):
@@ -22,6 +35,18 @@ class StructureMethods(NoNewAttributesMixin):
 
     def remove_hs(self, **kwargs):
         return self._data.apply(lambda m: m.remove_hs(**kwargs))
+
+    def visualize(self, fper='morgan', dim_red='tsne', dim_red_kw={}, **kwargs):
+
+        if isinstance(dim_red, str):
+            dim_red = DIM_RED.get(dim_red.lower())(**dim_red_kw)
+
+        fper = descriptors.get(fper)
+        fper.verbose = False
+        feats = fper.transform(self._data)
+        feats = feats.fillna(feats.mean())
+        twod = pd.DataFrame(dim_red.fit_transform(feats))
+        return twod.plot.scatter(x=0, y=1, **kwargs)
 
     @property
     def atoms(self):
@@ -41,7 +66,7 @@ class StructureAccessorMixin(object):
                                  'Series that only contain mols.')
 
         return StructureMethods(self)
-    ms = AccessorProperty(StructureMethods, _make_structure_accessor)
+    mol = AccessorProperty(StructureMethods, _make_structure_accessor)
 
 
 Series.__bases__ += StructureAccessorMixin,

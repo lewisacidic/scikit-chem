@@ -16,7 +16,7 @@ from rdkit import Chem
 import pandas as pd
 
 from ..core import Mol
-from ..utils import Suppressor
+from ..utils import Suppressor, squeeze
 
 def _drop_props(row):
     for prop in row.structure.props.keys():
@@ -127,7 +127,7 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
             data.apply(_drop_props, axis=1)
 
     data.index = idx
-    return data
+    return squeeze(data, axis=1)
 
 def write_sdf(data, sdf, write_cols=True, index_as_name=True, mol_props=False,
               *args, **kwargs):
@@ -155,9 +155,10 @@ def write_sdf(data, sdf, write_cols=True, index_as_name=True, mol_props=False,
         `index_as_name` argument is `True`, and will delete all properties in
         the molecule dictionary if `mol_props` is `False`.
     """
-
     if isinstance(data, pd.Series):
         data = data.to_frame(name='structure')
+
+    names = [m.name for m in data.structure]
 
     writer = Chem.SDWriter(sdf, *args, **kwargs)
 
@@ -174,6 +175,9 @@ def write_sdf(data, sdf, write_cols=True, index_as_name=True, mol_props=False,
 
     data.structure.apply(writer.write)
 
+    # rdkit writer changes names sometimes
+    for mol, name in zip(data.structure, names):
+        mol.name = name
 
 @wraps(write_sdf)
 def _to_sdf_series(self, *args, **kwargs):

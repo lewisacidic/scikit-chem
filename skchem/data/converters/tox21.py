@@ -43,12 +43,12 @@ class Tox21Converter(Converter):
         data.index.names = 'ds', 'id'
 
         data = self.standardize(data)
+        data = self.optimize(data)
         data = self.filter(data)
 
         # generate splits
         data = data.reset_index(0)
         split_arr = data['ds'].values
-
 
         splits = {}
         for split in 'train', 'valid', 'test':

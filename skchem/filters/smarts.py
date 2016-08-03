@@ -10,7 +10,6 @@ Module defines SMARTS filters.
 """
 
 from rdkit import RDConfig
-import pandas as pd
 import os
 import pandas as pd
 
@@ -34,25 +33,35 @@ class SMARTSFilter(Filter):
     Examples:
 
         >>> import skchem
-        >>> m1 = skchem.Mol.from_smiles('CC')
-        >>> m2 = skchem.Mol.from_smiles('c1ccccc1')
-        >>> m3 = skchem.Mol.from_smiles('c1ccccc1-c2c(C=O)ccnc2')
-        >>> ms = pd.Series({'ethane': m1, 'benzene': m2, 'big': m3})
-        >>> f = skchem.filters.SMARTSFilter({'benzene': 'c1ccccc1', 'pyridine': 'c1ccccn1', 'acetyl': 'C=O'})
-        >>> f.transform(ms)
+
+        >>> data = [
+        ...         skchem.Mol.from_smiles('CC', name='ethane'),
+        ...         skchem.Mol.from_smiles('c1ccccc1', name='benzene'),
+        ...         skchem.Mol.from_smiles('c1ccccc1-c2c(C=O)ccnc2', name='big')
+        ... ]
+
+        >>> f = skchem.filters.SMARTSFilter({'benzene': 'c1ccccc1', 'pyridine': 'c1ccccn1', 'acetyl': 'C=O'}, agg='any')
+        >>> f.transform(data, agg=False)
                 acetyl benzene pyridine
+        ethane   False   False    False
         benzene  False    True    False
         big       True    True     True
-        ethane   False   False    False
 
-        >>> f.filter(ms, agg=any)
+        >>> f.transform(data)
+        ethane     False
+        benzene     True
+        big         True
+        dtype: bool
+
+        >>> f.filter(data)
         benzene                <Mol: c1ccccc1>
         big        <Mol: O=Cc1ccncc1-c1ccccc1>
-        dtype: object
+        Name: structure, dtype: object
 
-        >>> f.filter(ms, agg=all)
+        >>> f.agg = all
+        >>> f.filter(data)
         big    <Mol: O=Cc1ccncc1-c1ccccc1>
-        dtype: object
+        Name: structure, dtype: object
     """
 
     def __init__(self, smarts, **kwargs):
@@ -64,14 +73,15 @@ class SMARTSFilter(Filter):
                 return s
 
         self.smarts = pd.Series(smarts).apply(read_smarts)
+        super(SMARTSFilter, self).__init__(**kwargs)
 
-        self.index = self.smarts.index
-        super(SMARTSFilter, self).__init__(self.func, **kwargs)
+    def _transform_mol(self, mol):
 
-    def func(self, mol):
+        return self.smarts.apply(lambda smarts: smarts in mol).values
 
-        return self.smarts.apply(lambda smarts: smarts in mol)
-
+    @property
+    def columns(self):
+        return self.smarts.index
 
 
 class PAINSFilter(SMARTSFilter):
@@ -88,31 +98,36 @@ class PAINSFilter(SMARTSFilter):
         Basic usage as a function on molecules:
 
         >>> import skchem
-        >>> m1 = skchem.Mol.from_smiles('c1ccccc1', name='benzene')
-        >>> no_pains = PAINSFilter()
-        >>> no_pains(m1)
+        >>> benzene = skchem.Mol.from_smiles('c1ccccc1', name='benzene')
+        >>> pf = skchem.filters.PAINSFilter()
+        >>> pf.transform(benzene)
         True
-        >>> m2 = skchem.Mol.from_smiles('Oc1c(O)cccc1', name='catechol')
-        >>> no_pains(m2)
+        >>> catechol = skchem.Mol.from_smiles('Oc1c(O)cccc1', name='catechol')
+        >>> pf.transform(catechol)
         False
+
+        >>> res = pf.transform(catechol, agg=False)
+        >>> res[res]
+        names
+        catechol_A(92)    True
+        Name: PAINSFilter, dtype: bool
 
         More useful in combination with pandas DataFrames:
 
-        >>> import gzip
-        >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
-        >>> data = skchem.read_sdf(sdf)
-        >>> no_pains.transform(data).value_counts()
-        True     3855
-        False     482
-        dtype: int64
+        >>> data = [benzene, catechol]
+        >>> pf.transform(data)
+        benzene      True
+        catechol    False
+        dtype: bool
 
-        >>> len(no_pains.filter(data))
-        3855
+        >>> pf.filter(data)
+        benzene    <Mol: c1ccccc1>
+        Name: structure, dtype: object
     """
 
     def __init__(self):
 
-        super(PAINSFilter, self).__init__(self._load_pains(), agg=any, neg=True)
+        super(PAINSFilter, self).__init__(self._load_pains(), agg='not any')
 
     def _load_pains(cls):
 

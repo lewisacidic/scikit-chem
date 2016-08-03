@@ -14,13 +14,13 @@ import subprocess
 def line_count(filename):
 
     """ Adapted from http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python"""
-    f = open(filename, 'r')
+    f = open(filename, 'rb')
     lines = 0
     buf_size = 1024 * 1024
     read_f = f.read
     buf = read_f(buf_size)
     while buf:
-        lines += buf.count('\n')
+        lines += buf.count(b'\n')
         buf = read_f(buf_size)
     return lines
 
@@ -40,4 +40,4 @@ def sdf_count(filename):
     """
 
     with open(filename, 'rb') as f:
-        return sum(1 for l in f if l == b'$$$$\n')
+        return sum(1 for l in f if l[:4] == b'$$$$')

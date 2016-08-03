@@ -11,9 +11,7 @@ LOGGER = logging.getLogger(__name__)
 import pandas as pd
 import numpy as np
 
-
 from ... import io
-from ... import standardizers
 from .base import Converter
 
 TXT_COLUMNS = [l.lower() for l in """CAS
@@ -68,8 +66,8 @@ class PhysPropConverter(Converter):
         data = data.ix[y.index]
 
         data = self.standardize(data)
-        data = self.filter(data)
         data = self.optimize(data)
+        data = self.filter(data)
 
 
         self.run(data.structure, data.drop('structure', axis=1), output_path=output_path, contiguous=True)

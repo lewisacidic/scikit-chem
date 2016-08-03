@@ -9,6 +9,9 @@
 Module specifying atom based descriptor generators.
 """
 
+import functools
+from abc import ABCMeta
+
 import pandas as pd
 import numpy as np
 
@@ -18,13 +21,10 @@ from rdkit.Chem import Lipinski
 from rdkit.Chem import rdMolDescriptors, rdPartialCharges
 from rdkit.Chem.rdchem import HybridizationType
 
-import functools
-
-from .. import core
-from ..data import PERIODIC_TABLE
-from ..filters import OrganicFilter
-from .. import forcefields
-from ..utils import NamedProgressBar
+from ..core import Mol
+from ..data import PERIODIC_TABLE, ORGANIC
+from ..base import AtomTransformer, Featurizer
+from ..utils import nanarray
 
 def element(a):
 
@@ -32,12 +32,14 @@ def element(a):
 
     return a.GetSymbol()
 
+
 def is_element(a, symbol='C'):
 
     """ Is the atom of a given element """
     return element(a) == symbol
 
-element_features = {'is_{}'.format(e): functools.partial(is_element, symbol=e) for e in OrganicFilter.organic}
+element_features = {'is_{}'.format(e): functools.partial(is_element, symbol=e) for e in ORGANIC}
+
 
 def is_h_acceptor(a):
 
@@ -47,6 +49,7 @@ def is_h_acceptor(a):
     idx = a.GetIdx()
     return idx in [i[0] for i in Lipinski._HAcceptors(m)]
 
+
 def is_h_donor(a):
 
     """ Is an H donor? """
@@ -54,6 +57,7 @@ def is_h_donor(a):
     m = a.GetOwningMol()
     idx = a.GetIdx()
     return idx in [i[0] for i in Lipinski._HDonors(m)]
+
 
 def is_hetero(a):
 
@@ -63,11 +67,13 @@ def is_hetero(a):
     idx = a.GetIdx()
     return idx in [i[0] for i in Lipinski._Heteroatoms(m)]
 
+
 def atomic_number(a):
 
     """ Atomic number of atom """
 
     return a.GetAtomicNum()
+
 
 def atomic_mass(a):
 
@@ -75,10 +81,12 @@ def atomic_mass(a):
 
     return a.mass
 
+
 def explicit_valence(a):
 
     """ Explicit valence of atom """
     return a.GetExplicitValence()
+
 
 def implicit_valence(a):
 
@@ -86,11 +94,13 @@ def implicit_valence(a):
 
     return a.GetImplicitValence()
 
+
 def valence(a):
 
     """ returns the valence of the atom """
 
     return explicit_valence(a) + implicit_valence(a)
+
 
 def formal_charge(a):
 
@@ -98,11 +108,13 @@ def formal_charge(a):
 
     return a.GetFormalCharge()
 
+
 def is_aromatic(a):
 
     """ Boolean if atom is aromatic"""
 
     return a.GetIsAromatic()
+
 
 def num_implicit_hydrogens(a):
 
@@ -110,11 +122,13 @@ def num_implicit_hydrogens(a):
 
     return a.GetNumImplicitHs()
 
+
 def num_explicit_hydrogens(a):
 
     """ Number of explicit hydrodgens """
 
     return a.GetNumExplicitHs()
+
 
 def num_hydrogens(a):
 
@@ -122,11 +136,13 @@ def num_hydrogens(a):
 
     return num_implicit_hydrogens(a) + num_explicit_hydrogens(a)
 
+
 def is_in_ring(a):
 
     """ Whether the atom is in a ring """
 
     return a.IsInRing()
+
 
 def crippen_log_p_contrib(a):
 
@@ -136,6 +152,7 @@ def crippen_log_p_contrib(a):
     m = a.GetOwningMol()
     return Crippen._GetAtomContribs(m)[idx][0]
 
+
 def crippen_molar_refractivity_contrib(a):
 
     """ Hacky way of getting molar refractivity contribution. """
@@ -143,6 +160,7 @@ def crippen_molar_refractivity_contrib(a):
     idx = a.GetIdx()
     m = a.GetOwningMol()
     return Crippen._GetAtomContribs(m)[idx][1]
+
 
 def tpsa_contrib(a):
 
@@ -152,6 +170,7 @@ def tpsa_contrib(a):
     m = a.GetOwningMol()
     return rdMolDescriptors._CalcTPSAContribs(m)[idx]
 
+
 def labute_asa_contrib(a):
 
     """ Hacky way of getting accessible surface area contribution. """
@@ -159,6 +178,7 @@ def labute_asa_contrib(a):
     idx = a.GetIdx()
     m = a.GetOwningMol()
     return rdMolDescriptors._CalcLabuteASAContribs(m)[0][idx]
+
 
 def gasteiger_charge(a, force_calc=False):
 
@@ -173,21 +193,26 @@ def gasteiger_charge(a, force_calc=False):
         rdPartialCharges.ComputeGasteigerCharges(m)
         return float(a.props['_GasteigerCharge'])
 
+
 def electronegativity(a):
 
     return PERIODIC_TABLE.loc[a.atomic_number, 'pauling_electronegativity']
+
 
 def first_ionization(a):
 
     return PERIODIC_TABLE.loc[a.atomic_number, 'first_ionisation_energy']
 
+
 def group(a):
 
     return PERIODIC_TABLE.loc[a.atomic_number, 'group']
 
+
 def period(a):
 
     return PERIODIC_TABLE.loc[a.atomic_number, 'period']
+
 
 def is_hybridized(a, hybrid_type=HybridizationType.SP3):
 
@@ -197,7 +222,7 @@ def is_hybridized(a, hybrid_type=HybridizationType.SP3):
 
 hybridization_features = {'is_' + n + '_hybridized': functools.partial(is_hybridized, hybrid_type=n) for n in HybridizationType.names}
 
-atom_features = {
+ATOM_FEATURES = {
     'atomic_number': atomic_number,
     'atomic_mass': atomic_mass,
     'formal_charge': formal_charge,
@@ -218,100 +243,80 @@ atom_features = {
     'total_polar_surface_area_contrib': tpsa_contrib,
     'total_labute_accessible_surface_area': labute_asa_contrib,
 }
-atom_features.update(element_features)
-atom_features.update(hybridization_features)
+ATOM_FEATURES.update(element_features)
+ATOM_FEATURES.update(hybridization_features)
 
-class AtomFeatureCalculator(object):
 
-    def __init__(self, features='all', max_atoms=75):
-        if features == 'all':
-            features = atom_features
-        self.features = pd.Series(features)
-        self.max_atoms = max_atoms
+class AtomFeaturizer(AtomTransformer):
+
+    def __init__(self, features='all', **kwargs):
+
+        self.features = features
+
+        super(AtomFeaturizer, self).__init__(**kwargs)
 
     @property
-    def feature_names(self):
+    def features(self):
+        return self._features
+
+    @features.setter
+    def features(self, features):
+        if features == 'all':
+            features = ATOM_FEATURES
+        elif isinstance(features, str):
+            features = {features: ATOM_FEATURES[features]}
+        elif isinstance(features, list):
+            features = {feature: ATOM_FEATURES[feature] for feature in features}
+        elif isinstance(features, (dict, pd.Series)):
+            features = features
+        else:
+            raise NotImplementedError('Cannot use features {}'.format(features))
+
+        self._features = pd.Series(features)
+        self._features.index.name = 'atom_features'
+
+    @property
+    def minor_axis(self):
         return self.features.index
 
-    def transform(self, obj):
-        if isinstance(obj, core.Atom):
-            return self._transform_atom(obj)
-        elif isinstance(obj, core.Mol):
-            return self._transform_mol(obj)
-        elif isinstance(obj, pd.Series):
-            return self._transform_series(obj)
-        elif isinstance(obj, pd.DataFrame):
-            return self._transform_series(obj.structure)
-        elif isinstance(obj, (tuple, list)):
-            return self._transform_series(obj)
-        else:
-            raise NotImplementedError
+    def _transform_atom(self, atom):
+        return self.features.apply(lambda f: f(atom)).values
+
+    def _transform_mol(self, mol):
+        return np.array([self.transform(a) for a in mol.atoms])
+
+
+class DistanceTransformer(AtomTransformer, metaclass=ABCMeta):
+
+    @property
+    def minor_axis(self):
+        return pd.RangeIndex(self.max_atoms, name='atom_idx')
 
     def _transform_atom(self, atom):
-        return self.features.apply(lambda f: f(atom))
+        return NotImplemented
 
-    def _transform_mol(self, mol):
-        return pd.DataFrame(self.transform(a) for a in mol.atoms)
-
-    def _transform_series(self, data):
-        X = np.repeat(np.nan,
-                      len(self.feature_names) * self.max_atoms * len(data))\
-                      .reshape((len(data), self.max_atoms, len(self.feature_names)))
-        bar = NamedProgressBar(self.__class__.__name__)
-        for i, mol in enumerate(bar(data)):
-            X[i, :len(mol.atoms), :] = self._transform_mol(mol)
-        res = pd.Panel(X, items=data.index)
-        res.minor_axis = self.features.index
-        res.major_axis.name = 'atom_idx'
+    def transform(self, mols):
+        res = super(DistanceTransformer, self).transform(mols)
+        if isinstance(mols, Mol):
+            res = res.iloc[:len(mols.atoms), :len(mols.atoms)]
         return res
 
-    def __call__(self, *args, **kwargs):
-        return self.transform(*args, **kwargs)
+class SpacialDistanceTransformer(DistanceTransformer):
 
-class DistanceCalculator(object):
-    def __init__(self, max_atoms=75):
-        self.max_atoms = max_atoms
+    """ Transformer class for generating 3D distance matrices.  """
 
-    def _transform_series(self, ser):
-        bar = NamedProgressBar(self.__class__.__name__)
-        res = pd.Panel(np.array([self.transform(mol) for mol in bar(ser)]), items=ser.index)
-        res.major_axis.name = res.minor_axis.name = 'atom_idx'
-        return res
-
-    def transform(self, obj):
-        if isinstance(obj, core.Atom):
-            return self._transform_atom(obj)
-        elif isinstance(obj, core.Mol):
-            return self._transform_mol(obj)
-        elif isinstance(obj, pd.Series):
-            return self._transform_series(obj)
-        elif isinstance(obj, pd.DataFrame):
-            return self._transform_series(obj.structure)
-        elif isinstance(obj, (tuple, list)):
-            return self._transform_series(obj)
-        else:
-            raise NotImplementedError
-
-    def __call__(self, *args, **kwargs):
-        return self.transform(*args, **kwargs)
-
-class GraphDistanceCalculator(DistanceCalculator):
+    # TODO: handle multiple conformers
 
     def _transform_mol(self, mol):
-        res = np.repeat(np.nan, self.max_atoms ** 2).reshape(self.max_atoms, self.max_atoms)
+        res = nanarray((len(mol.atoms), self.max_atoms))
+        res[:, :len(mol.atoms)] = Chem.Get3DDistanceMatrix(mol)
+        return res
+
+
+class GraphDistanceTransformer(DistanceTransformer):
+
+    """ Transformer class for generating Graph distance matrices. """
+    def _transform_mol(self, mol):
+        res = nanarray((len(mol.atoms), self.max_atoms))
         res[:len(mol.atoms), :len(mol.atoms)] = Chem.GetDistanceMatrix(mol)
-        return res
-
-class SpaceDistanceCalculator(DistanceCalculator):
-
-    def __init__(self, max_atoms=75, warn_on_fail=True, error_on_fail=False, forcefield='uff'):
-        self.forcefield = forcefields.get(forcefield)
-        self.warn_on_fail = warn_on_fail
-        self.error_on_fail = error_on_fail
-        super(SpaceDistanceCalculator, self).__init__(max_atoms=max_atoms)
-
-    def _transform_mol(self, mol):
-        res = np.repeat(np.nan, self.max_atoms ** 2).reshape(self.max_atoms, self.max_atoms)
-        self.forcefield.optimize(mol)
-        res[:len(mol.atoms), :len(mol.atoms)] = Chem.Get3DDistanceMatrix(mol)
         return res

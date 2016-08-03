@@ -12,14 +12,12 @@ from . import data
 from . import descriptors
 from . import io
 from . import vis
-from . import target_prediction
 from . import cross_validation
 from . import standardizers
 from . import interact
 from . import pandas
 
 from .core import Mol
-from .descriptors import MorganFingerprinter
 from .io import read_sdf, read_smiles
 
 __version__ = '0.0.5'

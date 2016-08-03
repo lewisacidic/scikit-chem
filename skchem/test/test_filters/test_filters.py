@@ -24,10 +24,13 @@ def f():
     return Filter(lambda mol: len(mol.atoms) > 1)
 
 def test_takes_mol(m, f):
-    assert f(m) == True
+    assert f.transform(m) == True
 
 def test_takes_mol_transform(m, f):
     assert f.transform(m) == True
+
+def test_takes_list(m, f):
+    assert np.array_equal(f.transform([m]), [True])
 
 def test_takes_dict(m, f):
     assert np.array_equal(f.transform({'name': m}), [True])

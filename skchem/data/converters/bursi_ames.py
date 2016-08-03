@@ -27,12 +27,12 @@ class BursiAmesConverter(Converter):
 
         data = io.read_sdf(sdf_path)
         data['is_mutagen'] = (data['Ames test categorisation'] == 'mutagen').astype(np.uint8)
-
-        data = self.standardize(data)
-        data = self.optimize(data)
-        data = self.filter(data)
-
         ms, y = data.structure, data.is_mutagen
+        ms = self.standardize(ms)
+        ms = self.optimize(ms)
+        ms = self.filter(ms)
+        y = y.reindex(ms.index)
+
         self.run(ms, y, output_path, contiguous=True)
 
 if __name__ == '__main__':

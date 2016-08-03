@@ -20,6 +20,7 @@ def resource(*args):
     return os.path.join(os.path.dirname(__file__), *args)
 
 PERIODIC_TABLE = pd.read_csv(resource('atom_data.csv'), index_col=0)
+ORGANIC = ['H', 'B', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
 
 # must go below periodic table
 from .datasets import (

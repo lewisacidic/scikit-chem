@@ -16,192 +16,159 @@ import pandas as pd
 import numpy as np
 
 from .base import Filter
+from ..data import ORGANIC
 from ..data import PERIODIC_TABLE
-from ..utils import NamedProgressBar
 
-ELEMENTS = pd.Index(PERIODIC_TABLE.symbol, name='element')
 
 class ElementFilter(Filter):
 
     """ Filter by elements.
 
-    Args:
-        elements (list[str]):
-            A list of elements to filter with.  If an element not in the list is
-            found in a molecule, return False, else return True.
-        as_bits (bool):
-            Whether to return integer counts or booleans for atoms.
-        not_in (bool):
-            Whether to use the element list as elements not to check.
+        Args:
+            elements (list[str]):
+                A list of elements to filter with.  If an element not in the list is
+                found in a molecule, return False, else return True.
 
-    Examples:
+            as_bits (bool):
+                Whether to return integer counts or booleans for atoms if mode is `count`.
 
-        Basic usage on molecules:
+        Examples:
 
-        >>> import skchem
-        >>> has_halogen = skchem.filters.ElementFilter(['F', 'Cl', 'Br', 'I'])
+            Basic usage on molecules:
 
-        Molecules without any of the atoms transform to `True`.
+            >>> import skchem
+            >>> has_halogen = skchem.filters.ElementFilter(['F', 'Cl', 'Br', 'I'], agg='any')
 
-        >>> m1 = skchem.Mol.from_smiles('ClC(Cl)Cl', name='chloroform')
-        >>> has_halogen.transform(m1)
-        True
+            Molecules with one of the atoms transform to `True`.
 
-        Molecules with the atom transform to `False`.
+            >>> m1 = skchem.Mol.from_smiles('ClC(Cl)Cl', name='chloroform')
+            >>> has_halogen.transform(m1)
+            True
 
-        >>> m2 = skchem.Mol.from_smiles('CC', name='ethane')
-        >>> has_halogen.transform(m2)
-        False
+            Molecules with none of the atoms transform to `False`.
 
-        Can see the atom breakdown by passing `agg` == `False`:
-        >>> has_halogen.transform(m1, agg=False)
-        element
-        F     0
-        Cl    3
-        Br    0
-        I     0
-        Name: chloroform, dtype: int64
+            >>> m2 = skchem.Mol.from_smiles('CC', name='ethane')
+            >>> has_halogen.transform(m2)
+            False
 
-        Or setting it as a property on the filter:
-        >>> has_halogen.agg = False
-        >>> has_halogen.transform(m1)
-        element
-        F     0
-        Cl    3
-        Br    0
-        I     0
-        Name: chloroform, dtype: int64
+            Can see the atom breakdown by passing `agg` == `False`:
+            >>> has_halogen.transform(m1, agg=False)
+            has_element
+            F     0
+            Cl    3
+            Br    0
+            I     0
+            Name: ElementFilter, dtype: int64
 
-        Or even at instantiation:
-        >>> has_halogen = skchem.filters.ElementFilter(['F', 'Cl', 'Br', 'I'], agg=False)
-        >>> has_halogen.transform(m1)
-        element
-        F     0
-        Cl    3
-        Br    0
-        I     0
-        Name: chloroform, dtype: int64
+            Can transform series.
 
-        Can transform series.
+            >>> ms = [m1, m2]
+            >>> has_halogen.transform(ms)
+            chloroform     True
+            ethane        False
+            dtype: bool
 
-        >>> has_halogen.agg = any
-        >>> ms = pd.Series({m.name: m for m in (m1, m2)}, name='structure')
-        >>> has_halogen.transform(ms)
-        chloroform     True
-        ethane        False
-        dtype: bool
+            >>> has_halogen.transform(ms, agg=False)
+            has_element  F  Cl  Br  I
+            chloroform   0   3   0  0
+            ethane       0   0   0  0
 
-        >>> has_halogen.transform(ms, agg=False)
-        element     F  Cl  Br  I
-        chloroform  0   3   0  0
-        ethane      0   0   0  0
+            Can also filter series:
 
-        Can also filter series for organic.
+            >>> has_halogen.filter(ms)
+            chloroform    <Mol: ClC(Cl)Cl>
+            Name: structure, dtype: object
 
-        >>> has_halogen.filter(ms)
-        chloroform    <Mol: ClC(Cl)Cl>
-        Name: structure, dtype: object
+            >>> has_halogen.filter(ms, neg=True)
+            ethane    <Mol: CC>
+            Name: structure, dtype: object
 
-        >>> has_halogen.filter(ms, neg=True)
-        ethane    <Mol: CC>
-        Name: structure, dtype: object
-
-    """
-
-    _DEFAULT_AGG = any
-
-    def __init__(self, elements=None, as_bits=False, not_in=False, **kwargs):
-        self.not_in = not_in
+        """
+    def __init__(self, elements=None, as_bits=False, **kwargs):
         self.elements = elements
         self.as_bits = as_bits
-        super(ElementFilter, self).__init__(self.func, **kwargs)
+        super(ElementFilter, self).__init__(**kwargs)
 
     @property
     def elements(self):
         return self._elements
 
     @elements.setter
-    def elements(self, value):
-        if self.not_in:
-            self._elements = ELEMENTS.drop(value)
+    def elements(self, val):
+        if val is None:
+            self._elements = PERIODIC_TABLE.symbol.tolist()
         else:
-            self._elements = pd.Index(value, name='element')
+            self._elements = val
 
     @property
-    def index(self):
-        return self.elements
+    def columns(self):
+        return pd.Index(self.elements, name='has_element')
 
-    def func(self, mol):
+    def _transform_mol(self, mol):
 
-        cntr = Counter()
-        for atom in mol.atoms:
-            cntr[atom.element] += 1
-        res = pd.Series(cntr)
-        if self.elements is not None:
-            res = res[self.elements]
+        counter = Counter(atom.element for atom in mol.atoms)
+        res = pd.Series(counter)
+
+        res = res[self.elements].fillna(0).astype(int)
+
         if self.as_bits:
             res = (res > 0).astype(np.uint8)
-        return res
 
-    def _transform(self, ser, **kwargs):
-        bar = NamedProgressBar(name=self.__class__.__name__)
-        res = pd.DataFrame((self.func(ele, **kwargs) for ele in bar(ser)), index=ser.index).fillna(0)
-        if not self.as_bits:
-            res = res.astype(np.int)
         return res
 
 
 class OrganicFilter(ElementFilter):
-
     """ Whether a molecule is organic.
+        For the purpose of this function, an organic molecule is defined as having
+        atoms with elements only in the set H, B, C, N, O, F, P, S, Cl, Br, I.
+        Args:
+            mol (skchem.Mol):
+                The molecule to be tested.
+        Returns:
+            bool:
+                Whether the molecule is organic.
+        Examples:
+                Basic usage as a function on molecules:
+                >>> import skchem
+                >>> of = skchem.filters.OrganicFilter()
+                >>> benzene = skchem.Mol.from_smiles('c1ccccc1', name='benzene')
 
-    For the purpose of this function, an organic molecule is defined as having
-    atoms with elements only in the set H, B, C, N, O, F, P, S, Cl, Br, I.
+                >>> of.transform(benzene)
+                True
 
-    Args:
-        mol (skchem.Mol):
-            The molecule to be tested.
+                >>> ferrocene = skchem.Mol.from_smiles('[cH-]1cccc1.[cH-]1cccc1.[Fe+2]',
+                ...                                    name='ferrocene')
+                >>> of.transform(ferrocene)
+                False
 
-    Returns:
-        bool:
-            Whether the molecule is organic.
+                More useful on collections:
 
-    Examples:
+                >>> sa = skchem.Mol.from_smiles('CC(=O)[O-].[Na+]', name='sodium acetate')
+                >>> norbornane = skchem.Mol.from_smiles('C12CCC(C2)CC1', name='norbornane')
 
-            Basic usage as a function on molecules:
+                >>> data = [benzene, ferrocene, norbornane, sa]
+                >>> of.transform(data)
+                benzene            True
+                ferrocene         False
+                norbornane         True
+                sodium acetate    False
+                dtype: bool
 
-            >>> import skchem
-            >>> m1 = skchem.Mol.from_smiles('c1ccccc1', name='benzene')
-            >>> is_organic = skchem.filters.OrganicFilter()
-            >>> is_organic(m1)
-            True
-            >>> m2 = skchem.Mol.from_smiles('[cH-]1cccc1.[cH-]1cccc1.[Fe+2]', \
-                                            name='ferrocene')
-            >>> is_organic(m2)
-            False
+                >>> of.filter(data)
+                benzene          <Mol: c1ccccc1>
+                norbornane    <Mol: C1CC2CCC1C2>
+                Name: structure, dtype: object
 
-            More useful in combination with pandas data frames:
-
-            >>> import gzip
-            >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
-            >>> data = skchem.read_sdf(sdf)
-            >>> is_organic.transform(data).value_counts()
-            True     4253
-            False      84
-            dtype: int64
-
-            >>> len(is_organic.filter(data))
-            4253
-            >>> len(is_organic.filter(data, neg=True))
-            84
-    """
-
-    organic = ['H', 'B', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
-    _DEFAULT_IS_NEG = True
+                >>> of.filter(data, neg=True)
+                ferrocene         <Mol: [Fe+2].c1cc[cH-]c1.c1cc[cH-]c1>
+                sodium acetate                  <Mol: CC(=O)[O-].[Na+]>
+                Name: structure, dtype: object
+        """
 
     def __init__(self):
-        super(OrganicFilter, self).__init__(self.organic, not_in=True, agg=any,
-                                            as_bits=True)
+        super(OrganicFilter, self).__init__(elements=None, agg='not any')
+        self.elements = [element for element in self.elements if element not in ORGANIC]
+
 
 def n_atoms(mol, above=2, below=75, include_hydrogens=False):
 
@@ -287,21 +254,38 @@ class AtomNumberFilter(Filter):
             The higher threshold number of atoms (inclusive).
             Defaults to None.
 
-    Args:
+    Examples:
         >>> import skchem
-        >>> import gzip
-        >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
-        >>> data = skchem.read_sdf(sdf)
-        >>> f_natom = skchem.filters.AtomNumberFilter(above=3, below=60)
-        >>> f_natom.transform(data).value_counts()
-        True     4306
-        False      31
-        Name: structure, dtype: int64
 
-        >>> len(f_natom.filter(data))
-        4306
-        >>> len(f_natom.filter(data, neg=True))
-        31
+        >>> data = [
+        ...         skchem.Mol.from_smiles('CC', name='ethane'),
+        ...         skchem.Mol.from_smiles('CCCC', name='butane'),
+        ...         skchem.Mol.from_smiles('NC(C)C(=O)O', name='alanine'),
+        ...         skchem.Mol.from_smiles('C12C=CC(C=C2)C=C1', name='barrelene')
+        ... ]
+
+        >>> af = skchem.filters.AtomNumberFilter(above=3, below=7)
+
+        >>> af.transform(data)
+        ethane       False
+        butane        True
+        alanine       True
+        barrelene    False
+        Name: num_atoms_in_range, dtype: bool
+
+        >>> af.filter(data)
+        butane            <Mol: CCCC>
+        alanine    <Mol: CC(N)C(=O)O>
+        Name: structure, dtype: object
+
+        >>> af = skchem.filters.AtomNumberFilter(above=5, below=15, include_hydrogens=True)
+
+        >>> af.transform(data)
+        ethane        True
+        butane        True
+        alanine       True
+        barrelene    False
+        Name: num_atoms_in_range, dtype: bool
     """
 
     def __init__(self, above=3, below=60, include_hydrogens=False, **kwargs):
@@ -311,11 +295,14 @@ class AtomNumberFilter(Filter):
         self.below = below
         self.include_hydrogens = include_hydrogens
 
-        super(AtomNumberFilter, self).__init__(n_atoms, above=self.above,
-                                below=self.below,
-                                include_hydrogens=self.include_hydrogens,
-                                **kwargs)
+        super(AtomNumberFilter, self).__init__(**kwargs)
 
+    def _transform_mol(self, mol):
+        return n_atoms(mol, above=self.above, below=self.below, include_hydrogens=self.include_hydrogens)
+
+    @property
+    def columns(self):
+        return pd.Index(['num_atoms_in_range'])
 
 def mass(mol, above=10, below=900):
 
@@ -375,19 +362,28 @@ class MassFilter(Filter):
     Examples:
 
         >>> import skchem
-        >>> import gzip
-        >>> sdf = gzip.open(skchem.data.resource('ames_mutagenicity.sdf.gz'))
-        >>> data = skchem.read_sdf(sdf)
-        >>> f_mass = skchem.filters.MassFilter(above=10, below=900)
-        >>> f_mass.transform(data).value_counts()
-        True     4312
-        False      25
-        Name: structure, dtype: int64
 
-        >>> len(f_mass.filter(data))
-        4312
-        >>> len(f_mass.filter(data, neg=True))
-        25
+        >>> data = [
+        ...         skchem.Mol.from_smiles('CC', name='ethane'),
+        ...         skchem.Mol.from_smiles('CCCC', name='butane'),
+        ...         skchem.Mol.from_smiles('NC(C)C(=O)O', name='alanine'),
+        ...         skchem.Mol.from_smiles('C12C=CC(C=C2)C=C1', name='barrelene')
+        ... ]
+
+        >>> mf = skchem.filters.MassFilter(above=31, below=100)
+
+        >>> mf.transform(data)
+        ethane       False
+        butane        True
+        alanine       True
+        barrelene    False
+        Name: mass_in_range, dtype: bool
+
+        >>> mf.filter(data)
+        butane            <Mol: CCCC>
+        alanine    <Mol: CC(N)C(=O)O>
+        Name: structure, dtype: object
+
     """
 
     def __init__(self, above=3, below=900, **kwargs):
@@ -396,5 +392,11 @@ class MassFilter(Filter):
         self.above = above
         self.below = below
 
-        super(MassFilter, self).__init__(mass, above=self.above,
-                                below=self.below, **kwargs)
+        super(MassFilter, self).__init__( **kwargs)
+
+    def _transform_mol(self, mol):
+        return mass(mol, above=self.above, below=self.below)
+
+    @property
+    def columns(self):
+        return pd.Index(['mass_in_range'])

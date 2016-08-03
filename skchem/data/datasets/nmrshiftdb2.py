@@ -10,7 +10,7 @@ from ..converters.nmrshiftdb2 import NMRShiftDB2Converter
 from ..downloaders.nmrshiftdb2 import NMRShiftDB2Downloader
 
 class NMRShiftDB2(Dataset):
-    filename = 'muller_ames.h5'
+    filename = 'nmrshiftdb2.h5'
     downloader = NMRShiftDB2Downloader
     converter = NMRShiftDB2Converter
 

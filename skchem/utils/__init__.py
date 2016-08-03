@@ -11,6 +11,7 @@ Module providing utility functions for scikit-chem
 
 from .suppress import Suppressor
 from .string import camel_to_snail, free_to_snail
+
 from .decorators import (
     takes_mol_series,
     method_takes_mol_series,
@@ -19,3 +20,5 @@ from .decorators import (
 )
 from .progressbar import NamedProgressBar
 from .io import line_count, sdf_count
+from .helpers import iterable_to_series, nanarray, squeeze, optional_second_method, Defaults
+

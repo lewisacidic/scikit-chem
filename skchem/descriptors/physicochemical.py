@@ -14,19 +14,17 @@ from rdkit.Chem import Descriptors
 import pandas as pd
 import numpy as np
 
-from .fingerprints import Fingerprinter
+from ..base import Transformer, Featurizer
 from ..utils import camel_to_snail
 
-DESCRIPTORS = [(camel_to_snail(s), f) for (s, f) in Descriptors.descList]
+DESCRIPTORS = {camel_to_snail(s): f for (s, f) in Descriptors.descList}
 
-class PhysicochemicalFingerprinter(Fingerprinter):
+
+class PhysicochemicalFeaturizer(Transformer):
 
     """ Physicochemical descriptor generator using RDKit descriptor """
 
-    NAME = 'physchem'
-    sparse = False
-
-    def __init__(self, descriptors='all'):
+    def __init__(self, features='all', **kwargs):
 
         """ Create a physicochemical descriptor generator.
 
@@ -34,23 +32,40 @@ class PhysicochemicalFingerprinter(Fingerprinter):
             descriptors (list<(str, func)> or 'all'):
                 Descriptors to calculate, or if 'all', use all descriptors."""
 
-        if descriptors == 'all':
-            self.descriptors = DESCRIPTORS
-        else:
-            self.descriptors = descriptors
-        self.descriptor_names, _ = zip(*self.descriptors)
+        super(PhysicochemicalFeaturizer, self).__init__(**kwargs)
+
+        self.features = features
 
     @property
-    def index(self):
-        return self.descriptor_names
+    def features(self):
+        return self._features
 
-    def _transform(self, mol):
+    @features.setter
+    def features(self, features):
+        if features == 'all':
+            features = DESCRIPTORS
+        elif isinstance(features, str):
+            features = {features: DESCRIPTORS[features]}
+        elif isinstance(features, list):
+            features = {feature: DESCRIPTORS[feature] for feature in features}
+        elif isinstance(features, (dict, pd.Series)):
+            features = features
+        else:
+            raise NotImplementedError('Cannot use features {}'.format(features))
+
+        self._features = pd.Series(features)
+        self._features.index.name = 'physicochemical_features'
+
+    @property
+    def columns(self):
+        return self.features.index
+
+    def _transform_mol(self, mol):
         res = []
-        for (n, f) in self.descriptors:
+        for (n, f) in self.features.items():
             try:
                 res.append(f(mol))
             except ValueError:
-                print(mol)
                 return res.append(np.NaN)
 
         return np.array(res)

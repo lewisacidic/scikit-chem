@@ -40,7 +40,7 @@ class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
 
         return '{}{}{}'.format(self.atoms[0].element, \
             '-' if self.order == 1 else self.GetSmarts(), \
-            self.atoms[0].element)
+            self.atoms[1].element)
 
     def to_dict(self):
 

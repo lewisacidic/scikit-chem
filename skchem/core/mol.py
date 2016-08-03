@@ -345,7 +345,8 @@ def bind_serializer(serializer_name, name_to_bind=None):
     def serializer(self, *args, **kwargs):
 
         """ The serializer to be bound. """
-        return getattr(rdkit.Chem, 'MolTo' + serializer_name)(self, *args, **kwargs)
+        with Suppressor():
+            return getattr(rdkit.Chem, 'MolTo' + serializer_name)(self, *args, **kwargs)
 
     setattr(Mol, 'to_{}'.format(serializer_name).lower() \
         if name_to_bind is None else name_to_bind, serializer)

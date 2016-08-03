@@ -12,72 +12,25 @@ Chemical filters are defined.
 
 import pandas as pd
 
-from ..utils import method_takes_mol_series, method_takes_pandas, NamedProgressBar
+from ..base import BaseTransformer, Transformer
+from .. import core
+from ..utils import iterable_to_series, Defaults
 
-def _identity(x):
-    return x
 
-def _identity_meth(_, x):
-    return x
+AGGS = Defaults(defaults={
+    'none': lambda x: x,
+    'any': any,
+    'all': all,
+    'not all': lambda x: not all(x),
+    'not any': lambda x: not any(x)
+})
 
-class Filter(object):
 
-    """ Filter base class
+class BaseFilter(BaseTransformer):
 
-    Args:
-        func (function: Mol => bool):
-            The function to use to filter the arguments.
-        agg (function: iterable<bool> => bool):
-            The aggregation to use in the filter, for example `any` or `all`.
-
-    Examples:
-
-        >>> import skchem
-
-        Initialize the filter with a function:
-        >>> is_named = skchem.filters.Filter(lambda m: m.name is not None)
-
-        Filter results can be found with `transform`:
-        >>> ethane = skchem.Mol.from_smiles('CC', name='ethane')
-        >>> is_named.transform(ethane)
-        True
-
-        >>> anonymous = skchem.Mol.from_smiles('c1ccccc1')
-        >>> is_named.transform(anonymous)
-        False
-
-        The filter can also be used as a function:
-        >>> ethane = skchem.Mol.from_smiles('CC', name='ethane')
-        >>> is_named.transform(ethane)
-        True
-
-        Apply can take a series or dataframe:
-        >>> mols = pd.Series({'anonymous': anonymous, 'ethane': ethane})
-        >>> is_named.transform(mols)
-        anonymous    False
-        ethane        True
-        dtype: bool
-
-        Using `filter` will drop out molecules that fail the test:
-        >>> is_named.filter(mols)
-        ethane    <Mol: CC>
-        dtype: object
-
-        Only failed are retained with the `neg` keyword argument:
-        >>> is_named.filter(mols, neg=True)
-        anonymous    <Mol: c1ccccc1>
-        dtype: object
-    """
-
-    _DEFAULT_AGG = _identity_meth
-    _DEFAULT_IS_NEG = False
-
-    def __init__(self, func,  agg=None, neg=False, **kwargs):
-
-        self.func = func
-        self.agg = self._get_agg(agg) if agg is not None else self._DEFAULT_AGG
-        self.neg = neg
-        self.kwargs = kwargs
+    def __init__(self, agg=any, **kwargs):
+        super(BaseFilter, self).__init__(**kwargs)
+        self.agg = agg
 
     @property
     def agg(self):
@@ -85,82 +38,113 @@ class Filter(object):
 
     @agg.setter
     def agg(self, val):
-        self._agg = self._get_agg(val)
-
-    def _get_agg(self, val):
-        if val is True:
-            return self._DEFAULT_AGG
-        elif val is False:
-            return _identity
-        elif val is None:
-            return self.agg
-        else:
-            return val
+        self._agg = AGGS.get(val)
 
     @property
-    def neg(self):
-        return self._get_neg(self._neg)
+    def columns(self):
+        return pd.Index([self.__class__.__name__])
 
-    @neg.setter
-    def neg(self, val):
-
-        # xor
-        self._neg = self._get_neg(val)
-
-
-    def _get_neg(self, val):
-        if self._DEFAULT_IS_NEG:
-            return not val
-        else:
-            return val
-
-    @method_takes_mol_series
-    def transform(self, mols, agg=None, neg=None):
-
-        """ Apply the function and return the boolean values. """
-
-        agg = self._get_agg(agg)
-
-        if neg is None:
-            neg = self._neg
-        else:
-            neg = self._get_neg(neg)
-
-        res = self._transform(mols)
-
+    def _mask(self, mols=None, res=None, neg=False):
+        res = self.transform(mols, agg=False) if res is None else res
+        res = (res != False) & pd.notnull(res)
+        if isinstance(res, pd.Series) and isinstance(mols, core.Mol):
+            res = self.agg(res)
         if isinstance(res, pd.DataFrame):
-            res = res.apply(agg, axis=1)
+            res = res.apply(self.agg, axis=1)
+        return res == False if neg else res
 
-        if neg:
-            res = ~res
+    def transform(self, mols, *args, agg=True, **kwargs):
 
-        return res
+        # transform takes additional optional kwarg `agg`, that specifies to transform to the aggregated value or
+        # return the full series.
 
-    def _transform(self, ser):
-        bar = NamedProgressBar(name=self.__class__.__name__)
-        return pd.Series((self.func(ele, **self.kwargs) for ele in bar(ser)), index=ser.index)
+        if agg:
+            return self._mask(mols)
+        else:
+            return super(BaseFilter, self).transform(mols, *args, **kwargs)
 
-    @method_takes_pandas
-    def filter(self, X, y=None, agg=None, neg=None):
+    def filter(self, mols, y=None, neg=False):
 
-        """ Apply the function and return filtered values.
+        mask = self._mask(mols=mols, neg=neg)
 
-        Args:
-            X (pd.Series or pd.DataFrame):
-                The compound dataframe. """
+        if isinstance(mols, core.Mol):
+            return mols if mask else None
 
-        if neg is None:
-            neg = self.neg
-
-        agg = self._get_agg(agg)
-
-        res = self.transform(X, neg=neg, agg=agg)
+        elif not isinstance(mols, pd.Series):
+            mols = iterable_to_series(mols)
 
         if y is None:
-            return X[res]
+            return mols[mask]
         else:
-            return X[res], y[res]
+            return mols[mask], y[mask]
 
-    def __call__(self, *args, **kwargs):
 
-        return self.transform(*args, **kwargs)
+class Filter(BaseFilter, Transformer):
+    """ Filter base class.
+
+     Args:
+         func (function: Mol => bool):
+             The function to use to filter the arguments.
+         agg (str or function: iterable<bool> => bool):
+             The aggregation to use in the filter. Can be 'any', 'all', 'not any', 'not all' or a callable,
+             for example `any` or `all`.
+
+     Examples:
+
+         >>> import skchem
+
+         Initialize the filter with a function:
+         >>> is_named = skchem.filters.Filter(lambda m: m.name is not None)
+
+         Filter results can be found with `transform`:
+         >>> ethane = skchem.Mol.from_smiles('CC', name='ethane')
+         >>> is_named.transform(ethane)
+         True
+
+         >>> anonymous = skchem.Mol.from_smiles('c1ccccc1')
+         >>> is_named.transform(anonymous)
+         False
+
+         Can take a series or dataframe:
+         >>> mols = pd.Series({'anonymous': anonymous, 'ethane': ethane})
+         >>> is_named.transform(mols)
+         anonymous    False
+         ethane        True
+         Name: Filter, dtype: bool
+
+         Using `filter` will drop out molecules that fail the test:
+         >>> is_named.filter(mols)
+         ethane    <Mol: CC>
+         dtype: object
+
+         Only failed are retained with the `neg` keyword argument:
+         >>> is_named.filter(mols, neg=True)
+         anonymous    <Mol: c1ccccc1>
+         dtype: object
+     """
+    def __init__(self, func=None, **kwargs):
+        super(Filter, self).__init__(**kwargs)
+        if func is not None:
+            self._transform_mol = func
+
+    def _transform_mol(self, mol):
+        raise NotImplemented
+
+
+
+class TransformFilter(BaseFilter):
+
+    """ Filter. """
+
+    def transform_filter(self, mols, y=None, neg=False):
+
+        res = self.transform(mols)
+        mask = self._mask(res=res, neg=neg)
+
+        if isinstance(mols, core.Mol):
+            return res if mask else None
+
+        if y is None:
+            return res[mask]
+        else:
+            return res[mask], y[mask]

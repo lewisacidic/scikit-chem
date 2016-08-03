@@ -11,15 +11,13 @@ Module specifying atom based descriptor generators.
 
 import logging
 import subprocess
-import tempfile
+import re
 
 import pandas as pd
 import numpy as np
-import time
 
-from ..io import write_sdf
-from .. import core
-from ..utils import NamedProgressBar, line_count
+from ..utils import line_count, nanarray
+from ..base import CLIWrapper, Transformer, AtomTransformer, BatchTransformer
 
 LOGGER = logging.getLogger(__file__)
 
@@ -28,12 +26,207 @@ LOGGER = logging.getLogger(__file__)
 # TODO: oen (orbital electronegativity) - sigma + pi
 # TODO: water accessible surface area
 
-class ChemAxonFeatureCalculator(object):
+#  TODO: these don't produce csv
+# ['doublebondstereoisomers', 'conformers', 'stereoisomers', 'moleculardynamics', 'stereoanalysis',
+# 'lowestenergyconformer', 'msdistr2', 'conformations', 'dominanttautomerdistribution', 'hnmr', 'moldyn', 'cnmr',
+# 'frameworks', 'microspeciesdistribution', 'nmr', 'leconformer', 'msdistr', 'tetrahedralstereoisomers']
+#
+
+CHEMAXON_HINT = """ Install ChemAxon from https://www.chemaxon.com.  It requires a license, which can be freely obtained
+for academics. """
+
+
+class ChemAxonBaseFeaturizer(CLIWrapper):
+
+    install_hint = CHEMAXON_HINT
+
+    _feat_columns = {'averagepol': ['molecular'], 'name': ['preferred_iupac_name'],
+                     'aromaticbondcount': ['aromatic_bond_count'],
+                     'maximalprojectionradius': ['maximal_projection_radius'],
+                     'tpolarizability': ['molecular', 'a_xx', 'a_yy', 'a_zz'], 'distance': ['distance'],
+                     'acceptor': ['acceptorcount', 'accsitecount'], 'fusedringcount': ['fused_ring_count'],
+                     'charge': ['total_charge'], 'donor': ['donorcount', 'donsitecount'], 'ringcount': ['ring_count'],
+                     'chainbond': ['chain_bond'], 'mmff94energy': ['mmff94_energy'],
+                     'huckel': ['aromatic_e+/nu-_order', 'localization_energy_l_+/l-', 'pi_energy',
+                                'electron_density', 'charge_density'], 'chainatom': ['chain_atom'],
+                     'shortestpath': ['shortest_path'], 'resonantcount': ['count'],
+                     'tpol': ['molecular', 'a_xx', 'a_yy', 'a_zz'], 'moststabletautomer': ['structure'],
+                     'generictautomer': ['structure'], 'hmoelectrophilicityorder': ['aromatic_e+_order'],
+                     'ringsystemcountofsize': ['ring_system_count_of_size'],
+                     'largestatomringsize': ['largest_ring_size_of_atom'],
+                     'tetrahedralstereoisomercount': ['stereoisomer_count'], 'enumerations': ['structures'],
+                     'ringatom': ['ring_atom'], 'connected': ['connected'],
+                     'hmolocalizationenergy': ['localization_energy_l+/l-'],
+                     'averagemolecularpolarizability': ['molecular'], 'donorsitecount': ['donsitecount'],
+                     'donorcount': ['donorcount'], 'asymmetricatom': ['asymmetric_atom'], 'pienergy': ['pi_energy'],
+                     'bondcount': ['bond_count'], 'chiralcenters': ['chiral_centers'],
+                     'hmohuckel': ['aromatic_e+/nu-_order', 'localization_energy_l+/l-', 'pi_energy',
+                                   'electron_density', 'charge_density'], 'huckeleigenvector': ['eigenvector'],
+                     'ringcountofsize': ['ring_count_of_size'],
+                     'heteroaliphaticringcount': ['heteroaliphatic_ring_count'], 'markushenumerations': ['structures'],
+                     'minimalprojectionradius': ['minimal_projection_radius'], 'dipole': ['dipole'],
+                     'balabanindex': ['balaban_index'], 'aromaticnucleophilicityorder': ['aromatic_nu-_order'],
+                     'tautomercount': ['count'], 'cyclomaticnumber': ['cyclomatic_number'],
+                     'psa': ['polar_surface_area'], 'isoelectricpoint': ['pi'], 'hmopienergy': ['pi_energy'],
+                     'ayypol': ['a_yy'], 'fragmentcount': ['fragment_count'], 'acceptormultiplicity': ['acc'],
+                     'topologyanalysistable': ['atom_count', 'aliphatic_atom_count', 'aromatic_atom_count',
+                                               'bond_count', 'aliphatic_bond_count', 'aromatic_bond_count',
+                                               'rotatable_bond_count', 'ring_count', 'aliphatic_ring_count',
+                                               'aromatic_ring_count', 'hetero_ring_count', 'heteroaliphatic_ring_count',
+                                               'heteroaromatic_ring_count', 'ring_atom_count', 'ring_bond_count',
+                                               'chain_atom_count', 'chain_bond_count', 'smallest_ring_size',
+                                               'largest_ring_size'], 'ioncharge': ['charge'],
+                     'asymmetricatoms': ['asymmetric_atoms'],
+                     'wateraccessiblesurfacearea': ['asa', 'asa+', 'asa-', 'asa_h', 'asa_p'], 'avgpol': ['molecular'],
+                     'carboaliphaticringcount': ['carboaliphatic_ring_count'],
+                     'aliphaticringcount': ['aliphatic_ring_count'], 'donormultiplicity': ['don'],
+                     'minimalprojectionarea': ['minimal_projection_area'],
+                     'nucleophiliclocalizationenergy': ['localization_energy_l-'], 'dihedral': ['dihedral'],
+                     'heteroringcount': ['hetero_ring_count'], 'azzpol': ['a_zz'],
+                     'molecularsurfacearea': ['van_der_waals_surface_area_3d'],
+                     'hmonucleophiliclocalizationenergy': ['localization_energy_l-'],
+                     'chargedistribution': ['charge'], 'pol': ['molecular', 'atomic'],
+                     'hmoelectrondensity': ['electron_density'], 'carboaromaticringcount': ['carboaromatic_ring_count'],
+                     'acceptorsitecount': ['accsitecount'], 'markushenumerationcount': ['markush_library_size'],
+                     'localizationenergy': ['localization_energy_l+/l-'], 'hararyindex': ['harary_index'],
+                     'asa': ['asa', 'asa+', 'asa-', 'asa_h', 'asa_p'], 'acc': ['acc'], 'majortautomer': ['structure'],
+                     'majormicrospecies': ['major-ms'], 'aliphaticatomcount': ['aliphatic_atom_count'],
+                     'angle': ['angle'], 'huckeleigenvalue': ['eigenvalue'], 'axxpol': ['a_xx'],
+                     'chiralcenter': ['chiral_center'], 'aliphaticbondcount': ['aliphatic_bond_count'],
+                     'smallestatomringsize': ['smallest_ring_size_of_atom'], 'dreidingenergy': ['dreiding_energy'],
+                     'maximalprojectionsize': ['length_perpendicular_to_the_max_area'],
+                     'largestringsystemsize': ['largest_ring_system_size'], 'accsitecount': ['accsitecount'],
+                     'refractivity': ['refractivity'], 'bondtype': ['bond_type'], 'chargedensity': ['charge_density'],
+                     'resonants': ['structure'], 'aromaticatomcount': ['aromatic_atom_count'],
+                     'distancedegree': ['distance_degree'], 'hasvalidconformer': ['has_valid_conformer'],
+                     'electrondensity': ['electron_density'], 'asymmetricatomcount': ['asymmetric_atom_count'],
+                     'fsp3': ['fsp3'], 'don': ['don'], 'fusedaliphaticringcount': ['fused_aliphatic_ring_count'],
+                     'pkat': ['pkat'], 'fusedaromaticringcount': ['fused_aromatic_ring_count'],
+                     'majorms2': ['majorms2'], 'maximalprojectionarea': ['maximal_projection_area'],
+                     'hbonddonoracceptor': ['acceptorcount', 'donorcount', 'accsitecount', 'donsitecount'],
+                     'acceptorcount': ['acceptorcount'], 'molecularpolarizability': ['molecular'],
+                     'huckeltable': ['aromatic_e+/nu-_order', 'localization_energy_l+/l-', 'pi_energy',
+                                     'electron_density', 'charge_density'],
+                     'rotatablebondcount': ['rotatable_bond_count'],
+                     'minimalprojectionsize': ['length_perpendicular_to_the_min_area'],
+                     'polarizability': ['molecular', 'atomic'], 'acceptortable': ['acceptorcount', 'accsitecount'],
+                     'aliphaticringcountofsize': ['aliphatic_ring_count_of_size'], 'hlb': ['hlb'],
+                     'eccentricity': ['eccentricity'], 'hmochargedensity': ['charge_density'],
+                     'hmohuckeleigenvalue': ['eigenvalue'], 'totalchargedensity': ['total_charge_density'],
+                     'hmonucleophilicityorder': ['aromatic_nu-_order'],
+                     'aromaticringcountofsize': ['aromatic_ring_count_of_size'],
+                     'electrophilicityorder': ['aromatic_e+_order'], 'connectedgraph': ['connected_graph'],
+                     'plattindex': ['platt_index'], 'logp': ['logp'],
+                     'topanal': ['atom_count', 'aliphatic_atom_count', 'aromatic_atom_count', 'bond_count',
+                                 'aliphatic_bond_count', 'aromatic_bond_count', 'rotatable_bond_count', 'ring_count',
+                                 'aliphatic_ring_count', 'aromatic_ring_count', 'hetero_ring_count',
+                                 'heteroaliphatic_ring_count', 'heteroaromatic_ring_count', 'ring_atom_count',
+                                 'ring_bond_count', 'chain_atom_count', 'chain_bond_count', 'smallest_ring_size',
+                                 'largest_ring_size'],
+                     'logdcalculator': ['ph=0', 'ph=1', 'ph=2', 'ph=3', 'ph=4', 'ph=5', 'ph=6', 'ph=7', 'ph=8', 'ph=9',
+                                        'ph=10', 'ph=11', 'ph=12', 'ph=13', 'ph=14', 'unnamed:_16'],
+                     'logs': ['ph=0.0', 'ph=1.0', 'ph=2.0', 'ph=3.0', 'ph=4.0', 'ph=5.0', 'ph=6.0', 'ph=7.0', 'ph=8.0',
+                              'ph=9.0', 'ph=10.0', 'ph=11.0', 'ph=12.0', 'ph=13.0', 'ph=14.0', 'unnamed:_16'],
+                     'atompol': ['atomic'], 'canonicalresonant': ['structure'], 'ringbond': ['ring_bond'],
+                     'ringatomcount': ['ring_atom_count'], 'donortable': ['donorcount', 'donsitecount'],
+                     'randicindex': ['randic_index'], 'rotatablebond': ['rotatable_bond'],
+                     'hyperwienerindex': ['hyper_wiener_index'], 'hmohuckeleigenvector': ['eigenvector'],
+                     'carboringcount': ['carbo_ring_count'], 'logpcalculator': ['logp', 'unnamed:_2'],
+                     'ringsystemcount': ['ring_system_count'], 'largestringsize': ['largest_ring_size'],
+                     'stereodoublebondcount': ['stereo_double_bond_count'], 'pi': ['pi'],
+                     'stericeffectindex': ['steric_effect_index'], 'volume': ['van_der_waals_volume'],
+                     'averagemicrospeciescharge': ['charge'], 'pka': ['apka1', 'apka2', 'bpka1', 'bpka2', 'atoms'],
+                     'hmohuckeltable': ['aromatic_e+/nu-_order', 'localization_energy_l+/l-', 'pi_energy',
+                                        'electron_density', 'charge_density'],
+                     'ringcountofatom': ['ring_count_of_atom'],
+                     'aromaticelectrophilicityorder': ['aromatic_e+_order'], 'hindrance': ['steric_hindrance'],
+                     'chainatomcount': ['chain_atom_count'],
+                     'pkacalculator': ['apka1', 'apka2', 'bpka1', 'bpka2', 'atoms'],
+                     'heteroaromaticringcount': ['heteroaromatic_ring_count'], 'sterichindrance': ['steric_hindrance'],
+                     'hbda': ['acceptorcount', 'donorcount', 'accsitecount', 'donsitecount'], 'molpol': ['molecular'],
+                     'atomicpolarizability': ['atomic'],
+                     'msdon': ['ph=0.00', 'ph=1.00', 'ph=2.00', 'ph=3.00', 'ph=4.00', 'ph=5.00', 'ph=6.00', 'ph=7.00',
+                               'ph=8.00', 'ph=9.00', 'ph=10.00', 'ph=11.00', 'ph=12.00', 'ph=13.00', 'ph=14.00'],
+                     'enumerationcount': ['markush_library_size'], 'vdwsa': ['van_der_waals_surface_area_3d'],
+                     'orbitalelectronegativity': ['sigma_orbital_electronegativity', 'pi_orbital_electronegativity'],
+                     'hmoelectrophiliclocalizationenergy': ['localization_energy_l+'],
+                     'smallestringsize': ['smallest_ring_size'], 'szegedindex': ['szeged_index'],
+                     'nucleophilicityorder': ['aromatic_nu-_order'], 'canonicaltautomer': ['structure'],
+                     'stereoisomercount': ['stereoisomer_count'], 'msa': ['van_der_waals_surface_area__3d'],
+                     'donsitecount': ['donsitecount'], 'randommarkushenumerations': ['structures'],
+                     'wienerindex': ['wiener_index'], 'huckelorbitals': ['orbitals'],
+                     'doublebondstereoisomercount': ['stereoisomer_count'], 'tautomers': ['structure'],
+                     'polarsurfacearea': ['polar_surface_area'], 'chiralcentercount': ['chiral_center_count'],
+                     'electrophiliclocalizationenergy': ['localization_energy_l+'],
+                     'aliphaticatom': ['aliphatic_atom'], 'ringbondcount': ['ring_bond_count'],
+                     'wienerpolarity': ['wiener_polarity'],
+                     'msacc': ['ph=0.00', 'ph=1.00', 'ph=2.00', 'ph=3.00', 'ph=4.00', 'ph=5.00', 'ph=6.00', 'ph=7.00',
+                               'ph=8.00', 'ph=9.00', 'ph=10.00', 'ph=11.00', 'ph=12.00', 'ph=13.00', 'ph=14.00'],
+                     'formalcharge': ['formal_charge'], 'smallestringsystemsize': ['smallest_ring_system_size'],
+                     'majorms': ['major-ms'], 'tholepolarizability': ['molecular', 'a_xx', 'a_yy', 'a_zz'],
+                     'aromaticatom': ['aromatic_atom'],
+                     'oen': ['sigma_orbital_electronegativity', 'pi_orbital_electronegativity'],
+                     'chainbondcount': ['chain_bond_count'],
+                     'logd': ['ph=0.00', 'ph=1.00', 'ph=2.00', 'ph=3.00', 'ph=4.00', 'ph=5.00', 'ph=6.00', 'ph=7.00',
+                              'ph=8.00', 'ph=9.00', 'ph=10.00', 'ph=11.00', 'ph=12.00', 'ph=13.00', 'ph=14.00'],
+                     'hmohuckelorbitals': ['orbitals'], 'aromaticringcount': ['aromatic_ring_count'],
+                     'pichargedensity': ['pi_charge_density']}
+
+    def __init__(self, features='optimal', **kwargs):
+        super(ChemAxonBaseFeaturizer, self).__init__(**kwargs)
+        self.features = features
+
+    @property
+    def features(self):
+        return self._features
+
+    @features.setter
+    def features(self, features):
+        if features in ('optimal', 'all'):
+            self._features = self._optimal_feats
+        elif isinstance(features, str):
+            self.features = [features]
+        elif isinstance(features, (list, tuple)):
+            valid = np.array([feat in self._feat_columns.keys() for feat in features])
+            if not all(valid):
+                raise NotImplementedError('Descriptor \'{}\' not available.'.format(np.array(features)[~valid]))
+            else:
+                self._features = list(features)
+        else:
+            raise NotImplementedError('Feature set {} not available.'.format(features))
+
+    def _feature_index(self):
+        return pd.Index(sum((self._feat_columns[feat] for feat in self.features), []), name='features')
+
+    def validate_install(self):
+        try:
+            return 0 == subprocess.call(['cxcalc'], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        except FileNotFoundError:
+            return False
+
+    def monitor_progress(self, filename):
+        res = line_count(filename)
+        return res - 1 if res else 0
+
+    def _cli_args(self, infile, outfile):
+        return ['cxcalc', infile, '-o', outfile] + self.features
+
+    def _parse_outfile(self, outfile):
+        res = pd.read_table(outfile, engine='python').drop('id', axis=1)
+        return res
+
+    def _parse_errors(self, errs):
+        LOGGER.debug('stderr: %s', errs)
+        return [] # instances are not skipped ever, so don't return anything
+
+
+class ChemAxonFeaturizer(ChemAxonBaseFeaturizer, BatchTransformer, Transformer):
+
     _optimal_feats = ['acceptorcount', 'accsitecount', 'aliphaticatomcount', 'aliphaticbondcount', 'aliphaticringcount',
                       'aromaticatomcount', 'aromaticbondcount', 'aromaticringcount', 'asymmetricatomcount',
                       'averagemolecularpolarizability', 'axxpol', 'ayypol', 'azzpol', 'balabanindex', 'bondcount',
                       'carboaliphaticringcount', 'carboaromaticringcount', 'carboringcount', 'chainatomcount',
-                      'chainbondcount', 'charge', 'chiralcentercount', 'connectedgraph', 'cyclomaticnumber', 'dipole',
+                      'chainbondcount', 'chiralcentercount', 'connectedgraph', 'cyclomaticnumber', 'dipole',
                       'donorcount', 'donorsitecount', 'doublebondstereoisomercount', 'dreidingenergy', 'formalcharge',
                       'fragmentcount', 'fsp3', 'fusedaliphaticringcount', 'fusedaromaticringcount', 'fusedringcount',
                       'hararyindex', 'heteroaliphaticringcount', 'heteroaromaticringcount', 'heteroringcount', 'hlb',
@@ -42,215 +235,116 @@ class ChemAxonFeatureCalculator(object):
                       'maximalprojectionsize', 'minimalprojectionarea', 'minimalprojectionradius',
                       'minimalprojectionsize', 'mmff94energy', 'molpol', 'pienergy', 'plattindex', 'psa', 'randicindex',
                       'refractivity', 'resonantcount', 'ringatomcount', 'ringbondcount', 'ringcount', 'ringsystemcount',
-                      'rotatablebondcount', 'smallestatomringsize', 'smallestringsize', 'smallestringsystemsize',
+                      'rotatablebondcount', 'smallestringsize', 'smallestringsystemsize',
                       'stereodoublebondcount', 'stereoisomercount', 'szegedindex', 'tetrahedralstereoisomercount',
                       'vdwsa', 'volume', 'wateraccessiblesurfacearea', 'wienerindex', 'wienerpolarity']
 
-    _all_feats = ['acc', 'acceptor', 'acceptorcount', 'acceptormultiplicity', 'acceptorsitecount', 'acceptortable',
-                  'accsitecount', 'aliphaticatom', 'aliphaticatomcount', 'aliphaticbondcount', 'aliphaticringcount',
-                  'aliphaticringcountofsize', 'aromaticatom', 'aromaticatomcount', 'aromaticbondcount',
-                  'aromaticelectrophilicityorder', 'aromaticnucleophilicityorder', 'aromaticringcount',
-                  'aromaticringcountofsize', 'asa', 'asymmetricatom', 'asymmetricatomcount', 'asymmetricatoms',
-                  'atomicpolarizability', 'atompol', 'averagemicrospeciescharge', 'averagemolecularpolarizability',
-                  'averagepol', 'avgpol', 'axxpol', 'ayypol', 'azzpol', 'balabanindex', 'bondcount',
-                  'canonicalresonant', 'canonicaltautomer', 'carboaliphaticringcount', 'carboaromaticringcount',
-                  'carboringcount', 'chainatom', 'chainatomcount', 'chainbondcount', 'charge', 'chargedensity',
-                  'chargedistribution', 'chiralcenter', 'chiralcentercount', 'chiralcenters', 'connectedgraph',
-                  'cyclomaticnumber', 'dipole', 'distancedegree', 'don', 'donor', 'donorcount', 'donormultiplicity',
-                  'donorsitecount', 'donortable', 'donsitecount', 'doublebondstereoisomercount', 'dreidingenergy',
-                  'eccentricity', 'electrondensity', 'electrophilicityorder', 'electrophiliclocalizationenergy',
-                  'enumerationcount', 'enumerations', 'formalcharge', 'fragmentcount', 'fsp3',
-                  'fusedaliphaticringcount', 'fusedaromaticringcount', 'fusedringcount', 'generictautomer',
-                  'hararyindex', 'hasvalidconformer', 'hbda', 'hbonddonoracceptor', 'heteroaliphaticringcount',
-                  'heteroaromaticringcount', 'heteroringcount', 'hindrance', 'hlb', 'hmochargedensity',
-                  'hmoelectrondensity', 'hmoelectrophilicityorder', 'hmoelectrophiliclocalizationenergy', 'hmohuckel',
-                  'hmohuckeleigenvalue', 'hmohuckeleigenvector', 'hmohuckelorbitals', 'hmohuckeltable',
-                  'hmolocalizationenergy', 'hmonucleophilicityorder', 'hmonucleophiliclocalizationenergy',
-                  'hmopienergy', 'huckel', 'huckeleigenvalue', 'huckeleigenvector', 'huckelorbitals', 'huckeltable',
-                  'hyperwienerindex', 'ioncharge', 'isoelectricpoint', 'largestatomringsize', 'largestringsize',
-                  'largestringsystemsize', 'localizationenergy', 'logd', 'logdcalculator', 'logp', 'logpcalculator',
-                  'logs', 'majormicrospecies', 'majorms', 'majorms2', 'majortautomer', 'markushenumerationcount',
-                  'markushenumerations', 'maximalprojectionarea', 'maximalprojectionradius', 'maximalprojectionsize',
-                  'minimalprojectionarea', 'minimalprojectionradius', 'minimalprojectionsize', 'mmff94energy',
-                  'molecularpolarizability', 'molecularsurfacearea', 'molpol', 'moststabletautomer', 'msa', 'msacc',
-                  'msdon', 'name', 'nucleophilicityorder', 'nucleophiliclocalizationenergy', 'oen',
-                  'orbitalelectronegativity', 'pi', 'pichargedensity', 'pienergy', 'pka', 'pkacalculator', 'pkat',
-                  'plattindex', 'pol', 'polarizability', 'polarsurfacearea', 'psa', 'randicindex',
-                  'randommarkushenumerations', 'refractivity', 'resonantcount', 'resonants', 'ringatom',
-                  'ringatomcount', 'ringbondcount', 'ringcount', 'ringcountofatom', 'ringcountofsize',
-                  'ringsystemcount', 'ringsystemcountofsize', 'rotatablebondcount', 'smallestatomringsize',
-                  'smallestringsize', 'smallestringsystemsize', 'stereodoublebondcount', 'stereoisomercount',
-                  'stericeffectindex', 'sterichindrance', 'szegedindex', 'tautomercount', 'tautomers',
-                  'tetrahedralstereoisomercount', 'tholepolarizability', 'topanal', 'topologyanalysistable',
-                  'totalchargedensity', 'tpol', 'tpolarizability', 'vdwsa', 'volume', 'wateraccessiblesurfacearea',
-                  'wienerindex', 'wienerpolarity']
+    @property
+    def columns(self):
+        return self._feature_index()
 
-    def __init__(self, feat_set='optimal'):
-        if feat_set == 'all':
-            self.index = self._all_feats
-        elif feat_set == 'optimal':
-            self.index = self._optimal_feats
-        elif feat_set in self._all_feats:
-            self.index = [feat_set]
-        elif isinstance(feat_set, (list, tuple)):
-            valid = np.array([feat in self._all_feats for feat in feat_set])
-            if all(valid):
-                self.index = feat_set
-            else:
-                self.index = feat_set
-                raise NotImplementedError('Descriptor \'{}\' not available.'.format(np.array(feat_set)[~valid]))
-        else:
-            raise NotImplementedError('Feature set {} not available.'.format(feat_set))
 
-    def transform(self, obj):
-        if isinstance(obj, core.Mol):
-            return self._transform_series(pd.Series(obj)).iloc[0]
-        elif isinstance(obj, pd.Series):
-            return self._transform_series(obj)
-        elif isinstance(obj, pd.DataFrame):
-            return self._transform_series(obj.structure)
-        elif isinstance(obj, (tuple, list)):
-            return self._transform_series(obj)
-        else:
-            raise NotImplementedError
+class ChemAxonAtomFeaturizer(ChemAxonBaseFeaturizer, AtomTransformer, BatchTransformer):
 
-    def _transform_series(self, series):
-
-        with tempfile.NamedTemporaryFile(suffix='.sdf') as in_file, tempfile.NamedTemporaryFile() as out_file:
-            # write mols to file
-            write_sdf(series, in_file.name)
-            args = ['cxcalc', in_file.name, '-o', out_file.name] + self.index
-
-            LOGGER.debug('Running: ' + ' '.join(args))
-
-            # call command line
-            bar = NamedProgressBar(name=self.__class__.__name__, max_value=len(series))
-            p = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-            # monitor
-            while p.poll() is None:
-                bar.update(line_count(out_file.name))
-                time.sleep(1)
-            bar.update(len(series))
-            p.wait()
-
-            try:
-                finished = pd.read_table(out_file.name).set_index('id')
-            except Exception:
-                finished = None
-        finished.index = series.index
-        return finished
-
-class ChemAxonAtomFeatureCalculator(object):
-
-    _all_feats = ['acceptormultiplicity', 'aliphaticatom', 'aromaticatom', 'aromaticelectrophilicityorder',
-                  'asymmetricatom', 'atomicpolarizability', 'chainatom', 'chargedensity', 'chiralcenter',
-                  'distancedegree', 'donormultiplicity', 'eccentricity', 'electrondensity',
-                  'electrophiliclocalizationenergy', 'hindrance', 'hmochargedensity', 'hmoelectrondensity', 'hmoelectrophilicityorder',
-                  'hmoelectrophiliclocalizationenergy', 'hmonucleophilicityorder', 'hmonucleophiliclocalizationenergy', 'ioncharge', 'largestatomringsize',
-                  'nucleophilicityorder', 'nucleophiliclocalizationenergy', 'oen', 'pichargedensity', 'ringatom', 'ringcountofatom',
-                  'stericeffectindex', 'totalchargedensity']
+    _optimal_feats = ['acceptormultiplicity', 'aliphaticatom', 'aromaticatom', 'aromaticelectrophilicityorder',
+                      'asymmetricatom', 'atomicpolarizability', 'chainatom', 'chargedensity', 'chiralcenter',
+                      'distancedegree', 'donormultiplicity', 'eccentricity', 'electrondensity',
+                      'electrophiliclocalizationenergy', 'hindrance', 'hmochargedensity', 'hmoelectrondensity',
+                      'hmoelectrophilicityorder',
+                      'hmoelectrophiliclocalizationenergy', 'hmonucleophilicityorder',
+                      'hmonucleophiliclocalizationenergy', 'ioncharge', 'largestatomringsize',
+                      'nucleophilicityorder', 'nucleophiliclocalizationenergy', 'oen', 'pichargedensity', 'ringatom',
+                      'ringcountofatom',
+                      'stericeffectindex', 'totalchargedensity']
 
     _h_inc_feats = ['acc', 'atomicpolarizability', 'charge', 'distancedegree', 'don',
        'eccentricity', 'hindrance', 'largestatomringsize', 'oen',
        'ringcountofatom', 'smallestatomringsize', 'stericeffectindex']
 
-    def __init__(self, feat_set='all', include_hs=False, max_atoms=75):
-
-        """
-        Args:
-            feat_set (str or list<str>):
-                The feature sets to calculate.
-                - a single identifier as a `str`
-                - a list of identifiers
-                - 'h_inc' or those that also calculate for Hs.
-                - 'all' for all
-
-            max_atoms:
-                - The maximum number of atoms available.
-        """
-        self.max_atoms = max_atoms
-
-        if feat_set in self._all_feats:
-            self.index = [feat_set]
-        elif feat_set == 'h_inclusive':
-            self.index = self._h_inc_feats
-        elif feat_set == 'all':
-            self.index = self._all_feats
-        elif isinstance(feat_set, (list, tuple)):
-            valid = np.array([feat in self._all_feats for feat in feat_set])
-            if all(valid):
-                self.index = feat_set
-            else:
-                raise NotImplementedError('Descriptor \'{}\' not available.'.format(np.array(feat_set)[~valid]))
-            self.feature_names = feat_set
-        else:
-            raise NotImplementedError('{} feature set is not available'.format(feat_set))
-
     @property
-    def feature_names(self):
-        return self.index
-
-    def transform(self, obj):
-        if isinstance(obj, core.Atom):
-            return self._transform_atom(obj)
-        elif isinstance(obj, core.Mol):
-            return self._transform_mol(obj)
-        elif isinstance(obj, pd.Series):
-            return self._transform_series(obj)
-        elif isinstance(obj, pd.DataFrame):
-            return self._transform_series(obj.structure)
-        elif isinstance(obj, (tuple, list)):
-            return self._transform_series(obj)
-        else:
-            raise NotImplementedError
+    def minor_axis(self):
+        return self._feature_index()
 
     def _transform_atom(self, atom):
-        raise NotImplementedError('Cannot calculate atom wise with Chemaxon')
+        raise NotImplementedError('Cannot calculate per atom with ChemAxon')
 
-    def _transform_mol(self, mol):
-        # make into series then use self._transform_mol
-        ser = pd.Series([mol], name=mol.name)
-        res = self._transform_series(ser)
-        return res.iloc[0]
+    def _parse_outfile(self, outfile):
+        res = super(ChemAxonAtomFeaturizer, self)._parse_outfile(outfile)
 
-    def _transform_series(self, series):
-
-        with tempfile.NamedTemporaryFile(suffix='.sdf') as in_file, tempfile.NamedTemporaryFile() as out_file:
-            # write mols to file
-            write_sdf(series, in_file.name)
-            args = ['cxcalc', in_file.name, '-o', out_file.name] + self.index
-
-            LOGGER.debug('Running: ' + ' '.join(args))
-
-            # call command line
-            p = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            bar = NamedProgressBar(name=self.__class__.__name__, max_value=len(series))
-
-            while p.poll() is None:
-                bar.update(line_count(out_file.name))
-                time.sleep(1)
-            bar.update(len(series))
-            p.wait()
-            finished = pd.read_table(out_file.name).set_index('id')
+        def parse_string(s):
+            if s == '':
+                return np.nan
+            elif s == 'false':
+                return 0
+            elif s == 'true':
+                return 1
+            else:
+                try:
+                    return float(s)
+                except ValueError:
+                    return np.nan
 
         def to_padded(s):
             res = np.repeat(np.nan, self.max_atoms)
-
-            def parse_string(s):
-                if s == '':
-                    return np.nan
-                elif s == 'false':
-                    return 0
-                elif s == 'true':
-                    return 1
-                else:
-                    return float(s)
-
-            ans = np.array([parse_string(i) for i in s.split(';')])
+            ans = np.array([parse_string(i) for i in str(s).split(';')])
             res[:len(ans)] = ans
             return res
-        res = np.array([[to_padded(i) for k, i in val.items()] for idx, val in finished.T.items()])
-        res = pd.Panel(res, items=series.index, major_axis=pd.Index(finished.columns, name='cx_atom_desc'),
-                        minor_axis=pd.Index(range(self.max_atoms), name='atom_idx'))
-        return res.swapaxes(1, 2) # to be consistent with AtomFeatureCalculator
+
+        res = res.applymap(to_padded)
+        return pd.Panel(res.values.tolist()).swapaxes(1, 2)
+
+
+class ChemAxonNMRPredictor(ChemAxonBaseFeaturizer, BatchTransformer, AtomTransformer):
+
+    _feat_columns = {'cnmr': ['cnmr'], 'hnmr': ['hnmr']}
+    _optimal_feats = ['cnmr']
+
+    def _transform_atom(self, atom):
+        raise NotImplementedError('ChemAxon cannot predict')
+
+    def monitor_progress(self, filename):
+        return sum(1 for l in open(filename, 'rb') if l == b'##PEAKASSIGNMENTS=(XYMA)\r\n')
+
+    @property
+    def minor_axis(self):
+        return pd.Index(self.features, name='shift')
+
+    @property
+    def features(self):
+        return self._features
+
+    @features.setter
+    def features(self, val):
+        if val == 'c':
+            self._features = ['cnmr']
+        elif val == 'h':
+            self._features = ['hnmr']
+        else:
+            raise NotImplementedError('Feature {} not implemented'.format(val))
+
+    def _parse_outfile(self, outfile):
+        n_mols = self.monitor_progress(outfile)
+        res = nanarray((n_mols, self.max_atoms, 1))
+        regex = re.compile(b'\((-?\d+.\d+),\d+,[A-Z],<([0-9\,]+)>\)\r\n')
+
+        mol_idx = 0
+
+        with open(outfile, 'rb') as f:
+            # loop through the file - inner loop will also advance the pointer
+            for l in f:
+                if l == b'##PEAKASSIGNMENTS=(XYMA)\r\n':
+                    for row in f:
+                        if row == b'##END=\r\n':
+                            break
+                        else:
+                            LOGGER.debug('Row to parse: %s', row)
+                            shift, idxs = regex.match(row).groups()
+                            shift, idxs = float(shift), [int(idx) for idx in idxs.split(b',')]
+                            for atom_idx in idxs:
+                                res[mol_idx, atom_idx] = shift
+                    mol_idx += 1
+        res = pd.Panel(res)
+        return res
+
+    def transform(self, inp):
+        return super(ChemAxonNMRPredictor, self).transform(inp).T
