@@ -32,34 +32,99 @@ from ..base import Transformer, Featurizer
 
 
 class MorganFeaturizer(Transformer, Featurizer):
+    """ Morgan fingerprints, implemented by RDKit.
 
+     Notes:
+
+         Currently, folded bits are by far the fastest implementation.
+
+     Examples:
+
+        >>> import skchem
+        >>> import pandas as pd
+        >>> pd.options.display.max_rows = pd.options.display.max_columns = 5
+
+        >>> mf = skchem.descriptors.MorganFeaturizer()
+        >>> m = skchem.Mol.from_smiles('CCC')
+
+        Can transform an individual molecule to yield a Series:
+
+        >>> mf.transform(m)
+        morgan_fp_idx
+        0       0
+        1       0
+               ..
+        2046    0
+        2047    0
+        Name: MorganFeaturizer, dtype: uint8
+
+        Can transform a list of molecules to yield a DataFrame:
+
+        >>> mf.transform([m])
+        morgan_fp_idx  0     1     ...   2046  2047
+        0                 0     0  ...      0     0
+        <BLANKLINE>
+        [1 rows x 2048 columns]
+
+        Change the number of features the fingerprint is folded down to using `n_feats`.
+
+        >>> mf.n_feats = 1024
+        >>> mf.transform(m)
+        morgan_fp_idx
+        0       0
+        1       0
+               ..
+        1022    0
+        1023    0
+        Name: MorganFeaturizer, dtype: uint8
+
+        Count fingerprints with `as_bits` = False
+
+        >>> mf.as_bits = False
+        >>> res = mf.transform(m); res[res > 0]
+        morgan_fp_idx
+        33     2
+        80     1
+        294    2
+        320    1
+        Name: MorganFeaturizer, dtype: int64
+
+        Pseudo-gradient with `grad` shows which atoms contributed to which feature.
+
+        >>> mf.grad(m)[res > 0]
+        atom_idx  0  1  2
+        features
+        33        1  0  1
+        80        0  1  0
+        294       1  2  1
+        320       1  1  1
+
+    """
     def __init__(self, radius=2, n_feats=2048, as_bits=True, use_features=False,
                  use_bond_types=True, use_chirality=False, **kwargs):
 
-        """
-        Args:
-            radius (int):
-                The maximum radius for atom environments.
-                Default is `2`.
-            n_feats (int):
-                The number of features to which to fold the fingerprint down.
-                For unfolded, use `-1`.
-                Default is `2048`.
-            as_bits (bool):
-                Whether to return bits (`True`) or counts (`False`).
-                Default is `True`.
-            use_features (bool):
-                Whether to use map atom types to generic features (FCFP analog).
-                Default is `False`.
-            use_bond_types (bool):
-                Whether to use bond types to differentiate environments.
-                Default is `False`.
-            use_chirality (bool):
-                Whether to use chirality to differentiate environments.
-                Default is `False`.
+        """ Initialize the fingerprinter object.
 
-        Notes:
-            Currently, folded bits are by far the fastest implementation.
+        Args:
+             radius (int):
+                 The maximum radius for atom environments.
+                 Default is `2`.
+             n_feats (int):
+                 The number of features to which to fold the fingerprint down.
+                 For unfolded, use `-1`.
+                 Default is `2048`.
+             as_bits (bool):
+                 Whether to return bits (`True`) or counts (`False`).
+                 Default is `True`.
+             use_features (bool):
+                 Whether to use map atom types to generic features (FCFP analog).
+                 Default is `False`.
+             use_bond_types (bool):
+                 Whether to use bond types to differentiate environments.
+                 Default is `False`.
+             use_chirality (bool):
+                 Whether to use chirality to differentiate environments.
+                 Default is `False`.
         """
 
         super(MorganFeaturizer, self).__init__(**kwargs)
@@ -90,6 +155,7 @@ class MorganFeaturizer(Transformer, Featurizer):
         if self.as_bits and self.n_feats > 0:
 
             fp = GetMorganFingerprintAsBitVect(mol, self.radius,
+                                               nBits=self.n_feats,
                                                useFeatures=self.use_features,
                                                useBondTypes=self.use_bond_types,
                                                useChirality=self.use_chirality)
@@ -184,7 +250,7 @@ class MorganFeaturizer(Transformer, Featurizer):
 
 class AtomPairFeaturizer(Transformer, Featurizer):
 
-    """ Atom Pair Tranformer. """
+    """ Atom Pair Fingerprints, implemented by RDKit. """
 
     def __init__(self, min_length=1, max_length=30, n_feats=2048, as_bits=False,
                  use_chirality=False, **kwargs):
@@ -271,6 +337,8 @@ class AtomPairFeaturizer(Transformer, Featurizer):
 
 
 class TopologicalTorsionFeaturizer(Transformer, Featurizer):
+
+    """ Topological Torsion fingerprints, implemented by RDKit. """
 
     def __init__(self, target_size=4, n_feats=2048, as_bits=False,
                  use_chirality=False, **kwargs):
