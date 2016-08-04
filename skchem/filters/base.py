@@ -28,12 +28,14 @@ AGGS = Defaults(defaults={
 
 class BaseFilter(BaseTransformer):
 
-    def __init__(self, agg=any, **kwargs):
+    def __init__(self, agg='any', **kwargs):
         super(BaseFilter, self).__init__(**kwargs)
         self.agg = agg
 
     @property
     def agg(self):
+        """ callable: The aggregate function to use.  String aliases
+        for `'any'`, `'not any'`, 'all', `'not all'` are available."""
         return self._agg
 
     @agg.setter
@@ -42,9 +44,27 @@ class BaseFilter(BaseTransformer):
 
     @property
     def columns(self):
+
+        """ pd.Index: The column index to use. """
+
         return pd.Index([self.__class__.__name__])
 
     def _mask(self, mols=None, res=None, neg=False):
+
+        """ Generate a mask from molecules, or from their result after transform.
+
+        Args:
+            mols (pd.Series<skchem.Mol>):
+                The molecules to use to generate the mask.
+            res (pd.Series):
+                The result of a transform. Overrides mols.
+            neg (bool):
+                Whether the mask should be inversed.
+
+        Returns:
+            pd.Series<bool>
+        """
+
         res = self.transform(mols, agg=False) if res is None else res
         res = (res != False) & pd.notnull(res)
         if isinstance(res, pd.Series) and isinstance(mols, core.Mol):
@@ -131,10 +151,14 @@ class Filter(BaseFilter, Transformer):
         raise NotImplemented
 
 
-
 class TransformFilter(BaseFilter):
 
-    """ Filter. """
+    """ Transform Filter object.
+
+     Implements `transform_filter`, which allows a transform, then a
+     filter step returning the transformed values that are not `False`, `None` or `np.nan`.
+
+     """
 
     def transform_filter(self, mols, y=None, neg=False):
 
