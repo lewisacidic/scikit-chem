@@ -13,7 +13,16 @@ import subprocess
 
 def line_count(filename):
 
-    """ Adapted from http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python"""
+    """ Quickly count the number of lines in a file.
+
+    Adapted from http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
+
+    Args:
+        filename (str):
+            The name of the file to count for.
+
+    """
+
     f = open(filename, 'rb')
     lines = 0
     buf_size = 1024 * 1024
@@ -28,9 +37,7 @@ def sdf_count(filename):
 
     """ Efficiently count molecules in an sdf file.
 
-    Specifically, the function counts the number of times '$$$$\n' occurs in the file.
-
-    This function is quicker than calling subprocesses for sdf files of ~10 000.
+    Specifically, the function counts the number of times '$$$$' occurs at the start of lines in the file.
 
     Args:
         filename (str): The filename of the sdf file.
