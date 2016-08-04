@@ -17,6 +17,7 @@ from . import standardizers
 from . import interact
 from . import pandas
 
+from .base import Pipeline
 from .core import Mol
 from .io import read_sdf, read_smiles
 

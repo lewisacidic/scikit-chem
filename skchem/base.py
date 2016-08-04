@@ -25,7 +25,14 @@ from . import io
 LOGGER = logging.getLogger(__name__)
 
 
-class BaseTransformer(metaclass=ABCMeta):
+class BaseTransformer(object, metaclass=ABCMeta):
+
+    """ Transformer Base Class.
+
+    Specific Base Transformer classes inherit from this class and implement `transform` and `axis_names`.
+    """
+
+    # To share some functionality betweeen Transformer and AtomTransformer
 
     def __init__(self, verbose=True):
         self.verbose = verbose
@@ -42,20 +49,36 @@ class BaseTransformer(metaclass=ABCMeta):
     @property
     @abstractmethod
     def axes_names(self):
+        """ tuple: The names of the axes. """
         pass
 
     @abstractmethod
     def transform(self, mols):
+        """ Transform objects according to the objects transform protocol.
+
+        Args:
+            mols (skchem.Mol or pd.Series or iterable):
+                The mol objects to transform.
+
+        Returns:
+            pd.Series or pd.DataFrame
+        """
         pass
 
 
 class Transformer(BaseTransformer, metaclass=ABCMeta):
 
-    """ Molecular based Transformer object. """
+    """ Molecular based Transformer Base class.
+
+    Concrete Transformers inherit from this class and must implement `_transform_mol` and `_columns`.
+
+    See Also:
+         AtomTransformer."""
 
     @property
     @abstractmethod
     def columns(self):
+        """ pd.Index: The column index to use. """
         return pd.Index(None)
 
     @abstractmethod
@@ -64,14 +87,22 @@ class Transformer(BaseTransformer, metaclass=ABCMeta):
         pass
 
     def _transform_series(self, ser):
-        """ Transform a series of molecules to a list. """
-
+        """ Transform a series of molecules to an np.ndarray. """
         bar = self.optional_bar()
 
         return [self._transform_mol(mol) for mol in bar(ser)]
 
     @optional_second_method
     def transform(self, mols, **kwargs):
+        """ Transform objects according to the objects transform protocol.
+
+        Args:
+            mols (skchem.Mol or pd.Series or iterable):
+                The mol objects to transform.
+
+        Returns:
+            pd.Series or pd.DataFrame
+        """
         if isinstance(mols, core.Mol):
             # just squeeze works on series
             return pd.Series(self._transform_mol(mols),
@@ -89,15 +120,23 @@ class Transformer(BaseTransformer, metaclass=ABCMeta):
 
     @property
     def axes_names(self):
+        """ tuple: The names of the axes. """
         return 'batch', self.columns.name
 
 
 class BatchTransformer(BaseTransformer, metaclass=ABCMeta):
-    """ Transformer in which transforms on multiple molecules save overhead.
+    """ Transformer Mixin in which transforms on multiple molecules save overhead.
 
-    Override `_transform_series` with the transformation rather than `_transform_mol`."""
+    Implement `_transform_series` with the transformation rather than `_transform_mol`. Must occur before
+    `Transformer` or  `AtomTransformer` in method resolution order.
+
+    See Also:
+         Transformer, AtomTransformer.
+    """
 
     def _transform_mol(self, mol):
+        """ Transform a molecule. """
+
         v = self.verbose
         self.verbose = False
         res = self.transform([mol]).iloc[0]
@@ -106,11 +145,18 @@ class BatchTransformer(BaseTransformer, metaclass=ABCMeta):
 
     @abstractmethod
     def _transform_series(self, ser):
+        """ Transform a series of molecules to an np.ndarray. """
         pass
 
 
 class AtomTransformer(BaseTransformer, metaclass=ABCMeta):
-    """ Transformer that will produce a Panel. """
+    """ Transformer that will produce a Panel.
+
+    Concrete classes inheriting from this should implement `_transform_atom`, `_transform_mol` and `minor_axis`.
+
+    See Also:
+        Transformer
+    """
 
     def __init__(self, max_atoms=100, **kwargs):
         self.max_atoms = max_atoms
@@ -120,16 +166,25 @@ class AtomTransformer(BaseTransformer, metaclass=ABCMeta):
     @property
     @abstractmethod
     def minor_axis(self):
-
+        """ pd.Index: Minor axis of transformed values.  """
         return pd.Index(None)  # expects a length
 
     @property
     def axes_names(self):
+        """ tuple: The names of the axes. """
         return 'batch', 'atom_idx', self.minor_axis.name
 
     @optional_second_method
     def transform(self, mols):
+        """ Transform objects according to the objects transform protocol.
 
+        Args:
+            mols (skchem.Mol or pd.Series or iterable):
+                The mol objects to transform.
+
+        Returns:
+            pd.Series or pd.DataFrame
+        """
         if isinstance(mols, core.Atom):
             # just squeeze works on series
             return pd.Series(self._transform_atom(mols),
@@ -181,8 +236,10 @@ class AtomTransformer(BaseTransformer, metaclass=ABCMeta):
         return res
 
 
-class External(metaclass=ABCMeta):
-    """ Mixin for wrappers of external CLI tools. """
+class External(object, metaclass=ABCMeta):
+    """ Mixin for wrappers of external CLI tools.
+
+     Concrete classes must implement `validate_install`."""
 
     install_hint = "" # give an explanation of how to install external tool here.
 
@@ -192,6 +249,7 @@ class External(metaclass=ABCMeta):
 
     @property
     def validated(self):
+        """ bool: whether the external tool is installed and active. """
         if not hasattr(self.__class__, '_validated'):
             self.__class__._validated = self.validate_install()
         return self.__class__._validated
@@ -204,7 +262,10 @@ class External(metaclass=ABCMeta):
 
 
 class CLIWrapper(External, BaseTransformer, metaclass=ABCMeta):
-    """ CLI wrapper. """
+    """ CLI wrapper.
+
+    Concrete classes inheriting from this must implement `_cli_args`, `monitor_progress`,
+    `_parse_outfile`, `_parse_errors`."""
 
     def __init__(self, error_on_fail=False, warn_on_fail=True, **kwargs):
         super(CLIWrapper, self).__init__(**kwargs)
@@ -212,6 +273,7 @@ class CLIWrapper(External, BaseTransformer, metaclass=ABCMeta):
         self.warn_on_fail = warn_on_fail
 
     def _transform_series(self, ser):
+        """ Transform a series. """
         with NamedTemporaryFile(suffix='.sdf') as infile, NamedTemporaryFile() as outfile:
             io.write_sdf(ser, infile.name)
             args = self._cli_args(infile.name, outfile.name)
@@ -251,6 +313,7 @@ class CLIWrapper(External, BaseTransformer, metaclass=ABCMeta):
 
     @abstractmethod
     def _cli_args(self, infile, outfile):
+        """ list: The cli arguments. """
         return []
 
     @abstractmethod
@@ -260,22 +323,38 @@ class CLIWrapper(External, BaseTransformer, metaclass=ABCMeta):
 
     @abstractmethod
     def _parse_outfile(self, outfile):
+        """ Parse the file written and return a series. """
         pass
 
     @abstractmethod
     def _parse_errors(self, errs):
+        """ Parse stderr and return error indices. """
         pass
+
+from .filters.base import Filter, TransformFilter
 
 
 class Pipeline(object):
 
-    """ Pipeline object. Applies filters and transformers. """
+    """ Pipeline object. Applies filters and transformers in sequence. """
 
-    def transform(self):
-        raise NotImplemented
+    def __init__(self, objects):
+        self.objects = objects
+
+    def transform_filter(self, mols, y=None):
+        for obj in self.objects:
+            if isinstance(obj, TransformFilter):
+                mols = obj.transform_filter(mols)
+            elif isinstance(obj, Filter):
+                mols = obj.filter(mols)
+            elif isinstance(obj, Transformer):
+                mols = obj.transform(mols)
+            else:
+                raise NotImplementedError('Cannot apply {}.'.format(obj))
+        return mols if y is None else (mols, y.reindex(mols.index))
 
 
-class Featurizer(metaclass=ABCMeta):
+class Featurizer(object, metaclass=ABCMeta):
 
     """ Base class for m -> data transforms, such as Fingerprinting etc."""
 
