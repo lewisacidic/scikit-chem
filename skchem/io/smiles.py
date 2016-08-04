@@ -34,11 +34,11 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
         Defaults to `0`.
     name_column (int):
         The column index at which compound names are provided, for use as the
-        index in the dataframe.  If None, use the default index.
+        index in the DataFrame.  If None, use the default index.
         Defaults to `None`.
     delimiter (str):
         The delimiter used.
-        Defaults to `\t`.
+        Defaults to `\\t`.
     title_line (bool):
         Whether a title line is provided, to use as column titles.
         Defaults to `False`.
@@ -51,7 +51,7 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
     drop_bad_mol (bool):
         If true, drop any column with smiles that failed to parse. Otherwise,
         the field is None. Defaults to `True`.
-    *args, **kwargs:
+    args, kwargs:
         Arguments will be passed to pandas read_csv arguments.
 
     Returns:
@@ -62,7 +62,6 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
         pandas.read_csv
         skchem.Mol.from_smiles
         skchem.io.sdf
-
     """
 
     with Suppressor():

@@ -33,9 +33,9 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
              skipmols=None, skipfooter=None, read_props=True, mol_props=False,
              *args, **kwargs):
 
-    """Read an sdf file into a pandas dataframe.
+    """Read an sdf file into a `pd.DataFrame`.
 
-    The function wraps the RDKit ForwardSDMolSupplier object.
+    The function wraps the RDKit `ForwardSDMolSupplier` object.
 
     Args:
         sdf (str or file-like):
@@ -62,7 +62,7 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
             Whether to keep properties in the molecule dictionary after they are
             extracted to the dataframe.
             Default is `False`.
-        *args, **kwargs:
+        args, kwargs:
             Arguments will be passed to rdkit's ForwardSDMolSupplier.
 
     Returns:
