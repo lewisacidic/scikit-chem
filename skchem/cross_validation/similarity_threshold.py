@@ -54,7 +54,7 @@ def _above_minimum(args, X, metric, threshold, size):
 class SimThresholdSplit(object):
 
     def __init__(self, inp, pairs=None, min_threshold=0.45, largest_cluster_fraction=0.1, fper='morgan',
-                 similarity_metric='jaccard', memory_optimized=True, n_jobs=1, block_width=1000):
+                 similarity_metric='jaccard', memory_optimized=True, n_jobs=1, block_width=1000, verbose=False):
 
         """ Threshold similarity split for chemical datasets.
 
@@ -123,6 +123,9 @@ class SimThresholdSplit(object):
         self.min_threshold = min_threshold
         self.largest_cluster = largest_cluster_fraction
         self.pairs_ = pairs
+
+        if self.fper:
+            self.fper.verbose = verbose
 
 
         if isinstance(inp, (pd.Series, pd.DataFrame)):
