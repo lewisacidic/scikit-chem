@@ -5,13 +5,14 @@
 
 
 """
-# skchem.utils.progressbar
+# skchem.utils.progress
 
-Module implementing progressbars.
+Module implementing progress bars.
 """
 
 import progressbar
-print(progressbar)
+
+
 class NamedProgressBar(progressbar.ProgressBar):
 
     def __init__(self, name=None, **kwargs):

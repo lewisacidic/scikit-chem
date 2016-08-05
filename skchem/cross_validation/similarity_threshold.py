@@ -10,6 +10,7 @@ Similarity threshold dataset partitioning functionality.
 """
 
 import logging
+import sys
 
 import numpy as np
 import pandas as pd
@@ -31,7 +32,7 @@ def returns_pairs(func):
     @wraps(func)
     def inner(*args, **kwargs):
         pairs = func(*args, **kwargs)
-        return pd.DataFrame([(*p[0], p[1]) for p in pairs], columns=['i', 'j', 'sim']).sort_values('sim')
+        return pd.DataFrame([(p[0][0], p[0][1], p[1]) for p in pairs], columns=['i', 'j', 'sim']).sort_values('sim')
     return inner
 
 
@@ -267,7 +268,9 @@ class SimThresholdSplit(object):
                 if end:
                     yield res
                 else:
-                    yield from ((res, j) for j in slice_generator(low, high, width, end=True))
+                    # yield from ((res, j) for j in slice_generator(low, high, width, end=True))
+                    for slice_ in ((res, j) for j in slice_generator(low, high, width, end=True)):
+                        yield slice_
                 low += width
 
         size = len(fps)
@@ -283,8 +286,12 @@ class SimThresholdSplit(object):
         else:
             # multiprocessed
             LOGGER.debug('Generating pairs using memory optimized technique with %s processes', self.n_jobs)
-            with multiprocessing.Pool(self.n_jobs) as p:
-                return sum(p.map(f, [(i, j) for i, j in slices]), [])
+            # with multiprocessing.Pool(self.n_jobs) as p:
+            #    return sum(p.map(f, [(i, j) for i, j in slices]), [])
+            p = multiprocessing.Pool(self.n_jobs)
+            res = sum(p.map(f, [(i, j) for i, j in slices]), [])
+            p.close()
+            return res
 
     def _cluster(self, pairs):
         """ Assign instances to clusters. """
@@ -308,6 +315,7 @@ class SimThresholdSplit(object):
             return np.abs(res.value_counts().max() - self.largest_cluster * self.n_instances_)
 
         self.threshold_ = minimize_scalar(f, bounds=(self.min_threshold, 1), method='bounded').x
+        LOGGER.info('Optimal threshold: %s', self.threshold_)
         self.clusters = pd.Series(self._cluster(self.pairs_.loc[self.pairs_.sim > self.threshold_, ('i', 'j')]),
                                   index=self.index,
                                   name='clusters')
@@ -338,7 +346,7 @@ class SimThresholdSplit(object):
         dists = 1 - squareform(pdist(fps, self.similarity_metric))
         dists = (dists - np.identity(dists.shape[0])).flatten()
         hist = ax.hist(dists, bins=50)
-        ax.vlines(self.threshold, 0, max(hist[0]))
+        ax.vlines(self.threshold_, 0, max(hist[0]))
         ax.set_xlabel('similarity')
         return ax
 

@@ -136,7 +136,6 @@ class MorganFeaturizer(Transformer, Featurizer):
         self.use_bond_types = use_bond_types
         self.use_chirality = use_chirality
 
-
     def _transform_mol(self, mol):
 
         """Private method to transform a skchem molecule.
@@ -184,6 +183,10 @@ class MorganFeaturizer(Transformer, Featurizer):
                 res = np.array(list(res))
 
         return res
+
+    @property
+    def name(self):
+        return 'morg'
 
     @property
     def columns(self):
@@ -332,6 +335,10 @@ class AtomPairFeaturizer(Transformer, Featurizer):
         return res
 
     @property
+    def name(self):
+        return 'atom_pair'
+
+    @property
     def columns(self):
         return pd.RangeIndex(self.n_feats, name='ap_fp_idx')
 
@@ -405,6 +412,9 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
         return res
 
     @property
+    def names(self):
+        return 'top_tort'
+    @property
     def columns(self):
         return pd.RangeIndex(self.n_feats, name='tt_fp_idx')
 
@@ -419,6 +429,10 @@ class MACCSFeaturizer(Transformer, Featurizer):
 
     def _transform_mol(self, mol):
         return np.array(list(GetMACCSKeysFingerprint(mol)))[1:]
+
+    @property
+    def name(self):
+        return 'maccs'
 
     @property
     def columns(self):
@@ -464,6 +478,10 @@ class ErGFeaturizer(Transformer, Featurizer):
         return np.array(GetErGFingerprint(mol))
 
     @property
+    def name(self):
+        return 'erg'
+
+    @property
     def columns(self):
         return pd.RangeIndex(self.n_feats, name='erg_fp_idx')
 
@@ -479,6 +497,10 @@ class FeatureInvariantsFeaturizer(Transformer, Featurizer):
     def _transform_mol(self, mol):
 
         return np.array(GetFeatureInvariants(mol))
+
+    @property
+    def name(self):
+        return 'feat_inv'
 
     @property
     def columns(self):
@@ -498,6 +520,10 @@ class ConnectivityInvariantsFeaturizer(Transformer, Featurizer):
         return np.array(GetConnectivityInvariants(mol))
 
     @property
+    def name(self):
+        return 'conn_inv'
+
+    @property
     def columns(self):
         return None
 
@@ -515,25 +541,32 @@ class RDKFeaturizer(Transformer, Featurizer):
 
         Args:
             min_path (int):
+                minimum number of bonds to include in the subgraphs.
 
             max_path (int):
+                maximum number of bonds to include in the subgraphs.
 
             n_feats (int):
-                The number of features to which to fold the fingerprint down.
-                For unfolded, use `-1`.
-                Default is `2048`.
+                The number of features to which to fold the fingerprint down. For unfolded, use `-1`.
 
             n_bits_per_hash (int)
+                number of bits to set per path.
 
             use_hs (bool):
+                include paths involving Hs in the fingerprint if the molecule has explicit Hs.
 
             target_density (float):
+                fold the fingerprint until this minimum density has been reached.
 
             min_size (int):
+                the minimum size the fingerprint will be folded to when trying to reach tgtDensity.
 
             branched_paths (bool):
+                if set both branched and unbranched paths will be used in the fingerprint.
 
             use_bond_types (bool):
+                if set both bond orders will be used in the path hashes.
+
         """
 
         super(RDKFeaturizer, self).__init__(**kwargs)
@@ -559,6 +592,10 @@ class RDKFeaturizer(Transformer, Featurizer):
                                             minSize=self.min_size,
                                             branchedPaths=self.branched_paths,
                                             useBondOrder=self.use_bond_types)))
+
+    @property
+    def name(self):
+        return 'rdkit'
 
     @property
     def columns(self):

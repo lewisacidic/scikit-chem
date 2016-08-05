@@ -5,7 +5,8 @@
 
 """ Tests for data functions """
 
-from skchem.data import resource
+from ...resource import resource
+
 
 def test_resource():
 

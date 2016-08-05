@@ -12,12 +12,13 @@ Module specifying atom based descriptor generators.
 import logging
 import subprocess
 import re
+from abc import ABCMeta
 
 import pandas as pd
 import numpy as np
 
 from ..utils import line_count, nanarray
-from ..base import CLIWrapper, Transformer, AtomTransformer, BatchTransformer
+from ..base import CLIWrapper, Transformer, AtomTransformer, BatchTransformer, Featurizer
 
 LOGGER = logging.getLogger(__file__)
 
@@ -36,7 +37,9 @@ CHEMAXON_HINT = """ Install ChemAxon from https://www.chemaxon.com.  It requires
 for academics. """
 
 
-class ChemAxonBaseFeaturizer(CLIWrapper):
+class ChemAxonBaseFeaturizer(CLIWrapper, Featurizer):
+
+    __metaclass__ = ABCMeta
 
     install_hint = CHEMAXON_HINT
 
@@ -240,6 +243,10 @@ class ChemAxonFeaturizer(ChemAxonBaseFeaturizer, BatchTransformer, Transformer):
                       'vdwsa', 'volume', 'wateraccessiblesurfacearea', 'wienerindex', 'wienerpolarity']
 
     @property
+    def name(self):
+        return 'cx_mol'
+
+    @property
     def columns(self):
         return self._feature_index()
 
@@ -264,6 +271,10 @@ class ChemAxonAtomFeaturizer(ChemAxonBaseFeaturizer, AtomTransformer, BatchTrans
     _h_inc_feats = ['acc', 'atomicpolarizability', 'charge', 'distancedegree', 'don',
        'eccentricity', 'hindrance', 'largestatomringsize', 'oen',
        'ringcountofatom', 'smallestatomringsize', 'stericeffectindex']
+
+    @property
+    def name(self):
+        return 'cx_atom'
 
     @property
     def minor_axis(self):
@@ -303,8 +314,11 @@ class ChemAxonNMRPredictor(ChemAxonBaseFeaturizer, BatchTransformer, AtomTransfo
     _feat_columns = {'cnmr': ['cnmr'], 'hnmr': ['hnmr']}
     _optimal_feats = ['cnmr']
 
+    def name(self):
+        return 'cx_nmr'
+
     def _transform_atom(self, atom):
-        raise NotImplementedError('ChemAxon cannot predict')
+        raise NotImplementedError('ChemAxon cannot predict for atoms.')
 
     def monitor_progress(self, filename):
         return sum(1 for l in open(filename, 'rb') if l == b'##PEAKASSIGNMENTS=(XYMA)\r\n')

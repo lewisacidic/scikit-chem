@@ -16,7 +16,7 @@ from . import vis
 from . import cross_validation
 from . import standardizers
 from . import interact
-from . import pandas
+from . import pandas_ext
 
 from .pipeline import Pipeline
 from .core import Mol

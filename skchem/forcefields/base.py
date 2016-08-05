@@ -20,7 +20,7 @@ from ..base import Transformer
 from ..filters.base import TransformFilter
 
 
-class ForceField(Transformer, TransformFilter, metaclass=ABCMeta):
+class ForceField(Transformer, TransformFilter):
     # TODO: Multiple conformer generation handling.
 
     """ Base forcefield class.

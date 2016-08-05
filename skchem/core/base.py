@@ -9,9 +9,11 @@
 Define base classes for scikit chem objects
 """
 
+from abc import ABCMeta, abstractmethod
 import warnings
 import numpy as np
 import pandas as pd
+
 
 class ChemicalObject(object):
 
@@ -24,6 +26,7 @@ class ChemicalObject(object):
 
         obj.__class__ = cls
         return obj
+
 
 class AtomView(object):
 
@@ -63,10 +66,11 @@ class AtomView(object):
         return pd.RangeIndex(len(self), name='atom_idx')
 
     def __repr__(self):
-        return '<{klass} values="{values}" at {address}>'.format(
-            klass=self.__class__.__name__,
+        return '<{class_} values="{values}" at {address}>'.format(
+            class_=self.__class__.__name__,
             values=str(self),
             address=hex(id(self)))
+
 
 class AtomIterator(AtomView):
 
@@ -84,16 +88,18 @@ class AtomIterator(AtomView):
             self._current += 1
             return self[self._current - 1]
 
+    # py2 compat
+    next = __next__
+
 
 class View(object):
 
     """ View wrapper interface """
+    __metaclass__ = ABCMeta
 
+    @abstractmethod
     def keys(self):
-        raise NotImplemented
-
-    def remove(self):
-        raise NotImplemented
+        return []
 
     def get(self, index, default=None):
         if index in self.keys():
@@ -167,15 +173,15 @@ class PropertyView(View):
             except ValueError:
                 return value
 
-
     def __setitem__(self, key, value):
 
         if not isinstance(key, str):
-            warnings.warn("""RDKit property keys can only be of type `str`.  Using `{key}` as a `str`.""".format(key=key))
+            warnings.warn("RDKit property keys can only be of type `str`.  Using `{key}` as a `str`.".format(key=key))
             key = str(key)
 
         if key[0] == '_':
-            warnings.warn("""`{value}` is a private RDKit property key.  Using this may have unintended consequences.""".format(value=value))
+            warnings.warn("`{value}` is a private RDKit property key. "
+                          "Using this may have unintended consequences.".format(value=value))
 
         if isinstance(value, str):
             self._owner.SetProp(key, value)
@@ -184,12 +190,13 @@ class PropertyView(View):
         elif isinstance(value, (float, np.float64, np.float32)):
             self._owner.SetDoubleProp(key, value)
         else:
-            warnings.warn("""RDKit property keys can only be `str`, `int` or `float`.
-                          Using `{value}` as a `str`.""".format(value=value))
+            warnings.warn("RDKit property keys can only be `str`, `int` or `float`."
+                          "Using `{value}` as a `str`.".format(value=value))
             self._owner.SetProp(key, str(value))
 
     def __delitem__(self, index):
         self._owner.ClearProp(index)
+
 
 class AtomPropertyView(View):
 

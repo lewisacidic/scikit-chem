@@ -18,10 +18,10 @@ import pandas as pd
 
 def optional_second_method(func):
     @wraps(func)
-    def inner(self, arg, *args, **kwargs):
+    def inner(self, arg, second_arg=None, **kwargs):
         res = func(self, arg, **kwargs)
-        if len(args) > 0:
-            return (res, *args)
+        if second_arg is not None:
+            return res, second_arg
         else:
             return res
     return inner

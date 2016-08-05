@@ -20,7 +20,7 @@ from ..utils import camel_to_snail
 DESCRIPTORS = {camel_to_snail(s): f for (s, f) in Descriptors.descList}
 
 
-class PhysicochemicalFeaturizer(Transformer):
+class PhysicochemicalFeaturizer(Transformer, Featurizer):
 
     """ Physicochemical descriptor generator using RDKit descriptor """
 
@@ -57,12 +57,16 @@ class PhysicochemicalFeaturizer(Transformer):
         self._features.index.name = 'physicochemical_features'
 
     @property
+    def name(self):
+        return 'physchem'
+
+    @property
     def columns(self):
         return self.features.index
 
     def _transform_mol(self, mol):
         res = []
-        for (n, f) in self.features.items():
+        for (n, f) in self.features.iteritems():
             try:
                 res.append(f(mol))
             except ValueError:

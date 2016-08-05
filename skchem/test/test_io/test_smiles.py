@@ -9,9 +9,10 @@
 import pytest
 
 #required for test
-from skchem import read_smiles, Mol
+from ...io import read_smiles
+from ...core import Mol
+from ...resource import resource
 
-from skchem.data import resource
 
 class TestSmiles(object):
 

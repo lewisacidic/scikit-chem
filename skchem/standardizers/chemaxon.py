@@ -11,6 +11,7 @@ license activated.
 """
 
 import os
+import sys
 import re
 import subprocess
 import logging
@@ -24,6 +25,12 @@ from ..base import CLIWrapper, Transformer, BatchTransformer
 from ..filters.base import TransformFilter
 
 LOGGER = logging.getLogger(__name__)
+
+if sys.version_info[0] == 2:
+    NoFoundError = OSError
+    subprocess.DEVNULL = open(os.devnull, 'w')
+else:
+    NoFoundError = FileNotFoundError
 
 
 class ChemAxonStandardizer(CLIWrapper, BatchTransformer, Transformer, TransformFilter):
@@ -166,7 +173,7 @@ class ChemAxonStandardizer(CLIWrapper, BatchTransformer, Transformer, TransformF
         """ Check if we can call cxcalc. """
         try:
             return subprocess.call(['standardize', '-h'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
-        except FileNotFoundError:
+        except NoFoundError:
             return False
 
     def monitor_progress(self, filename):

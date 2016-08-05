@@ -14,7 +14,7 @@ import pandas as pd
 
 from ..base import BaseTransformer, Transformer
 from .. import core
-from ..utils import iterable_to_series, Defaults
+from ..utils import iterable_to_series, Defaults, optional_second_method
 
 
 AGGS = Defaults(defaults={
@@ -73,7 +73,8 @@ class BaseFilter(BaseTransformer):
             res = res.apply(self.agg, axis=1)
         return res == False if neg else res
 
-    def transform(self, mols, *args, agg=True, **kwargs):
+    @optional_second_method
+    def transform(self, mols, agg=True, **kwargs):
 
         # transform takes additional optional kwarg `agg`, that specifies to transform to the aggregated value or
         # return the full series.
@@ -81,7 +82,7 @@ class BaseFilter(BaseTransformer):
         if agg:
             return self._mask(mols)
         else:
-            return super(BaseFilter, self).transform(mols, *args, **kwargs)
+            return super(BaseFilter, self).transform(mols, **kwargs)
 
     def filter(self, mols, y=None, neg=False):
 

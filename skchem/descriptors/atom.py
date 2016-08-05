@@ -22,7 +22,7 @@ from rdkit.Chem import rdMolDescriptors, rdPartialCharges
 from rdkit.Chem.rdchem import HybridizationType
 
 from ..core import Mol
-from ..data import PERIODIC_TABLE, ORGANIC
+from ..resource import PERIODIC_TABLE, ORGANIC
 from ..base import AtomTransformer, Featurizer
 from ..utils import nanarray
 
@@ -247,13 +247,17 @@ ATOM_FEATURES.update(element_features)
 ATOM_FEATURES.update(hybridization_features)
 
 
-class AtomFeaturizer(AtomTransformer):
+class AtomFeaturizer(AtomTransformer, Featurizer):
 
     def __init__(self, features='all', **kwargs):
 
         self.features = features
 
         super(AtomFeaturizer, self).__init__(**kwargs)
+
+    @property
+    def name(self):
+        return 'atom_feat'
 
     @property
     def features(self):
@@ -286,7 +290,14 @@ class AtomFeaturizer(AtomTransformer):
         return np.array([self.transform(a) for a in mol.atoms])
 
 
-class DistanceTransformer(AtomTransformer, metaclass=ABCMeta):
+class DistanceTransformer(AtomTransformer, Featurizer):
+
+    """ Base class implementing Distance Matrix transformers.
+
+    Concrete classes inheriting from this should implement `_transform_mol`.
+    """
+
+    __metaclass__ = ABCMeta
 
     @property
     def minor_axis(self):
@@ -301,11 +312,15 @@ class DistanceTransformer(AtomTransformer, metaclass=ABCMeta):
             res = res.iloc[:len(mols.atoms), :len(mols.atoms)]
         return res
 
+
 class SpacialDistanceTransformer(DistanceTransformer):
 
     """ Transformer class for generating 3D distance matrices.  """
 
     # TODO: handle multiple conformers
+
+    def name(self):
+        return 'spacial_dist'
 
     def _transform_mol(self, mol):
         res = nanarray((len(mol.atoms), self.max_atoms))
@@ -316,6 +331,12 @@ class SpacialDistanceTransformer(DistanceTransformer):
 class GraphDistanceTransformer(DistanceTransformer):
 
     """ Transformer class for generating Graph distance matrices. """
+
+    # TODO: handle multiple conformers
+
+    def name(self):
+        return 'graph_dist'
+
     def _transform_mol(self, mol):
         res = nanarray((len(mol.atoms), self.max_atoms))
         res[:len(mol.atoms), :len(mol.atoms)] = Chem.GetDistanceMatrix(mol)

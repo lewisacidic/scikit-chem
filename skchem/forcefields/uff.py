@@ -12,7 +12,6 @@ from rdkit.Chem.rdForceFieldHelpers import UFFOptimizeMolecule
 
 from .base import ForceField
 
-
 class UFF(ForceField):
 
     def __init__(self, **kwargs):

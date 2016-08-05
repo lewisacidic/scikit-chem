@@ -12,12 +12,12 @@ Simple filters for compounds.
 """
 
 from collections import Counter
-import pandas as pd
-import numpy as np
 
+import numpy as np
+import pandas as pd
+
+from ..resource import ORGANIC, PERIODIC_TABLE
 from .base import Filter
-from ..data import ORGANIC
-from ..data import PERIODIC_TABLE
 
 
 class ElementFilter(Filter):

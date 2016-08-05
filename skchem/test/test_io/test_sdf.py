@@ -8,8 +8,8 @@
 import pandas as pd
 import pytest
 
+from ...resource import resource
 from ...io import read_sdf
-from ...data import resource
 
 SINGLE_MOLECULE_PROPS = {
     'PUBCHEM_IUPAC_INCHIKEY', 'PUBCHEM_COMPOUND_CANONICALIZED',
