@@ -17,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 import numpy as np
 import pandas as pd
 
-from .base import Converter
+from .base import Converter, default_pipeline
 from ... import io
 from ... import core
 
@@ -42,27 +42,22 @@ class Tox21Converter(Converter):
         data = pd.concat([train, valid, test], keys=['train', 'valid', 'test']).sort_index()
         data.index.names = 'ds', 'id'
 
-        data = self.standardize(data)
-        data = self.optimize(data)
-        data = self.filter(data)
+        ms, y = data.structure, data.drop('structure', axis=1)
+
+        pipeline = default_pipeline()
+        ms, y = pipeline.transform_filter(ms, y)
 
         # generate splits
-        data = data.reset_index(0)
-        split_arr = data['ds'].values
+        ms, y = ms.reset_index(0), y.reset_index(0)
+        split_arr = ms.pop('ds')
+        y.pop('ds')
 
-        splits = {}
-        for split in 'train', 'valid', 'test':
-            idx, = np.nonzero(split_arr == split)
-            splits[split] = (min(idx), max(idx))
+        splits = [(split, split_arr == split) for split in ('train', 'valid', 'test')]
 
-        data = data.drop('ds', axis=1)
-
-        # get ms and targets together
-        ms, y = data.structure, data.drop('structure', axis=1)
         y.columns.name = 'tasks'
 
         # call the Converter to make the final dataset
-        self.run(ms, y, output_path, splits=splits, contiguous=True)
+        self.run(ms, y, output_path, splits=splits)
 
     @staticmethod
     def fix_id(s):

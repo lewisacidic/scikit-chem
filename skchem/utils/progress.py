@@ -11,7 +11,7 @@ Module implementing progressbars.
 """
 
 import progressbar
-
+print(progressbar)
 class NamedProgressBar(progressbar.ProgressBar):
 
     def __init__(self, name=None, **kwargs):

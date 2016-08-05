@@ -8,6 +8,7 @@
 import logging
 
 from . import core
+from . import filters
 from . import data
 from . import descriptors
 from . import io
@@ -17,7 +18,7 @@ from . import standardizers
 from . import interact
 from . import pandas
 
-from .base import Pipeline
+from .pipeline import Pipeline
 from .core import Mol
 from .io import read_sdf, read_smiles
 

@@ -13,7 +13,8 @@ import numpy as np
 
 from ... import io
 
-from .base import Converter
+from .base import Converter, default_pipeline, contiguous_order
+from ...cross_validation import SimThresholdSplit
 
 class BursiAmesConverter(Converter):
 
@@ -26,14 +27,17 @@ class BursiAmesConverter(Converter):
             sdf_path = f.extract('cas_4337.sdf')
 
         data = io.read_sdf(sdf_path)
+        data.index.name = 'batch'
         data['is_mutagen'] = (data['Ames test categorisation'] == 'mutagen').astype(np.uint8)
         ms, y = data.structure, data.is_mutagen
-        ms = self.standardize(ms)
-        ms = self.optimize(ms)
-        ms = self.filter(ms)
-        y = y.reindex(ms.index)
+        pipeline = default_pipeline()
+        ms, y = pipeline.transform_filter(ms, y)
 
-        self.run(ms, y, output_path, contiguous=True)
+        cv = SimThresholdSplit(ms,  min_threshold=0.6, n_jobs=-1)
+        train, valid, test = cv.split((70, 15, 15))
+        (ms, y, train, valid, test) = contiguous_order((ms, y, train, valid, test), (train, valid, test))
+        splits = (('train', train), ('valid', valid), ('test', test))
+        self.run(ms, y, output_path, splits=splits)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

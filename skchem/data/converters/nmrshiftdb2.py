@@ -12,9 +12,10 @@ import pandas as pd
 import numpy as np
 from sklearn import metrics
 
-from .base import Converter
+from .base import Converter, default_pipeline, contiguous_order
 from ... import io
 from ... import utils
+from ...cross_validation import SimThresholdSplit
 
 LOGGER = logging.getLogger(__file__)
 
@@ -36,14 +37,21 @@ class NMRShiftDB2Converter(Converter):
         c13s = self.to_frame(ys.loc[ys['13c'].notnull(), '13c'])
         data = data[['structure']].join(c13s, how='right')
 
-        data = self.standardize(data)
-        data = self.filter(data)
-        data = self.optimize(data)
-
         ms, y = data.structure, data.drop('structure', axis=1)
-        self.run(ms, y, output_path=output_path)
+        pipeline = default_pipeline()
+        ms, y = pipeline.transform_filter(ms, y)
+        y.columns.name = 'shifts'
 
-    def parse_data(self, filepath):
+        cv = SimThresholdSplit(ms, min_threshold=0.6, block_width=4000, n_jobs=-1)
+        train, valid, test = cv.split((70, 15, 15))
+
+        (ms, y, train, valid, test) = contiguous_order((ms, y, train, valid, test), (train, valid, test))
+        splits = (('train', train), ('valid', valid), ('test', test))
+
+        self.run(ms, y, output_path=output_path, splits=splits)
+
+    @staticmethod
+    def parse_data(filepath):
 
         """ Reads the raw datafile. """
 
@@ -56,7 +64,8 @@ class NMRShiftDB2Converter(Converter):
         LOGGER.info('Read %s molecules.', len(data))
         return data
 
-    def get_spectra(self, data):
+    @staticmethod
+    def get_spectra(data):
 
         """ Retrieves spectra from raw data. """
 
@@ -87,7 +96,8 @@ class NMRShiftDB2Converter(Converter):
         data.columns = pd.MultiIndex.from_tuples([index_pair(i.split('_')[1:]) for i in data.columns])
         return data
 
-    def process_spectra(self, data):
+    @staticmethod
+    def process_spectra(data):
 
         """ Turn the string representations found in sdf file into a dictionary. """
 
@@ -102,7 +112,8 @@ class NMRShiftDB2Converter(Converter):
 
         return data.applymap(spectrum_dict)
 
-    def combine_duplicates(self, data):
+    @staticmethod
+    def combine_duplicates(data):
 
         """ Collect duplicate spectra into one dictionary. All shifts are collected into lists. """
 
@@ -116,7 +127,8 @@ class NMRShiftDB2Converter(Converter):
 
         return data.groupby(level=0, axis=1).apply(lambda s: s.apply(aggregate_dicts, axis=1))
 
-    def squash_duplicates(self, data):
+    @staticmethod
+    def squash_duplicates(data):
 
         """ Take the mean of all the duplicates.  This is where we could do a bit more checking. """
 
@@ -128,14 +140,16 @@ class NMRShiftDB2Converter(Converter):
 
         return data.applymap(squash)
 
-    def to_frame(self, data):
+    @staticmethod
+    def to_frame(data):
 
         """ Convert a series of dictionaries to a dataframe. """
         res = pd.DataFrame(data.tolist(), index=data.index)
         res.columns.name = 'atom_idx'
         return res
 
-    def extract_duplicates(self, data, kind='13c'):
+    @staticmethod
+    def extract_duplicates(data, kind='13c'):
 
         """ Get all 13c duplicates.  """
 
@@ -147,7 +161,8 @@ class NMRShiftDB2Converter(Converter):
 
         return data.loc[data[kind].apply(is_duplicate), kind]
 
-    def log_dists(self, data):
+    @staticmethod
+    def log_dists(data):
 
         def n_spect(ele):
             return isinstance(ele, dict)
@@ -161,6 +176,7 @@ class NMRShiftDB2Converter(Converter):
         LOGGER.info('Number of spectra: %s', log_message(n_spect))
         LOGGER.info('Extracted shifts: %s', log_message(n_shifts))
 
+
     def log_duplicates(self, data):
 
         for kind in '1h', '13c':
@@ -171,12 +187,6 @@ class NMRShiftDB2Converter(Converter):
             LOGGER.info('MAE for duplicate %s: %.4f', kind, metrics.mean_absolute_error(res[0], res[1]))
             LOGGER.info('MSE for duplicate %s: %.4f', kind, metrics.mean_squared_error(res[0], res[1]))
             LOGGER.info('r2 for duplicate %s: %.4f', kind, metrics.r2_score(res[0], res[1]))
-
-    def plot_duplicates(self, data):
-
-        """ Plot the duplicates """
-        pass
-
 
 
 if __name__ == '__main__':

@@ -25,12 +25,14 @@ from . import io
 LOGGER = logging.getLogger(__name__)
 
 
-class BaseTransformer(object, metaclass=ABCMeta):
+class BaseTransformer(object):
 
     """ Transformer Base Class.
 
     Specific Base Transformer classes inherit from this class and implement `transform` and `axis_names`.
     """
+
+    __metaclass__ = ABCMeta
 
     # To share some functionality betweeen Transformer and AtomTransformer
 
@@ -66,7 +68,7 @@ class BaseTransformer(object, metaclass=ABCMeta):
         pass
 
 
-class Transformer(BaseTransformer, metaclass=ABCMeta):
+class Transformer(BaseTransformer):
 
     """ Molecular based Transformer Base class.
 
@@ -124,7 +126,7 @@ class Transformer(BaseTransformer, metaclass=ABCMeta):
         return 'batch', self.columns.name
 
 
-class BatchTransformer(BaseTransformer, metaclass=ABCMeta):
+class BatchTransformer(BaseTransformer):
     """ Transformer Mixin in which transforms on multiple molecules save overhead.
 
     Implement `_transform_series` with the transformation rather than `_transform_mol`. Must occur before
@@ -149,7 +151,7 @@ class BatchTransformer(BaseTransformer, metaclass=ABCMeta):
         pass
 
 
-class AtomTransformer(BaseTransformer, metaclass=ABCMeta):
+class AtomTransformer(BaseTransformer):
     """ Transformer that will produce a Panel.
 
     Concrete classes inheriting from this should implement `_transform_atom`, `_transform_mol` and `minor_axis`.
@@ -236,10 +238,12 @@ class AtomTransformer(BaseTransformer, metaclass=ABCMeta):
         return res
 
 
-class External(object, metaclass=ABCMeta):
+class External(object):
     """ Mixin for wrappers of external CLI tools.
 
      Concrete classes must implement `validate_install`."""
+
+    __metaclass__ = ABCMeta
 
     install_hint = "" # give an explanation of how to install external tool here.
 
@@ -261,7 +265,7 @@ class External(object, metaclass=ABCMeta):
         pass
 
 
-class CLIWrapper(External, BaseTransformer, metaclass=ABCMeta):
+class CLIWrapper(External, BaseTransformer):
     """ CLI wrapper.
 
     Concrete classes inheriting from this must implement `_cli_args`, `monitor_progress`,
@@ -331,32 +335,13 @@ class CLIWrapper(External, BaseTransformer, metaclass=ABCMeta):
         """ Parse stderr and return error indices. """
         pass
 
-from .filters.base import Filter, TransformFilter
 
+class Featurizer(object):
 
-class Pipeline(object):
+    """ Base class for m -> data transforms, such as Fingerprinting etc.
 
-    """ Pipeline object. Applies filters and transformers in sequence. """
+    Concrete subclasses should implement `name`, returning a string uniquely identifying the featurizer. """
 
-    def __init__(self, objects):
-        self.objects = objects
+    __metaclass__ = ABCMeta
 
-    def transform_filter(self, mols, y=None):
-        for obj in self.objects:
-            if isinstance(obj, TransformFilter):
-                mols = obj.transform_filter(mols)
-            elif isinstance(obj, Filter):
-                mols = obj.filter(mols)
-            elif isinstance(obj, Transformer):
-                mols = obj.transform(mols)
-            else:
-                raise NotImplementedError('Cannot apply {}.'.format(obj))
-        return mols if y is None else (mols, y.reindex(mols.index))
-
-
-class Featurizer(object, metaclass=ABCMeta):
-
-    """ Base class for m -> data transforms, such as Fingerprinting etc."""
-
-    pass
 

@@ -12,7 +12,9 @@ import pandas as pd
 import numpy as np
 
 from ... import io
-from .base import Converter
+from .base import Converter, contiguous_order
+
+from ...cross_validation import SimThresholdSplit
 
 TXT_COLUMNS = [l.lower() for l in """CAS
 Formula
@@ -63,14 +65,18 @@ class PhysPropConverter(Converter):
 
         y = self.process_targets(data)
         LOGGER.debug('Compounds with experimental: %s', len(y))
+
         data = data.ix[y.index]
+        data.columns.name = 'targets'
+        ms, y = data.structure, data.drop('structure', axis=1)
 
-        data = self.standardize(data)
-        data = self.optimize(data)
-        data = self.filter(data)
+        cv = SimThresholdSplit(ms, min_threshold=0.6, block_width=4000, n_jobs=-1)
+        train, valid, test = cv.split((70, 15, 15))
 
+        (ms, y, train, valid, test) = contiguous_order((ms, y, train, valid, test), (train, valid, test))
+        splits = (('train', train), ('valid', valid), ('test', test))
 
-        self.run(data.structure, data.drop('structure', axis=1), output_path=output_path, contiguous=True)
+        self.run(ms, y, output_path=output_path, splits=splits)
 
     def extract(self, directory):
         LOGGER.info('Extracting from %s', directory)
