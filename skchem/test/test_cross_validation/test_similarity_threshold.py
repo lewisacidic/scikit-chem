@@ -14,17 +14,17 @@ import pytest
 from scipy.spatial.distance import cdist
 import numpy as np
 
-from ...data import BursiAmes
+from ...data import Diversity
 from ...cross_validation import SimThresholdSplit
 
 
 @pytest.fixture
 def x():
-    return BursiAmes.read_frame('features/X_morg').sample(1200)
+    return Diversity.read_frame('feats/X_morg')
 
 @pytest.fixture
 def cv(x):
-    return SimThresholdSplit(x, fper=None)
+    return SimThresholdSplit(x, fper=None, block_width=500, n_jobs=2)
 
 def test_split(cv, x):
     train, test = cv.split((8, 2))
