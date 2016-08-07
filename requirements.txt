@@ -1,5 +1,9 @@
+h5py
 numpy
 pandas
 scipy
+rdkit
+ipywidgets
+matplotlib
 scikit-learn
 fuel

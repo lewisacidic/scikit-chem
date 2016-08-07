@@ -1,16 +1,16 @@
 language: python
 python:
   - "2.7"
-  - "3.4"
   - "3.5"
 
 # command to install dependencies
 install: 
   -  source ci/install.sh
   -  pip install coveralls
+
 # command to run tests
 script: 
-  nosetests --with-coverage --cover-package=skchem
+  python setup.py test
 
 after_success:
   coveralls

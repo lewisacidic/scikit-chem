@@ -3,7 +3,9 @@
 # Copyright (C) 2007-2009 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
-from setuptools import *
+from setuptools.command.test import test as TestCommand
+from setuptools import setup, find_packages
+import sys
 
 DISTNAME = 'scikit-chem'
 DESCRIPTION = 'A set of python modules for cheminformatics'
@@ -37,15 +39,29 @@ CLASSIFIERS = [
 ]
 MAJOR = 0
 MINOR = 0
-MICRO = 4 
+MICRO = '6dev0'
 VERSION = '{major}.{minor}.{micro}'.format(major=MAJOR, minor=MINOR, micro=MICRO)
 
 with open('requirements.txt') as f:
-   REQUIREMENTS = [l.strip() for l in f]
+    REQUIREMENTS = [l.strip() for l in f]
+    REQUIREMENTS.remove('rdkit')
 
 with open('test_requirements.txt') as f:
-   TEST_REQUIREMENTS = [l.strip() for l in f]
+    TEST_REQUIREMENTS = [l.strip() for l in f]
 
+
+class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = []
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.pytest_args)
+        sys.exit(errno)
 
 def setup_package():
 
@@ -63,13 +79,13 @@ def setup_package():
 
     setup(
         packages=find_packages(),
+        cmdclass={'test': PyTest},
         package_data = {
             'skchem.target_prediction': ['data/PIDGIN_models.pkl.gz'],
             'skchem.data': ['atom_data.csv'],
             'skchem.standardizers': ['default_config.xml']},
         include_package_data=True,
         install_requires=REQUIREMENTS,
-        test_suite='nose.collector',
         tests_require=TEST_REQUIREMENTS,
         zip_safe=False,
         **metadata

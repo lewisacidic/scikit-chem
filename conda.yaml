@@ -1,6 +1,6 @@
 package:
   name: scikit-chem
-  version: 0.0.4
+  version: 0.0.6dev0
 
 source:
   path: .
@@ -14,26 +14,31 @@ requirements:
   build:
     - python
     - setuptools
-    - scikit-learn
 
   run:
     - python
     - numpy
     - scikit-learn
+    - scipy
     - rdkit
     - pandas
+    - fuel
+    - progressbar2
+    - pytest
+    - matplotlib
 
 test:
   imports:
     - skchem
+
   requires:
     - nose
     - pytest
     - coverage
     - pytest-cov
 
-  commands:
-    - py.test
+  #commands:
+  #  - py.test
 
 about:
   home: https://github.com/richlewis42/scikit-chem

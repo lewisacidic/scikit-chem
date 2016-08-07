@@ -51,13 +51,13 @@ class ChemAxonStandardizer(CLIWrapper, BatchTransformer, Transformer, TransformF
     Examples:
 
         >>> import skchem
-        >>> std = skchem.standardizers.ChemAxonStandardizer()
+        >>> std = skchem.standardizers.ChemAxonStandardizer() # doctest:+SKIP
         >>> m = skchem.Mol.from_smiles('CC.CCC')
-        >>> print(std.transform(m))
+        >>> print(std.transform(m)) # doctest:+SKIP
         <Mol: CCC>
 
         >>> data = [m, skchem.Mol.from_smiles('C=CO'), skchem.Mol.from_smiles('C[O-]')]
-        >>> std.transform(data)
+        >>> std.transform(data) # doctest:+SKIP
         0     <Mol: CCC>
         1    <Mol: CC=O>
         2      <Mol: CO>
@@ -90,26 +90,26 @@ class ChemAxonStandardizer(CLIWrapper, BatchTransformer, Transformer, TransformF
         ... '''
 
         >>> will_fail = skchem.Mol.from_molblock(will_fail)
-        >>> std.transform(will_fail)
+        >>> std.transform(will_fail) # doctest:+SKIP
         nan
 
         >>> data = [will_fail] + data
 
-        >>> std.transform(data)
+        >>> std.transform(data) # doctest:+SKIP
         0           None
         1     <Mol: CCC>
         2    <Mol: CC=O>
         3      <Mol: CO>
         Name: structure, dtype: object
 
-        >>> std.transform_filter(data)
+        >>> std.transform_filter(data) # doctest:+SKIP
         1     <Mol: CCC>
         2    <Mol: CC=O>
         3      <Mol: CO>
         Name: structure, dtype: object
 
-        >>> std.keep_failed = True
-        >>> std.transform(data)
+        >>> std.keep_failed = True # doctest:+SKIP
+        >>> std.transform(data) # doctest:+SKIP
         0    <Mol: [N-]=[N+]=C1C=CC(=O)C=C1>
         1                         <Mol: CCC>
         2                        <Mol: CC=O>

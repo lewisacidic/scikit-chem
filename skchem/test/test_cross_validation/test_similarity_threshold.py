@@ -24,7 +24,7 @@ def x():
 
 @pytest.fixture
 def cv(x):
-    return SimThresholdSplit(x, fper=None, block_width=500, n_jobs=2)
+    return SimThresholdSplit(x, fper=None, block_width=500, n_jobs=1)
 
 def test_split(cv, x):
     train, test = cv.split((8, 2))

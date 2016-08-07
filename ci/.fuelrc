@@ -1,0 +1,6 @@
+data_path: ~/datasets
+
+extra_downloaders:
+- skchem.data.downloaders
+extra_converters:
+- skchem.data.converters

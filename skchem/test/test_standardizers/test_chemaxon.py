@@ -3,24 +3,27 @@
 # Copyright (C) 2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
-import numpy as np
 import pandas as pd
 import pytest
 
-import skchem
+from ... import standardizers
+from ...core import Mol
+from .. import chemaxon
 
 @pytest.fixture
 def s():
-    return skchem.standardizers.ChemAxonStandardizer()
+    return standardizers.ChemAxonStandardizer()
 
 @pytest.fixture
 def m():
-    return skchem.Mol.from_smiles('CCC.CC')
+    return Mol.from_smiles('CCC.CC')
 
+@chemaxon
 def test_on_mol(s, m):
     m_s = s.transform(m)
     assert len(m.atoms) > len(m_s.atoms)
 
+@chemaxon
 def test_on_series(s, m):
     ser = pd.Series([m], index=['mol1'], name='structure')
     ser_s = s.transform(ser)
