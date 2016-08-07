@@ -3,6 +3,12 @@
 # Copyright (C) 2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
+"""
+# skchem.data.converters.base
+
+Defines the base converter class.
+"""
+
 import warnings
 import logging
 import os
@@ -147,6 +153,7 @@ class Converter(object):
         """
 
         self.output_path = output_path
+        self.pytables_kws = pytables_kws
         self.features = features if features is not None else default_features()
         self.feature_names = [feat.key for feat in self.features]
         self.task_names = ['y']

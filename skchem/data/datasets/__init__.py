@@ -7,6 +7,7 @@
 
 Module defining skchem datasets. """
 
+from .diversity_set import Diversity
 from .muller_ames import MullerAmes
 from .bursi_ames import BursiAmes
 from .tox21 import Tox21

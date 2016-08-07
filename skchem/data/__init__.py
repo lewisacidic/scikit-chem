@@ -15,6 +15,7 @@ import pandas as pd
 
 # must go below periodic table
 from .datasets import (
+    Diversity,
     BursiAmes,
     MullerAmes,
     PhysProp,
