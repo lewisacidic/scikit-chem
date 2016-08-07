@@ -94,7 +94,7 @@ class Split(object):
 
     @property
     def contiguous(self):
-        diff = np.ediff1d(self.mask)
+        diff = np.ediff1d(self.mask.astype(int))
         if self.mask.iloc[0] != 0:
             diff[0] = 1
         if self.mask.iloc[-1] != 0:
@@ -146,7 +146,6 @@ class Converter(object):
             An iterable of name, split tuples. Splits are provided as boolean arrays of the whole data.
         """
 
-        self.pytables_kws = pytables_kws
         self.output_path = output_path
         self.features = features if features is not None else default_features()
         self.feature_names = [feat.key for feat in self.features]
