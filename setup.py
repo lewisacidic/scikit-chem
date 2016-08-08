@@ -39,7 +39,7 @@ CLASSIFIERS = [
 ]
 MAJOR = 0
 MINOR = 0
-MICRO = '6dev0'
+MICRO = 6
 VERSION = '{major}.{minor}.{micro}'.format(major=MAJOR, minor=MINOR, micro=MICRO)
 
 with open('requirements.txt') as f:

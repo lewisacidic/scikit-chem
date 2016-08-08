@@ -1,6 +1,6 @@
 package:
   name: scikit-chem
-  version: 0.0.6dev0
+  version: 0.0.6
 
 source:
   path: .

@@ -22,7 +22,7 @@ from .pipeline import Pipeline
 from .core import Mol
 from .io import read_sdf, read_smiles
 
-__version__ = '0.0.6dev0'
+__version__ = '0.0.6'
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())
