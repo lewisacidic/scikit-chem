@@ -26,6 +26,7 @@ requirements:
     - progressbar2
     - pytest
     - matplotlib
+    - ipywidgets
 
 test:
   imports:
