@@ -17,9 +17,12 @@ from rdkit.Chem.rdMolDescriptors import CalcMolFormula, CalcExactMolWt
 
 import json
 
-from . import Atom, Bond, Conformer
-from .base import ChemicalObject, AtomView, PropertyView
+from .atom import AtomView
+from .bond import BondView
+from .conformer import Conformer
+from .base import ChemicalObject, PropertyView
 from ..utils import Suppressor
+
 
 class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
@@ -32,16 +35,99 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
     Example:
         Constructors are implemented as class methods with the `from_` prefix.
 
-        ```python
-        m = Mol.from_smiles('c1ccccc1')
-        ```
+        >>> import skchem
+        >>> m = skchem.Mol.from_smiles('CC(=O)Cl'); m # doctest: +ELLIPSIS
+        <Mol name="None" formula="C2H3ClO" at ...>
+
+        This is an rdkit Mol:
+
+        >>> from rdkit.Chem import Mol as RDKMol
+        >>> isinstance(m, RDKMol)
+        True
+
+        A name can be given at initialization:
+        >>> m = skchem.Mol.from_smiles('CC(=O)Cl', name='acetyl chloride'); m # doctest: +ELLIPSIS
+        <Mol name="acetyl chloride" formula="C2H3ClO" at ...>
+
+        >>> m.name
+        'acetyl chloride'
 
         Serializers are implemented as instance methods with the `to_` prefix.
 
-        ```python
-        m.to_smiles()
-        ```
+        >>> m.to_smiles()
+        'CC(=O)Cl'
 
+        >>> m.to_inchi()
+        'InChI=1S/C2H3ClO/c1-2(3)4/h1H3'
+
+        >>> m.to_inchi_key()
+        'WETWJCDKMRHUPV-UHFFFAOYSA-N'
+
+        RDKit properties are accessible through the `props` property:
+
+        >>> m.SetProp('example_key', 'example_value') # set prop with rdkit directly
+        >>> m.props['example_key']
+        'example_value'
+
+        >>> m.SetIntProp('float_key', 42) # set int prop with rdkit directly
+        >>> m.props['float_key']
+        42
+
+        They can be set too:
+
+        >>> m.props['example_set'] = 'set_value'
+        >>> m.GetProp('example_set') # getting with rdkit directly
+        'set_value'
+
+        We can export the properties into a dict or a pandas series:
+
+        >>> m.props.to_series()
+        example_key    example_value
+        example_set        set_value
+        float_key                 42
+        dtype: object
+
+        Atoms and bonds are provided in views:
+
+        >>> m.atoms # doctest: +ELLIPSIS
+        <AtomView values="['C', 'C', 'O', 'Cl']" at ...>
+
+        >>> m.bonds # doctest: +ELLIPSIS
+        <BondView values="['C-C', 'C=O', 'C-Cl']" at ...>
+
+        These are iterable:
+        >>> [a.element for a in m.atoms]
+        ['C', 'C', 'O', 'Cl']
+
+        The view provides shorthands for some attributes to get these as pandas objects:
+
+        >>> m.atoms.element
+        atom_idx
+        0     C
+        1     C
+        2     O
+        3    Cl
+        dtype: object
+
+        Atom and bond props can also be set:
+
+        >>> m.atoms[0].props['atom_key'] = 'atom_value'
+        >>> m.atoms[0].props['atom_key']
+        'atom_value'
+
+        The properties for atoms on the whole molecule can be accessed like so:
+
+        >>> m.atoms.props # doctest: +ELLIPSIS
+        <MolPropertyView values="{'atom_key': ['atom_value', None, None, None]}" at ...>
+
+        The properties can be exported as a pandas dataframe
+        >>> m.atoms.props.to_frame()
+                    atom_key
+        atom_idx
+        0         atom_value
+        1               None
+        2               None
+        3               None
     """
 
     def __init__(self, *args, **kwargs):
@@ -94,8 +180,9 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
         """ List[skchem.Bond]: An iterable over the bonds of the molecule. """
 
-        return [Bond.from_super(self.GetBondWithIdx(i)) \
-                for i in range(self.GetNumBonds())]
+        if not hasattr(self, '_bonds'):
+            self._bonds = BondView(self)
+        return self._bonds
 
     @property
     def mass(self):

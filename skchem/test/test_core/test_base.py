@@ -4,12 +4,12 @@
 # License: 3-clause BSD
 
 import pytest
-
-import skchem
+import numpy as np
+from ...core import Mol, Atom
 
 @pytest.fixture
 def m():
-    return skchem.Mol.from_smiles('CC')
+    return Mol.from_smiles('CC')
 
 @pytest.fixture
 def mk(m):
@@ -29,7 +29,7 @@ def mkl(mk):
 
 @pytest.fixture
 def a():
-    return skchem.core.Atom('C')
+    return Atom('C')
 
 
 def test_set_prop(mk):
@@ -102,7 +102,7 @@ def test_atom_prop(a):
     assert a.props['test'] == 'value'
 
 def test_av_prop(ma):
-    assert ma.atoms.props['test'] == ['spam', 'eggs']
+    assert np.array_equal(ma.atoms.props['test'], ['spam', 'eggs'])
 
 def test_av_miss(ma):
     with pytest.raises(KeyError):
@@ -112,7 +112,10 @@ def test_av_keys(ma):
     assert 'test' in ma.atoms.props.keys()
 
 def test_av_items(ma):
-    assert ('test', ['spam', 'eggs']) in ma.atoms.props.items()
+    items = ma.atoms.props.items()
+    assert len(items) == 1
+    assert items[0][0] == 'test'
+    assert np.array_equal(items[0][1], ['spam', 'eggs'])
 
 def test_av_len(ma):
     assert len(ma.atoms.props) == 1

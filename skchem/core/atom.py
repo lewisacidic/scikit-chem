@@ -10,8 +10,10 @@
 Defining atoms in scikit-chem.
 """
 
+import pandas as pd
+
 from rdkit import Chem
-from .base import ChemicalObject, PropertyView
+from .base import ChemicalObject, PropertyView, ChemicalObjectView
 
 class Atom(Chem.rdchem.Atom, ChemicalObject):
 
@@ -60,3 +62,38 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
     def __str__(self):
 
         return self.element
+
+class AtomView(ChemicalObjectView):
+
+    def __getitem__(self, index):
+        if index >= len(self):
+            raise IndexError('Index {} out of range for molecule with {} atoms.'.format(index, len(self)))
+        else:
+            return Atom.from_super(self.owner.GetAtomWithIdx(index))
+
+    def __len__(self):
+        return self.owner.GetNumAtoms()
+
+    @property
+    def element(self):
+        """ A `pd.Series` of the element of the atoms in the `AtomView`. """
+
+        return pd.Series((atom.element for atom in self), index=self.index)
+
+    @property
+    def atomic_number(self):
+        """ A `pd.Series` of the atomic number of the atoms in the `AtomView`. """
+
+        return pd.Series((atom.atomic_number for atom in self), index=self.index)
+
+    @property
+    def atomic_mass(self):
+        """ A `pd.Series` of the atomic mass of the atoms in the `AtomView`. """
+
+        return pd.Series((atom.mass for atom in self), index=self.index)
+
+    @property
+    def index(self):
+        """ A `pd.Index` of the atoms in the `AtomView`. """
+
+        return pd.RangeIndex(len(self), name='atom_idx')

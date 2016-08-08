@@ -9,9 +9,11 @@
 Defining chemical bonds in scikit-chem.
 """
 
+import pandas as pd
 import rdkit.Chem
+
 from . import Atom
-from .base import ChemicalObject
+from .base import ChemicalObject, PropertyView, ChemicalObjectView
 
 class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
 
@@ -19,6 +21,15 @@ class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
     Class representing a chemical bond in scikit-chem.
 
     """
+
+    @property
+    def props(self):
+
+        """ PropertyView: rdkit properties of the atom. """
+
+        if not hasattr(self, '_props'):
+            self._props = PropertyView(self)
+        return PropertyView(self)
 
     @property
     def order(self):
@@ -55,3 +66,28 @@ class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
 
     def __str__(self):
         return self.draw()
+
+
+class BondView(ChemicalObjectView):
+
+    """ Bond interface wrapper """
+    def __getitem__(self, index):
+        if index >= len(self):
+            raise IndexError('Index {} out of range for molecule with {} bonds.'.format(index, len(self)))
+        else:
+            return Bond.from_super(self.owner.GetBondWithIdx(index))
+
+
+    def __len__(self):
+        return self.owner.GetNumBonds()
+
+    @property
+    def order(self):
+        """ A `pd.Series` of the bond orders of the bonds in the `BondView`. """
+
+        return pd.Series((bond.order for bond in self), index=self.index)
+
+    @property
+    def index(self):
+        """ A `pd.Index` of the bonds in the `BondView`. """
+        return pd.RangeIndex(len(self), name='bond_idx')

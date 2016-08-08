@@ -17,7 +17,7 @@ import pandas as pd
 
 class ChemicalObject(object):
 
-    """ A mixin for each chemical object in scikit-chem """
+    """ A mixin for each chemical object in scikit-chem. """
 
     @classmethod
     def from_super(cls, obj):
@@ -28,42 +28,38 @@ class ChemicalObject(object):
         return obj
 
 
-class AtomView(object):
+class ChemicalObjectView(object):
 
-    """ Atom interface wrapper """
+    """ Abstract iterable view of chemical objects.
+
+    Concrete classes inheriting from it should implement `__getitem__` and `__len__`.
+    """
+
+    __metaclass__ = ABCMeta
 
     def __init__(self, owner):
+        """ Return a view """
         self.owner = owner
-        self.props = AtomPropertyView(self)
 
-    def __getitem__(self, index):
-        from .atom import Atom
-        return Atom.from_super(self.owner.GetAtomWithIdx(index))
+    @abstractmethod
+    def __getitem__(self, item):
+        pass
 
+    @abstractmethod
     def __len__(self):
-        return self.owner.GetNumAtoms()
+        pass
 
     def __iter__(self):
-        return AtomIterator(self.owner)
+        return ChemicalObjectIterator(self)
 
     def __str__(self):
-        return str(list(str(atom) for atom in self))
+        return str(list(str(obj) for obj in self))
 
     @property
-    def elements(self):
-        return pd.Series((atom.element for atom in self), index=self.index)
+    def props(self):
+        """ Return a property view of the objects in the view. """
 
-    @property
-    def atomic_number(self):
-        return pd.Series((atom.atomic_number for atom in self), index=self.index)
-
-    @property
-    def atomic_mass(self):
-        return pd.Series((atom.mass for atom in self), index=self.index)
-
-    @property
-    def index(self):
-        return pd.RangeIndex(len(self), name='atom_idx')
+        return MolPropertyView(self)
 
     def __repr__(self):
         return '<{class_} values="{values}" at {address}>'.format(
@@ -72,21 +68,22 @@ class AtomView(object):
             address=hex(id(self)))
 
 
-class AtomIterator(AtomView):
+class ChemicalObjectIterator(object):
 
-    """ Atom iterator """
+    """  Iterator for chemical object views.  """
 
-    def __init__(self, owner):
-        super(AtomIterator, self).__init__(owner)
+    def __init__(self, view):
+        """ Create an iterator from a chemical object view. """
+        self.view = view
         self._current = 0
-        self._high = self.owner.GetNumAtoms()
+        self._high = len(self.view)
 
     def __next__(self):
         if self._current >= self._high:
             raise StopIteration
         else:
             self._current += 1
-            return self[self._current - 1]
+            return self.view[self._current - 1]
 
     # py2 compat
     next = __next__
@@ -94,7 +91,11 @@ class AtomIterator(AtomView):
 
 class View(object):
 
-    """ View wrapper interface """
+    """ View wrapper interface.  Conforms to the dictionary interface.
+
+    Objects inheriting from this should implement the `keys`, `getitem`,
+    `setitem` and `delitem` methods."""
+
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -116,29 +117,36 @@ class View(object):
         return val
 
     def clear(self):
+        """ Remove all properties from the object. """
         for idx in self.keys():
             self.remove(idx)
 
     def items(self):
+        """ Return an iterable of key, value pairs. """
+
         return list((k, self[k]) for k in self.keys())
 
     def remove(self, key):
+        """ Remove a property from the object. """
         self.__delitem__(key)
 
+    @abstractmethod
     def __getitem__(self, key):
-        raise NotImplemented
+        pass
 
+    @abstractmethod
     def __setitem__(self, key, value):
-        raise NotImplemented
+        pass
 
+    @abstractmethod
     def __delitem__(self, key):
-        raise NotImplemented
+        pass
 
     def __iter__(self):
         return iter(self.keys())
 
     def __str__(self):
-        return str(dict(self))
+        return str(self.to_dict())
 
     def __len__(self):
         return len(self.keys())
@@ -149,15 +157,32 @@ class View(object):
             values=str(self),
             address=hex(id(self)))
 
+    def to_dict(self):
+        """ Return a dict of the properties on the object. """
+        return dict(self)
+
+    def to_series(self):
+        """ Return a pd.Series of the properties on the object. """
+        return pd.Series(self.to_dict())
+
 
 class PropertyView(View):
+    """ Property object wrapper.
 
-    """ Property object wrapper """
+     This provides properties for rdkit objects. """
 
     def __init__(self, owner):
+        """ Initialize a PropertyView.
+
+        Args:
+            owner(skchem.ChemicalObject):
+                A chemical object with properties, such as `skchem.Atom`."""
+
         self._owner = owner
 
     def keys(self):
+        """ The available property keys on the object. """
+
         return list(k for k in self._owner.GetPropNames() if k[:1] != '_')
 
     def __getitem__(self, key):
@@ -198,21 +223,25 @@ class PropertyView(View):
         self._owner.ClearProp(index)
 
 
-class AtomPropertyView(View):
+class MolPropertyView(View):
 
-    """ Atom property wrapper """
+    """ Mol property wrapper.
 
-    def __init__(self, atom_view):
-        self._atom_view = atom_view
+    This provides properties for the atom and bond views. """
+
+    def __init__(self, obj_view):
+        self._obj_view = obj_view
 
     def keys(self):
+        """ The available property keys on the object. """
+
         res = set()
-        for atom in self._atom_view:
+        for atom in self._obj_view:
             res = res.union(set(atom.props.keys()))
         return list(res)
 
     def get(self, key, default=None):
-        return [a.props.get(key, default) for a in self._atom_view]
+        return pd.Series((a.props.get(key, default) for a in self._obj_view), index=self._obj_view.index)
 
     def __getitem__(self, key):
         if key not in self.keys():
@@ -220,10 +249,30 @@ class AtomPropertyView(View):
         return self.get(key, None)
 
     def __setitem__(self, key, value):
-        assert len(self._atom_view) == len(value), "Must pass same number of values as atoms."
-        for atom, val in zip(self._atom_view, value):
-            atom.props[key] = val
+        if isinstance(value, (pd.Series, dict)):
+            for idx, val in pd.compat.iteritems(value):
+                self._obj_view[int(idx)].props[key] = val
+        else:
+            assert len(self._obj_view) == len(value), "Must pass same number of values as atoms."
+            for atom, val in zip(self._obj_view, value):
+                atom.props[key] = val
 
     def __delitem__(self, key):
-        for atom in self._atom_view:
+        for atom in self._obj_view:
             atom.props.remove(key)
+
+    def to_frame(self):
+
+        """ Return a DataFrame of the properties of the objects of the molecular view. """
+
+        return pd.DataFrame(dict(self), index=self._obj_view.index)
+
+    def to_dict(self):
+
+        """ Return a dict of the properties of the objectos fo the molecular view. """
+
+        return {k: v.tolist() for k, v in self.items()}
+
+    def __str__(self):
+        return str(self.to_dict())
+
