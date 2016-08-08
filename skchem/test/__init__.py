@@ -11,6 +11,13 @@ Tests for scikit-chem
 
 import pytest
 
+class FakeConfig(object):
+    def getoption(self, arg):
+        pass
+
+if not hasattr(pytest, 'config'):
+    pytest.config = FakeConfig()
+
 chemaxon = pytest.mark.skipif(
     not pytest.config.getoption("--chemaxon"),
     reason="no chemaxon provided."
