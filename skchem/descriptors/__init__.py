@@ -18,6 +18,24 @@ from .fingerprints import (AtomPairFeaturizer,
 from .chemaxon import (ChemAxonAtomFeaturizer, ChemAxonFeaturizer, ChemAxonNMRPredictor)
 from .atom import (AtomFeaturizer, GraphDistanceTransformer, SpacialDistanceTransformer)
 
+__all__ = [
+    'PhysicochemicalFeaturizer',
+    'AtomFeaturizer',
+    'AtomPairFeaturizer',
+    'MorganFeaturizer',
+    'MACCSFeaturizer',
+    'TopologicalTorsionFeaturizer',
+    'RDKFeaturizer',
+    'ErGFeaturizer',
+    'ConnectivityInvariantsFeaturizer',
+    'FeatureInvariantsFeaturizer',
+    'ChemAxonNMRPredictor',
+    'ChemAxonFeaturizer',
+    'ChemAxonAtomFeaturizer',
+    'GraphDistanceTransformer',
+    'SpacialDistanceTransformer'
+]
+
 DEFAULTS = {
     'atom': AtomFeaturizer,
     'graph_distance': GraphDistanceTransformer,

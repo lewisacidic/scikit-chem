@@ -10,3 +10,7 @@ Tools for use in the JuPyteR notebook for scikit-chem.
 """
 
 from .desc_vis import Visualizer
+
+__all__ = [
+    'Visualizer'
+]

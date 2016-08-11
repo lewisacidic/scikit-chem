@@ -17,12 +17,15 @@ from . import cross_validation
 from . import standardizers
 from . import interact
 from . import pandas_ext
+from . import pipeline
 
-from .pipeline import Pipeline
 from .core import Mol
 from .io import read_sdf, read_smiles
 
 __version__ = '0.0.6'
+
+__all__ = ['core', 'filters', 'data', 'descriptors', 'io', 'vis', 'cross_validation',
+           'standardizers', 'interact', 'pipeline']
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())

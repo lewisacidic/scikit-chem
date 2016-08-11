@@ -10,6 +10,12 @@ Molecule filters for scikit-chem.
 """
 
 from .base import Filter
-from .simple import ElementFilter, OrganicFilter, n_atoms, AtomNumberFilter, mass, MassFilter
+from .simple import (ElementFilter, OrganicFilter, n_atoms,
+                     AtomNumberFilter, mass, MassFilter)
 from .smarts import SMARTSFilter, PAINSFilter
 from .stereo import ChiralFilter
+
+__all__ = [
+    'ChiralFilter', 'SMARTSFilter', 'PAINSFilter', 'ElementFilter',
+    'OrganicFilter', 'AtomNumberFilter', 'MassFilter', 'Filter'
+]

@@ -10,3 +10,7 @@ Package implementing pipelines.
 """
 
 from .pipeline import Pipeline
+
+__all__ = [
+    'Pipeline'
+]

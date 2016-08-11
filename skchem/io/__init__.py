@@ -11,4 +11,9 @@ Module defining input and output methods in scikit-chem.
 """
 
 from .sdf import read_sdf, write_sdf
-from .smiles import read_smiles
+from .smiles import read_smiles, write_smiles
+
+__all__ = [
+    'read_sdf', 'write_sdf', 'read_smiles', 'write_smiles'
+]
+

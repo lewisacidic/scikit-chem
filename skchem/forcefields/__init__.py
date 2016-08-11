@@ -13,6 +13,10 @@ from .mmff import MMFF
 from .uff import UFF
 from .base import RoughEmbedding
 
+__all__ = [
+    'MMFF', 'UFF', 'RoughEmbedding'
+]
+
 def get(name):
     DEFAULTS = {
         'uff': UFF,

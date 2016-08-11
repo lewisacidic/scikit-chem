@@ -20,3 +20,9 @@ all_converters = (
     ('physprop', PhysPropConverter.fill_subparser),
     ('bradley_open_mp', BradleyOpenMPConverter.fill_subparser)
 )
+
+__all__ = [
+    'DiversityConverter', 'BursiAmesConverter', 'MullerAmesConverter',
+    'PhysPropConverter', 'BradleyOpenMPConverter', 'NMRShiftDB2Converter',
+    'Tox21Converter'
+]

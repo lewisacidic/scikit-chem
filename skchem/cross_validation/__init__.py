@@ -11,3 +11,7 @@ Module implementing cross validation routines useful for chemical data.
 
 
 from .similarity_threshold import SimThresholdSplit
+
+__all__ = [
+    'SimThresholdSplit'
+]

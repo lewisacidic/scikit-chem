@@ -11,3 +11,7 @@ def resource(*args):
 
 PERIODIC_TABLE = pd.read_csv(resource('atom_data.csv'), index_col=0)
 ORGANIC = ['H', 'B', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
+
+__all__ = [
+    'resource', 'PERIODIC_TABLE', 'ORGANIC'
+]

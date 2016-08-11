@@ -5,6 +5,9 @@
 
 from .chemaxon import ChemAxonStandardizer
 
+__all__ = [
+    'ChemAxonStandardizer'
+]
 
 def get(identifier):
     if isinstance(identifier, str):
