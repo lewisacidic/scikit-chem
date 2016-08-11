@@ -16,6 +16,8 @@ import progressbar
 class NamedProgressBar(progressbar.ProgressBar):
 
     def __init__(self, name=None, **kwargs):
+        kwargs.setdefault('redirect_stdout', True)
+        kwargs.setdefault('redirect_stderr', True)
         super(NamedProgressBar, self).__init__(**kwargs)
         self.name = name
 
