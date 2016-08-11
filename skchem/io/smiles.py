@@ -110,6 +110,9 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
         if name_column is not None:
             data = data.set_index(data.columns[name_column])
 
+        cols = data.columns.tolist()
+        cols.remove('structure')
+        data = data[['structure'] + cols]
         return data
 
 
@@ -126,12 +129,14 @@ def write_smiles(data, smiles_path):
 
     if isinstance(data, pd.Series):
         data = data.to_frame(name='structure')
+    data = data.copy()
     data['structure'] = data.structure.apply(lambda m: m.to_smiles())
     data = data.reset_index()
     cols = list(data.columns)
     cols.insert(0, cols.pop(cols.index('structure')))
     data = data.reindex(columns=cols)[cols]
     data.to_csv(smiles_path, sep='\t', header=None, index=None)
+    del data
 
 
 @classmethod
