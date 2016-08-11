@@ -50,7 +50,11 @@ class StructureMethods(NoNewAttributesMixin):
         feats = fper.transform(self._data)
         feats = feats.fillna(feats.mean())
         twod = pd.DataFrame(dim_red.fit_transform(feats))
-        return twod.plot.scatter(x=0, y=1, **kwargs)
+        ax = twod.plot.scatter(x=0, y=1, **kwargs)
+        ax.set_xticklabels([])
+        ax.set_xlabel('')
+        ax.set_yticklabels([])
+        ax.set_ylabel('')
 
     @property
     def atoms(self):
