@@ -70,7 +70,7 @@ class PhysPropConverter(Converter):
         data.columns.name = 'targets'
         ms, y = data.structure, data.drop('structure', axis=1)
 
-        cv = SimThresholdSplit(ms, min_threshold=0.6, block_width=4000, n_jobs=-1)
+        cv = SimThresholdSplit(min_threshold=0.6, block_width=4000, n_jobs=-1).fit(ms)
         train, valid, test = cv.split((70, 15, 15))
 
         (ms, y, train, valid, test) = contiguous_order((ms, y, train, valid, test), (train, valid, test))

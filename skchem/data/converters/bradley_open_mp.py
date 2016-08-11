@@ -34,7 +34,7 @@ class BradleyOpenMPConverter(Converter):
         pipeline = default_pipeline()
         ms, y = pipeline.transform_filter(ms, y)
 
-        cv = SimThresholdSplit(ms, min_threshold=0.6, n_jobs=-1)
+        cv = SimThresholdSplit(min_threshold=0.6, n_jobs=-1).fit(ms)
         train, valid, test = cv.split((70, 15, 15))
         (ms, y, train, valid, test) = contiguous_order((ms, y, train, valid, test), (train, valid, test))
         splits = (('train', train), ('valid', valid), ('test', test))

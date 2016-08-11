@@ -42,7 +42,7 @@ class NMRShiftDB2Converter(Converter):
         ms, y = pipeline.transform_filter(ms, y)
         y.columns.name = 'shifts'
 
-        cv = SimThresholdSplit(ms, min_threshold=0.6, block_width=4000, n_jobs=-1)
+        cv = SimThresholdSplit(min_threshold=0.6, block_width=4000, n_jobs=-1).fit(ms)
         train, valid, test = cv.split((70, 15, 15))
 
         (ms, y, train, valid, test) = contiguous_order((ms, y, train, valid, test), (train, valid, test))

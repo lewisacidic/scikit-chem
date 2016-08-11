@@ -54,8 +54,9 @@ def _above_minimum(args, X, metric, threshold, size):
 
 class SimThresholdSplit(object):
 
-    def __init__(self, inp, pairs=None, min_threshold=0.45, largest_cluster_fraction=0.1, fper='morgan',
-                 similarity_metric='jaccard', memory_optimized=True, n_jobs=1, block_width=1000, verbose=False):
+    def __init__(self,  min_threshold=0.45, largest_cluster_fraction=0.1, fper='morgan',
+                 similarity_metric='jaccard', memory_optimized=True, n_jobs=1, block_width=1000,
+                 verbose=False):
 
         """ Threshold similarity split for chemical datasets.
 
@@ -73,22 +74,13 @@ class SimThresholdSplit(object):
         threshold set) this effect, making the problem harder.
 
         Args:
-            inp (pd.Series or pd.DataFrame or np.array):
-                - `pd.Series` of `skchem.Mol` instances
-                - `pd.DataFrame` with `skchm.Mol` instances as a `structure` row.
-                - `pd.DataFrame` of fingerprints if `fper` is `None`
-                - `pd.DataFrame` of similarity matrix if `similarity_metric` is `None`
-                - `np.array` of similarity matrix if `similarity_metric` is `None`
-
-            pairs (list<tuple<tuple(i, j), k>>):
-                An optional precalculated list of pairwise distances.
 
             min_threshold (float):
                 The minimum similarity threshold.  Lower will be slower.
 
             largest_cluster_fraction (float):
-                The fraction of the total dataset the largest cluster can be. This decided the final similarity
-                threshold.
+                The fraction of the total dataset the largest cluster can be. This decided the
+                final similarity threshold.
 
             fper (str or skchem.Fingerprinter):
                 The fingerprinting technique to use to generate the similarity
@@ -115,42 +107,59 @@ class SimThresholdSplit(object):
         if isinstance(fper, str):
             fper = descriptors.get(fper)
 
-        self.n_instances_ = len(inp)
         self.fper = fper
         self.similarity_metric = similarity_metric
         self.memory_optimized = memory_optimized
         self.n_jobs = n_jobs
-        self.block_width = block_width
+        self._block_width = block_width
         self.min_threshold = min_threshold
         self.largest_cluster = largest_cluster_fraction
-        self.pairs_ = pairs
 
         if self.fper:
             self.fper.verbose = verbose
 
+    def fit(self, inp, pairs=None):
+
+        """
+        Args:
+             inp (pd.Series or pd.DataFrame or np.array):
+                - `pd.Series` of `skchem.Mol` instances
+                - `pd.DataFrame` with `skchm.Mol` instances as a `structure` row.
+                - `pd.DataFrame` of fingerprints if `fper` is `None`
+                - `pd.DataFrame` of similarity matrix if `similarity_metric` is `None`
+                - `np.array` of similarity matrix if `similarity_metric` is `None`
+
+            pairs (list<tuple<tuple(i, j), k>>):
+                An optional precalculated list of pairwise distances.
+        """
+
+        self.n_instances_ = len(inp)
+        self.pairs_ = pairs
 
         if isinstance(inp, (pd.Series, pd.DataFrame)):
             self.index = inp.index
         else:
             self.index = pd.RangeIndex(len(inp), name='batch')
 
-        if similarity_metric is None:
+        if self.similarity_metric is None:
             # we were passed a similarity matrix directly
             self.pairs_ = self._pairs_from_sim_mat(inp)
 
-        elif fper is None:
+        elif self.fper is None:
             # we were passed fingerprints directly
             self.fps = inp
-            if pairs is None:
+            if self.pairs_ is None:
                 self.pairs_ = self._pairs_from_fps(inp)
 
         else:
             # we were passed Mol
-            if pairs is None:
+            if self.pairs_ is None:
                 self.fps = self.fper.transform(inp)
                 self.pairs_ = self._pairs_from_fps(self.fps)
 
-        self._optimal_thresh()
+        self.threshold_ = self._optimal_thresh()
+
+        return self
 
     @property
     def n_jobs(self):
@@ -171,8 +180,18 @@ class SimThresholdSplit(object):
 
     @block_width.setter
     def block_width(self, val):
-        assert val <= self.n_instances_, 'The block size should be less than or equal to the number of instances'
+        assert val <= self.n_instances_, 'The block width should be less than or equal to the number of instances'
         self._block_width = val
+
+    @property
+    def n_instances_(self):
+        """ The number of instances that were used to fit the object. """
+        return self._n_instances_
+
+    @n_instances_.setter
+    def n_instances_(self, val):
+        assert val >= self._block_width, 'The block width should be less than or equal to the number of instances'
+        self._n_instances_ = val
 
     def _cluster_cumsum(self, shuffled=True):
 
@@ -268,6 +287,7 @@ class SimThresholdSplit(object):
                 if end:
                     yield res
                 else:
+                    # py2 compat
                     # yield from ((res, j) for j in slice_generator(low, high, width, end=True))
                     for slice_ in ((res, j) for j in slice_generator(low, high, width, end=True)):
                         yield slice_
@@ -286,6 +306,7 @@ class SimThresholdSplit(object):
         else:
             # multiprocessed
             LOGGER.debug('Generating pairs using memory optimized technique with %s processes', self.n_jobs)
+            # py2 compat
             # with multiprocessing.Pool(self.n_jobs) as p:
             #    return sum(p.map(f, [(i, j) for i, j in slices]), [])
             p = multiprocessing.Pool(self.n_jobs)
