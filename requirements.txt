@@ -7,3 +7,4 @@ ipywidgets
 matplotlib
 scikit-learn
 fuel
+progressbar2
