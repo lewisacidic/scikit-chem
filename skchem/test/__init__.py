@@ -18,7 +18,7 @@ class FakeConfig(object):
 if not hasattr(pytest, 'config'):
     pytest.config = FakeConfig()
 
-chemaxon = pytest.mark.skipif(
-    not pytest.config.getoption("--chemaxon"),
+with_chemaxon = pytest.mark.skipif(
+    not pytest.config.getoption("--with-chemaxon"),
     reason="no chemaxon provided."
 )
