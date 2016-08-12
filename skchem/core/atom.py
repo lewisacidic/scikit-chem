@@ -13,6 +13,7 @@ Defining atoms in scikit-chem.
 import pandas as pd
 
 from rdkit import Chem
+
 from .base import ChemicalObject, PropertyView, ChemicalObjectView
 
 class Atom(Chem.rdchem.Atom, ChemicalObject):
@@ -63,13 +64,18 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
 
         return self.element
 
+
 class AtomView(ChemicalObjectView):
 
     def __getitem__(self, index):
-        if index >= len(self):
-            raise IndexError('Index {} out of range for molecule with {} atoms.'.format(index, len(self)))
+        res = super(AtomView, self).__getitem__(index)
+        if res is None:
+            if index >= len(self):
+                raise IndexError('Index {} out of range for molecule with {} atoms.'.format(index, len(self)))
+            else:
+                return Atom.from_super(self.owner.GetAtomWithIdx(index))
         else:
-            return Atom.from_super(self.owner.GetAtomWithIdx(index))
+            return res
 
     def __len__(self):
         return self.owner.GetNumAtoms()

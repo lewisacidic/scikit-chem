@@ -42,8 +42,18 @@ class ChemicalObjectView(object):
         self.owner = owner
 
     @abstractmethod
-    def __getitem__(self, item):
-        pass
+    def __getitem__(self, index):
+        # subclass call this, then implement the actual get if None
+        if isinstance(index, slice):
+            return self.to_list()[index]
+        if isinstance(index, list) \
+                and all(isinstance(i, bool) for i in index) \
+                and len(index) == len(self):
+            return [self[i] for i, ix in enumerate(index) if ix]
+        elif isinstance(index, (list, tuple)):
+            return [self[ix] for ix in index]
+        else:
+            return None
 
     @abstractmethod
     def __len__(self):
@@ -60,6 +70,11 @@ class ChemicalObjectView(object):
         """ Return a property view of the objects in the view. """
 
         return MolPropertyView(self)
+
+    def to_list(self):
+        """ Return a list of objects in the view. """
+
+        return list(self)
 
     def __repr__(self):
         return '<{class_} values="{values}" at {address}>'.format(

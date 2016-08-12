@@ -128,6 +128,7 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         1               None
         2               None
         3               None
+
     """
 
     def __init__(self, *args, **kwargs):

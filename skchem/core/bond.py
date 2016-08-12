@@ -72,10 +72,14 @@ class BondView(ChemicalObjectView):
 
     """ Bond interface wrapper """
     def __getitem__(self, index):
-        if index >= len(self):
-            raise IndexError('Index {} out of range for molecule with {} bonds.'.format(index, len(self)))
+        res = super(BondView, self).__getitem__(index)
+        if res is None:
+            if index >= len(self):
+                raise IndexError('Index {} out of range for molecule with {} bonds.'.format(index, len(self)))
+            else:
+                return Bond.from_super(self.owner.GetBondWithIdx(index))
         else:
-            return Bond.from_super(self.owner.GetBondWithIdx(index))
+            return res
 
 
     def __len__(self):
