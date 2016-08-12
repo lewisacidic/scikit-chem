@@ -25,7 +25,7 @@ class TestSmiles(object):
         df = read_smiles(resource('test_smiles', 'single_molecule.smiles'))
 
         assert len(df) == 1
-        assert df['structure'][0].to_smiles() == 'C'
+        assert df[0].to_smiles() == 'C'
 
     def test_multiple_parsed(self):
 
@@ -52,7 +52,7 @@ class TestSmiles(object):
 
         df = read_smiles(resource('test_smiles', 'custom_header.smiles'), header=2)
         assert len(df) == 3
-        assert (df.structure.apply(type) == Mol).all()
+        assert (df.apply(type) == Mol).all()
 
     def test_change_smiles_column(self):
 

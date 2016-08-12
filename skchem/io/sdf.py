@@ -116,7 +116,7 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
         if skipfooter:
             mols = mols[:-skipfooter]
 
-    idx = pd.Index((m.name for m in mols), name='name')
+    idx = pd.Index((m.name for m in mols), name='batch')
     data = pd.DataFrame(mols, columns=['structure'])
 
     if read_props:

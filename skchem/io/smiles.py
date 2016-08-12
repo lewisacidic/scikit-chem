@@ -14,7 +14,7 @@ from functools import wraps
 
 import pandas as pd
 
-from ..utils import Suppressor
+from ..utils import Suppressor, squeeze
 from ..core import Mol
 
 def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
@@ -85,6 +85,8 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
         # replace the smiles column with the structure column
         lst = list(data.columns)
         lst[smiles_column] = 'structure'
+        if name_column:
+            lst[name_column] = 'batch'
         data.columns = lst
 
         def parse(row):
@@ -113,7 +115,7 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
         cols = data.columns.tolist()
         cols.remove('structure')
         data = data[['structure'] + cols]
-        return data
+        return squeeze(data, axis=1)
 
 
 def write_smiles(data, smiles_path):
