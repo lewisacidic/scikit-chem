@@ -1,0 +1,19 @@
+
+v0.0.7 (ongoing)
+----------------
+
+This is a minor release in the unstable 0.0.x series, with breaking API changes.
+
+API changes
+~~~~~~~~~~~
+
+New features
+~~~~~~~~~~~~
+
+0187d92: Improvements to the rdkit abstraction views (``Mol.atoms``, ``Mol.bonds``, ``{Mol,Atom,Bond}.props``).
+
+Changes
+~~~~~~~
+
+Bug fixes
+~~~~~~~~~

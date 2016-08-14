@@ -1,6 +1,7 @@
-name: scikit-chem-dev
+channels:
+- https://conda.anaconda.org/richlewis
+
 dependencies:
-- appnope=0.1.0=py35_0
 - bzip2=1.0.6=3
 - cycler=0.10.0=py35_0
 - decorator=4.0.10=py35_0
@@ -22,7 +23,6 @@ dependencies:
 - libtiff=4.0.6=2
 - markupsafe=0.23=py35_2
 - matplotlib=1.5.1=np110py35_0
-- mistune=0.7.2=py35_1
 - mkl=11.3.3=0
 - nbconvert=4.2.0=py35_0
 - nbformat=4.0.1=py35_0
@@ -46,20 +46,19 @@ dependencies:
 - pytest=2.9.2=py35_0
 - python=3.5.2=0
 - python-dateutil=2.5.3=py35_0
-- python.app=1.2=py35_4
 - pytz=2016.6.1=py35_0
 - pyyaml=3.11=py35_4
 - pyzmq=15.4.0=py35_0
 - qt=4.8.7=4
 - readline=6.2=2
 - requests=2.10.0=py35_0
-- richlewis::boost=1.56.0=py35_3
-- richlewis::fuel=0.2.0=py35_0
-- richlewis::picklable-itertools=0.1.1=py35_0
-- richlewis::progressbar2=3.10.0=py35_0
-- richlewis::pytest-runner=2.9=py35_0
-- richlewis::python-utils=2.0.0=py35_0
-- richlewis::rdkit=2016.03.1=np110py35_0
+- boost=1.56.0=py35_3
+- fuel=0.2.0=py35_0
+- picklable-itertools=0.1.1=py35_0
+- progressbar2=3.10.0=py35_0
+- pytest-runner=2.9=py35_0
+- python-utils=2.0.0=py35_0
+- rdkit=2016.03.1=np110py35_0
 - scikit-learn=0.17.1=np110py35_2
 - scipy=0.17.1=np110py35_1
 - setuptools=25.1.6=py35_0
@@ -76,16 +75,7 @@ dependencies:
 - xz=5.2.2=0
 - yaml=0.1.6=0
 - zlib=1.2.8=3
-- pip:
-  - fuel==0.2.0
-  - ipython-genutils==0.1.0
-  - jupyter-client==4.3.0
-  - jupyter-core==4.1.1
-  - picklable-itertools==0.1.1
-  - progressbar2==3.10.0
-  - prompt-toolkit==1.0.3
-  - pytest-runner==2.9
-  - python-utils==2.0.0
-  - tables==3.2.2
-prefix: /Users/rich/anaconda/envs/scikit-chem-dev
 
+- pip:
+  - sphinx-bootstrap-theme==0.4.12
+  - nbsphinx==0.2.9

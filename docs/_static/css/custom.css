@@ -1,0 +1,38 @@
+@media screen and (min-width: 992px) {
+	.alert, .highlight-bash {
+    	margin: 1.5em !important;
+	}
+}
+
+.alert.alert-warning a {
+    color: #C0392B !important;
+}
+
+.alert.alert-info a {
+    color: #446CB3 !important;
+}
+
+div.nbinput > :first-child[class^=highlight] {
+    display: none;
+}
+
+div.nboutput > :first-child[class^=highlight] {
+    display: none;
+}
+
+div.nboutput > :first-child {
+    display: none;
+}
+
+table.dataframe {
+    border: 2px solid #aaaaaa;
+    margin: 0.5em 0 0.5em 0;
+}
+
+table.dataframe td, table.dataframe th {
+    border: 1px solid #cccccc;
+    min-width: 3em;
+    padding: 0.5em;
+}
+
+

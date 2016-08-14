@@ -1,0 +1,30 @@
+
+v0.0.6 (August 2016)
+--------------------
+
+This is a minor release in the unstable 0.0.x series, with breaking API changes.
+
+Highlights include a refactor of base classes to provide a more consistent and extensible API,
+the construction of this documentation and incremental improvements to the continuous integration.
+
+API changes
+~~~~~~~~~~~
+
+Objects no longer take pandas dataframes as input directly, but instead require molecules
+to be passed as a Series, with their data as a supplemental series or dataframe (this may
+be reverted in a patch).
+
+New features
+~~~~~~~~~~~~
+
+Base classes were established for ``Transformer``, ``Filter``, ``TransformFilter``.
+Verbosity options were added, allowing progress bars for most objects.
+Dataset support was added.
+
+Changes
+~~~~~~~
+
+
+Bug fixes
+~~~~~~~~~
+
