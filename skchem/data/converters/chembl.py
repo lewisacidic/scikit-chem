@@ -12,8 +12,10 @@ Dataset constructor for ChEMBL
 import pandas as pd
 import os
 
-from .base import Converter, default_pipeline, contiguous_order
+from .base import Converter, default_pipeline, contiguous_order, Feature
 from ...cross_validation import SimThresholdSplit
+from ... import descriptors
+
 
 class ChEMBLConverter(Converter):
 
@@ -34,6 +36,23 @@ class ChEMBLConverter(Converter):
         train, valid, test = cv.split((70, 15, 15))
         (ms, y, train, valid, test) = contiguous_order((ms, y, train, valid, test), (train, valid, test))
         splits = (('train', train), ('valid', valid), ('test', test))
+
+        features = (
+        Feature(fper=descriptors.MorganFeaturizer(),
+                key='X_morg',
+                axis_names=['batch', 'features']),
+        Feature(fper=descriptors.PhysicochemicalFeaturizer(),
+                key='X_pc',
+                axis_names=['batch', 'features']),
+        Feature(fper=descriptors.AtomFeaturizer(max_atoms=100),
+                key='A',
+                axis_names=['batch', 'atom_idx', 'features']),
+        Feature(fper=descriptors.GraphDistanceTransformer(max_atoms=100),
+                key='G',
+                axis_names=['batch', 'atom_idx', 'atom_idx']),
+        Feature(fper=descriptors.SpacialDistanceTransformer(max_atoms=100),
+                key='G_d'))
+
         self.run(ms, y, output_path, splits=splits)
 
 
