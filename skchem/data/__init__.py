@@ -17,9 +17,11 @@ from .datasets import (
     PhysProp,
     BradleyOpenMP,
     NMRShiftDB2,
-    Tox21
+    Tox21,
+    ChEMBL
 )
 
 __all__ = [
-    'Diversity', 'BursiAmes', 'MullerAmes', 'PhysProp', 'BradleyOpenMP', 'NMRShiftDB2', 'Tox21'
+    'Diversity', 'BursiAmes', 'MullerAmes', 'PhysProp', 'BradleyOpenMP',
+    'NMRShiftDB2', 'Tox21', 'ChEMBL'
 ]

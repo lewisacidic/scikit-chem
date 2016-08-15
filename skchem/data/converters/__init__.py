@@ -10,6 +10,7 @@ from .nmrshiftdb2 import NMRShiftDB2Converter
 from .physprop import PhysPropConverter
 from .bradley_open_mp import BradleyOpenMPConverter
 from .diversity_set import DiversityConverter
+from .chembl import ChEMBLConverter
 
 all_converters = (
     ('diversity', DiversityConverter.fill_subparser),
@@ -18,11 +19,12 @@ all_converters = (
     ('tox21', Tox21Converter.fill_subparser),
     ('nmrshiftdb2', NMRShiftDB2Converter.fill_subparser),
     ('physprop', PhysPropConverter.fill_subparser),
-    ('bradley_open_mp', BradleyOpenMPConverter.fill_subparser)
+    ('bradley_open_mp', BradleyOpenMPConverter.fill_subparser),
+    ('chembl', ChEMBLConverter.fill_subparser)
 )
 
 __all__ = [
     'DiversityConverter', 'BursiAmesConverter', 'MullerAmesConverter',
     'PhysPropConverter', 'BradleyOpenMPConverter', 'NMRShiftDB2Converter',
-    'Tox21Converter'
+    'Tox21Converter', 'ChEMBLConverter'
 ]

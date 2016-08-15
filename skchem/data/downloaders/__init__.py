@@ -10,9 +10,11 @@ from .nmrshiftdb2 import NMRShiftDB2Downloader
 from .physprop import PhysPropDownloader
 from .bradley_open_mp import BradleyOpenMPDownloader
 from .diversity import DiversityDownloader
+from .chembl import ChEMBLDownloader
 
 all_downloaders = (
     ('diversity', DiversityDownloader.fill_subparser),
+    ('chembl', ChEMBLDownloader.fill_subparser),
     ('bursi_ames', BursiAmesDownloader.fill_subparser),
     ('muller_ames', MullerAmesDownloader.fill_subparser),
     ('tox21', Tox21Downloader.fill_subparser),
@@ -20,3 +22,9 @@ all_downloaders = (
     ('physprop', PhysPropDownloader.fill_subparser),
     ('bradley_open_mp', BradleyOpenMPDownloader.fill_subparser)
 )
+
+__all__ = [
+    'DiversityDownloader', 'ChEMBLDownloader', 'BursiAmesDownloader',
+    'MullerAmesDownloader', 'Tox21Downloader', 'NMRShiftDB2Downloader',
+    'PhysPropDownloader', 'BradleyOpenMPDownloader'
+]

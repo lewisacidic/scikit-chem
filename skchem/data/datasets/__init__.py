@@ -14,7 +14,9 @@ from .tox21 import Tox21
 from .physprop import PhysProp
 from .nmrshiftdb2 import NMRShiftDB2
 from .bradley_open_mp import BradleyOpenMP
+from .chembl import ChEMBL
 
 __all__ = [
-    'Diversity', 'BursiAmes', 'MullerAmes', 'PhysProp', 'BradleyOpenMP', 'NMRShiftDB2', 'Tox21'
+    'Diversity', 'BursiAmes', 'MullerAmes', 'PhysProp', 'BradleyOpenMP',
+    'NMRShiftDB2', 'Tox21', 'ChEMBL'
 ]
