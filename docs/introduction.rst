@@ -3,10 +3,10 @@
 An introduction to scikit-chem
 ==============================
 
-scikit-chem is a high level cheminformatics library built on rdkit_ that aims
-to integrate with the `Scientific Python Stack`_ by promoting interoperativity
-with libraries such as pandas_ and scikit-learn_, and emulating similar
-patterns and APIs as found in those libraries.
+**scikit-chem** is a high level cheminformatics library built on rdkit_ that
+aims to integrate with the `Scientific Python Stack`_ by promoting
+interoperativity with libraries such as pandas_ and scikit-learn_, and
+emulating similar patterns and APIs as found in those libraries.
 
 Some notable features include:
 
@@ -22,10 +22,10 @@ Some notable features include:
 - Structure visualization
 - Interactivity in `Jupyter Notebooks`_
 
-scikit-chem should be thought of as a simple complement to the excellent rdkit_
-- scikit-chem objects are subclasses of rdkit_ objects, and as such, the two
-libraries can usually be used together easily when the advanced functionality
-of rdkit_ is required.
+**scikit-chem** should be thought of as a simple complement to the excellent
+rdkit_ - **scikit-chem** objects are subclasses of rdkit_ objects, and as such,
+the two libraries can usually be used together easily when the advanced
+functionality of rdkit_ is required.
 
 .. _rdkit: http://www.rdkit.org
 .. _pandas: http://pandas.pydata.org

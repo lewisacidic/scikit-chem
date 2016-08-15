@@ -6,17 +6,17 @@
 scikit-chem: simple cheminformatics for *Python*
 ================================================
 
-scikit-chem provides a high level, *Pythonic* interface to the rdkit_ library,
-with wrappers for other popular cheminformatics tools.
+**scikit-chem** provides a high level, *Pythonic* interface to the rdkit_
+library,  with wrappers for other popular cheminformatics tools.
 
 For a brief introduction to the ideas behind the package, please read the
-:ref:`introductory notes <introduction>`.  Installation info may be found on the
-:ref:`installation page <installing>`.  To get started straight away, try the
-:ref:`quick start guide <quickstart>`.  For a more in depth understanding, check out
-the :ref:`tutorial <tutorial>` and the :ref:`API reference <api>`.
+:ref:`introductory notes <introduction>`.  Installation info may be found on
+the :ref:`installation page <installing>`.  To get started straight away, try
+the :ref:`quick start guide <quickstart>`.  For a more in depth understanding,
+check out the :ref:`tutorial <tutorial>` and the :ref:`API reference <api>`.
 
-To read the code, submit feature requests, report a bug or contribute to the project,
-please visit the projects `github repository`_.
+To read the code, submit feature requests, report a bug or contribute to the
+project, please visit the projects `github repository`_.
 
 .. raw:: html
 
@@ -46,9 +46,9 @@ please visit the projects `github repository`_.
 
 .. warning::
 
-    scikit-chem is currently in pre-alpha.  The basic API may change between
-    releases as we develop and optimise the library.  Please read the :ref:`what's new <whatsnew>`
-    page when updating to stay on top of changes.
+    **scikit-chem** is currently in pre-alpha.  The basic API may change
+    between releases as we develop and optimise the library.  Please read the
+    :ref:`what's new <whatsnew>` page when updating to stay on top of changes.
 
 .. raw:: html
 

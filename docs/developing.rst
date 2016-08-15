@@ -58,7 +58,7 @@ is submitted!
 Code Quality
 ------------
 
-scikit-chem** conforms to pep8.  PyLint is used to assess code quality locally,
+**scikit-chem** conforms to pep8.  PyLint is used to assess code quality locally,
 and can be run using ``pylint skchem`` from the root of the project.
 Scrutinzer_ is also set up to run as part of the CI.  As with test coverage,
 code quality has slipped due to time demands, and will be fixed once the PhD is
@@ -68,9 +68,9 @@ Documentation
 -------------
 
 This documentation is built using Sphinx_, and Bootstrap using the Bootswatch
- Flatly theme.  The documentation is hosted on `Github Pages`_.  To build the
- html documentation locally, run ``make html``. To serve it, run
- ``make livehtml``.
+Flatly theme.  The documentation is hosted on `Github Pages`_.  To build the
+html documentation locally, run ``make html``. To serve it, run
+``make livehtml``.
 
 .. _GitHub: https://github.com/richlewis42/scikit-chem
 .. _pull requests: https://github.com/richlewis42/scikit-chem/pulls
