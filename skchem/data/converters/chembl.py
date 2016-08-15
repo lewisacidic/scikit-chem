@@ -8,13 +8,15 @@
 
 Dataset constructor for ChEMBL
 """
-
+import logging
 import pandas as pd
 import os
 
 from .base import Converter, default_pipeline, contiguous_order, Feature
 from ...cross_validation import SimThresholdSplit
 from ... import descriptors
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ChEMBLConverter(Converter):
@@ -61,3 +63,8 @@ class ChEMBLConverter(Converter):
         ms = pd.read_hdf(filename, 'structure')
         y = pd.read_hdf(filename, 'targets/Y')
         return ms, y
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    LOGGER.info('Converting ChEMBL...')
+    ChEMBLConverter.convert()
