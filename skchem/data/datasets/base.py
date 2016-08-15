@@ -8,7 +8,7 @@ import tempfile
 import os
 
 import pandas as pd
-
+import h5py
 from fuel.datasets import H5PYDataset
 from fuel.utils import find_in_data_path
 from fuel import config
@@ -21,6 +21,16 @@ class Dataset(H5PYDataset):
         kwargs.setdefault('load_in_memory', True)
         super(Dataset, self).__init__(
             file_or_path=find_in_data_path(self.filename), **kwargs)
+
+    @classmethod
+    def available_sources(cls):
+        with h5py.File(find_in_data_path(cls.filename)) as f:
+            return cls.get_all_sources(f)
+
+    @classmethod
+    def available_sets(cls):
+        with h5py.File(find_in_data_path(cls.filename)) as f:
+            return cls.get_all_splits(f)
 
     @classmethod
     def load_set(cls, set_name, sources=()):
