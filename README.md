@@ -26,3 +26,5 @@ Some notable features include:
 - Interactivity in Jupyter Notebooks
 
 scikit-chem should be thought of as a simple complement to the excellent rdkit - scikit-chem objects are subclasses of rdkit objects, and as such, the two libraries can usually be used together easily when the advanced functionality of rdkit is required.
+
+See the [quickstart guide](http://scikit-chem.readthedocs.io/en/latest/quickstart.html) in the documentation for an example workflow using **scikit-chem**.
