@@ -8,13 +8,21 @@
 
 # scikit-chem
 
-Quick attempt at more straightforwardly integrating the Scientific Python Stack with the RDKit Cheminformatics library.
+**scikit-chem** is a high level cheminformatics library, built on the excellent [RDKit](https://github.com/rdkit/rdkit), aimed to integrating with the Scientific Python Stack.
+scikit-chem is a high level cheminformatics library built on rdkit that aims to integrate with the Scientific Python Stack by promoting interoperativity with libraries such as pandas and scikit-learn, and emulating similar patterns and APIs as found in those libraries.
 
-- RDKit objects are inherited from, and their APIs are made more Pythonic(to an extent).
-- Longer term goals are to integrate as many webservices as possible
+Some notable features include:
 
-##Note
+- Pythonic core API
+- Consistent, declarative interfaces for many cheminformatics tasks, including:
+  - Reading file formats
+  - Chemical standardization
+  - Conformer generation
+  - Filtering
+  - Feature calculation
+  - Pipelining
+- A simple interface for chemical datasets
+- Structure visualization
+- Interactivity in Jupyter Notebooks
 
-- Work in Progress
-
-- Speed is not high on priority list. A demonstration of the convenience is the aim - much more would be required to maintain the RDKit levels of efficiency.  The end goal of the project may be simply to feed changes back into RDKit
+scikit-chem should be thought of as a simple complement to the excellent rdkit - scikit-chem objects are subclasses of rdkit objects, and as such, the two libraries can usually be used together easily when the advanced functionality of rdkit is required.
