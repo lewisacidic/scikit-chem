@@ -12,6 +12,7 @@ Module for drawing molecules.
 from matplotlib import pyplot as plt
 from rdkit.Chem.Draw import DrawingOptions, MolToImage
 
+
 def draw(mol, quality=1, ax=None):
 
     """Draw a molecule on a matplotlib axis.
@@ -20,8 +21,10 @@ def draw(mol, quality=1, ax=None):
         mol (skchem.Mol):
             The molecule to be drawn.
         quality (int):
-            The level of quality.  Higher quality takes more time, but will be
-            higher quality (so long as matplotlib's savefig.dpi is high enough).
+            The level of quality.  Higher quality takes more time, but will
+            look better (so long as matplotlib's savefig.dpi is high enough).
+        ax (plt.Axes or None):
+            An existing axis on which to draw the molecule.
 
     Returns:
         plt.AxesImage:
@@ -40,9 +43,7 @@ def draw(mol, quality=1, ax=None):
 
     size = 300 * quality
 
-    img, canvas, drawer = MolToImage(mol, size=(size, size), options=opts, returnCanvas=True)
+    img, canvas, drawer = MolToImage(mol, size=(size, size), options=opts,
+                                     returnCanvas=True)
     canvas.flush()
     return ax.imshow(img, extent=(0, 1, 0, 1))
-
-
-    return ax

@@ -9,7 +9,6 @@
 IO helper functions for skchem.
 """
 
-import subprocess
 
 def line_count(filename):
 
@@ -33,11 +32,13 @@ def line_count(filename):
         buf = read_f(buf_size)
     return lines
 
+
 def sdf_count(filename):
 
     """ Efficiently count molecules in an sdf file.
 
-    Specifically, the function counts the number of times '$$$$' occurs at the start of lines in the file.
+    Specifically, the function counts the number of times '$$$$' occurs at the
+    start of lines in the file.
 
     Args:
         filename (str): The filename of the sdf file.

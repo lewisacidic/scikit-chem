@@ -15,7 +15,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def plot_weights(mol, weights, quality=1, l=0.4, step=50, levels=20, contour_opacity=0.5, cmap='RdBu', ax=None, **kwargs):
+def plot_weights(mol, weights, quality=1, l=0.4, step=50, levels=20,
+                 contour_opacity=0.5, cmap='RdBu', ax=None, **kwargs):
     """ Plot weights as a sum of gaussians across a structure image.
 
     Args:
@@ -25,7 +26,7 @@ def plot_weights(mol, weights, quality=1, l=0.4, step=50, levels=20, contour_opa
             Array of weights in atom index order.
         l (float):
             Lengthscale of gaussians to visualize as a multiple of bond length.
-        steps (int):
+        step (int):
             Size of grid edge to calculate the gaussians.
         levels (int):
             Number of contours to plot.
@@ -54,9 +55,12 @@ def plot_weights(mol, weights, quality=1, l=0.4, step=50, levels=20, contour_opa
 
     size = 300 * quality
 
-    img, canvas, drawer = MolToImage(mol, size=(size, size), options=opts, returnCanvas=True)
+    img, canvas, drawer = MolToImage(mol, size=(size, size), options=opts,
+                                     returnCanvas=True)
     canvas.flush()
-    coords = np.array([[i / size, 1 - j / size] for k, (i, j) in list(drawer.atomPs.values())[0].items()])
+    coords = [[i / size, 1 - j / size]
+              for k, (i, j) in list(drawer.atomPs.values())[0].items()]
+    coords = np.array(coords)
 
     b = mol.bonds[0]
     begin, end = b.GetBeginAtom().GetIdx(), b.GetEndAtom().GetIdx()
@@ -67,11 +71,13 @@ def plot_weights(mol, weights, quality=1, l=0.4, step=50, levels=20, contour_opa
     x, y = np.meshgrid(x, y)
 
     def gaussian(x, y, mu=np.zeros(2), sigma=np.identity(2), size=50):
-        return (1 / (2 * np.pi * sigma[0, 0] * sigma[1, 1]) * np.exp(-((x - mu[0]) ** 2 / (2 * sigma[0, 0] ** 2)
-         + (y - mu[1]) ** 2 / (2 * sigma[1, 1] ** 2))))
+        return (1 / (2 * np.pi * sigma[0, 0] * sigma[1, 1]) *
+                np.exp(-((x - mu[0]) ** 2 / (2 * sigma[0, 0] ** 2) +
+                         (y - mu[1]) ** 2 / (2 * sigma[1, 1] ** 2))))
 
     if not np.max(weights) == np.min(weights) == 0:
-        z = sum([w * gaussian(x, y, mu, sigma=l * length * np.identity(2)) for mu, w in zip(coords, weights)])
+        z = sum([w * gaussian(x, y, mu, sigma=l * length * np.identity(2))
+                 for mu, w in zip(coords, weights)])
         v = np.max((np.abs(z.min()), np.abs(z.max())))
     else:
         z = np.zeros(x.shape)
@@ -79,7 +85,8 @@ def plot_weights(mol, weights, quality=1, l=0.4, step=50, levels=20, contour_opa
 
     if z.min() >= 0:
         levels = int(levels/2)
-    cf = ax.contourf(x, y, z, levels, alpha=contour_opacity, extent=(0, 1, 0, 1), vmin=-v, vmax=v, cmap=cmap, **kwargs)
+    ax.contourf(x, y, z, levels, alpha=contour_opacity,
+                extent=(0, 1, 0, 1), vmin=-v, vmax=v, cmap=cmap, **kwargs)
 
     ax.imshow(img, extent=(0, 1, 0, 1))
     return ax

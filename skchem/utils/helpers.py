@@ -33,7 +33,9 @@ def iterable_to_series(mols):
     if isinstance(mols, dict):
         return pd.Series(mols, name='structure')
     else:
-        return pd.Series(mols, index=[mol.name if mol.name else i for i, mol in enumerate(mols)], name='structure')
+        return pd.Series(mols, index=[mol.name if mol.name else i
+                                      for i, mol in enumerate(mols)],
+                         name='structure')
 
 
 def nanarray(shape):
@@ -68,7 +70,8 @@ def squeeze(data, axis=None):
         axis = range(len(data.axes))
     elif isinstance(axis, int):
         axis = (axis,)
-    return data.iloc[tuple([0 if len(a) == 1 and i in axis else slice(None) for i, a in enumerate(data.axes)])]
+    return data.iloc[tuple([0 if len(a) == 1 and i in axis else slice(None)
+                            for i, a in enumerate(data.axes)])]
 
 
 class Defaults(object):
@@ -79,7 +82,7 @@ class Defaults(object):
 
     def get(self, val):
         if isinstance(val, str):
-           return self.defaults.get(val)
+            return self.defaults.get(val)
         else:
             return val
 

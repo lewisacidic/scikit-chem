@@ -44,7 +44,8 @@ class Visualizer(object):
         self.update_smiles(None)
         self.display()
 
-    def initialize_ipython(self):
+    @staticmethod
+    def initialize_ipython():
         ipython = get_ipython()
         try:
             ipython.magic('matplotlib inline')
@@ -113,4 +114,5 @@ class Visualizer(object):
         clear_output()
         plt.clf()
         plt.rcParams['savefig.dpi'] = self.dpi
-        vis.plot_weights(self.mol, self.fpg.ix[self.current_bit], quality=4, ax=plt.gca())
+        vis.plot_weights(self.mol, self.fpg.ix[self.current_bit],
+                         quality=4, ax=plt.gca())

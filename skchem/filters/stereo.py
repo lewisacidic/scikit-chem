@@ -15,6 +15,7 @@ import pandas as pd
 from .base import Filter
 from ..utils import Suppressor
 
+
 class ChiralFilter(Filter):
 
     """ Filter chiral compounds.
@@ -36,17 +37,20 @@ class ChiralFilter(Filter):
         Name: is_chiral, dtype: bool
 
     """
-    def __init__(self, check_meso=True, **kwargs):
-        self.check_meso = True
-        super(ChiralFilter, self).__init__(**kwargs)
+    def __init__(self, check_meso=True, agg='any', verbose=True):
+        self.check_meso = check_meso
+        super(ChiralFilter, self).__init__(agg=agg, verbose=verbose)
 
     @property
     def columns(self):
         return pd.Index(['is_chiral'])
 
-    def _is_meso(self, mol):
-        """ Determines whether the molecule is meso (i.e. has chiral centres, but has a mirror plane allowing
-        superposition).
+    @staticmethod
+    def is_meso(mol):
+        """ Determines whether the molecule is meso.
+
+        Meso compounds have chiral centres, but has a mirror plane allowing
+        superposition.
 
         Examples:
             >>> import skchem
@@ -55,18 +59,19 @@ class ChiralFilter(Filter):
 
             >>> meso = skchem.Mol.from_smiles('F[C@H](Br)[C@H](Br)F')
 
-            >>> cf._is_meso(meso)
+            >>> cf.is_meso(meso)
             True
 
             >>> non_meso = skchem.Mol.from_smiles('F[C@H](Br)[C@@H](Br)F')
-            >>> cf._is_meso(non_meso)
+            >>> cf.is_meso(non_meso)
             False
         """
         with Suppressor():
-            return InchiInfo(mol.to_inchi()).get_sp3_stereo()['main']['non-isotopic'][2]
+            info = InchiInfo(mol.to_inchi())
+            return info.get_sp3_stereo()['main']['non-isotopic'][2]
 
     def _transform_mol(self, mol):
 
-        is_meso = self._is_meso(mol) if self.check_meso else False
+        is_meso = self.is_meso(mol) if self.check_meso else False
 
         return any(atom.GetChiralTag() for atom in mol.atoms) and not is_meso

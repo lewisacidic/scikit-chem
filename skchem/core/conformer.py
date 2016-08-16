@@ -13,16 +13,18 @@ import rdkit.Chem
 from .point import Point3D
 from .base import ChemicalObject
 
+
 class Conformer(rdkit.Chem.rdchem.Conformer, ChemicalObject):
 
     """ Class representing a Conformer in scikit-chem. """
-    #should use a view, list for now
+
     @property
     def atom_positions(self):
 
-        """ Return the atom positions in the conformer for the atoms in the molecule. """
+        """ The atom positions in the conformer. """
 
-        return [Point3D.from_super(self.GetAtomPosition(i)) for i in range(self.GetNumAtoms())]
+        return [Point3D.from_super(self.GetAtomPosition(i))
+                for i in range(self.GetNumAtoms())]
 
     @atom_positions.setter
     def atom_positions(self, value):
@@ -46,5 +48,7 @@ class Conformer(rdkit.Chem.rdchem.Conformer, ChemicalObject):
         self.set3D(value)
 
     def __repr__(self):
-        return '<{klass} id="{id}" at {address}>'.format(klass=self.__class__.__name__, \
-            id=self.GetId(), address=hex(id(self)))
+        return '<{klass} id="{id}" at {address}>'.format(
+            klass=self.__class__.__name__,
+            id=self.GetId(),
+            address=hex(id(self)))

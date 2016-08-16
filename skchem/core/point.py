@@ -9,13 +9,14 @@
 Defining points in scikit-chem.
 """
 
-# the functionality here perhaps should be replaced by numpy arrays to get closer
-# integration with the scientific python stack.
+# the functionality here perhaps should be replaced by numpy arrays to get
+# closer integration with the scientific python stack.
 
-import rdkit.Geometry.rdGeometry
+from rdkit.Geometry.rdGeometry import Point3D as RDPoint3D
 from .base import ChemicalObject
 
-class Point3D(rdkit.Geometry.rdGeometry.Point3D, ChemicalObject):
+
+class Point3D(RDPoint3D, ChemicalObject):
 
     """ Class representing a point in scikit-chem """
 
@@ -37,12 +38,14 @@ class Point3D(rdkit.Geometry.rdGeometry.Point3D, ChemicalObject):
             return {"x": round(self.x), "y": round(self.y), "z": round(self.z)}
 
     def __repr__(self):
-        return '<{klass} coords="({x:.2f}, {y:.2f}, {z:.2f})" at {address}>'.format(
-            klass=self.__class__.__name__, \
-            x=self.x, \
-            y=self.y, \
-            z=self.z, \
-            address=hex(id(self)))
+        return '<{kls} coords="({x:.2f}, {y:.2f}, {z:.2f})" at {add}>'.format(
+            kls=self.__class__.__name__,
+            x=self.x,
+            y=self.y,
+            z=self.z,
+            add=hex(id(self)))
 
     def __str__(self):
-        return '({x:.2f}, {y:.2f}, {z:.2f})'.format(x=self.x, y=self.y, z=self.z)
+        return '({x:.2f}, {y:.2f}, {z:.2f})'.format(x=self.x,
+                                                    y=self.y,
+                                                    z=self.z)

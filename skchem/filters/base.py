@@ -28,9 +28,15 @@ AGGS = Defaults(defaults={
 
 class BaseFilter(BaseTransformer):
 
-    def __init__(self, agg='any', **kwargs):
-        super(BaseFilter, self).__init__(**kwargs)
+    """ The base Filter class. """
+
+    def __init__(self, agg='any', verbose=True):
+        self._agg = None
+        super(BaseFilter, self).__init__(verbose=verbose)
         self.agg = agg
+
+    def axes_names(self):
+        return 'batch', self.columns.name
 
     @property
     def agg(self):
@@ -66,18 +72,18 @@ class BaseFilter(BaseTransformer):
         """
 
         res = self.transform(mols, agg=False) if res is None else res
-        res = (res != False) & pd.notnull(res)
+        res = (res != 0) & pd.notnull(res)
         if isinstance(res, pd.Series) and isinstance(mols, core.Mol):
             res = self.agg(res)
         if isinstance(res, pd.DataFrame):
             res = res.apply(self.agg, axis=1)
-        return res == False if neg else res
+        return res == 0 if neg else res
 
     @optional_second_method
     def transform(self, mols, agg=True, **kwargs):
 
-        # transform takes additional optional kwarg `agg`, that specifies to transform to the aggregated value or
-        # return the full series.
+        # transform takes additional optional kwarg `agg`, that specifies to
+        # transform to the aggregated value or return the full series.
 
         if agg:
             return self._mask(mols)
@@ -107,8 +113,8 @@ class Filter(BaseFilter, Transformer):
          func (function: Mol => bool):
              The function to use to filter the arguments.
          agg (str or function: iterable<bool> => bool):
-             The aggregation to use in the filter. Can be 'any', 'all', 'not any', 'not all' or a callable,
-             for example `any` or `all`.
+             The aggregation to use in the filter. Can be 'any', 'all',
+             'not any', 'not all' or a callable, for example `any` or `all`.
 
      Examples:
 
@@ -143,8 +149,8 @@ class Filter(BaseFilter, Transformer):
          anonymous    <Mol: c1ccccc1>
          dtype: object
      """
-    def __init__(self, func=None, **kwargs):
-        super(Filter, self).__init__(**kwargs)
+    def __init__(self, func=None, agg='any', verbose=True):
+        super(Filter, self).__init__(agg=agg, verbose=verbose)
         if func is not None:
             self._transform_mol = func
 
@@ -157,7 +163,8 @@ class TransformFilter(BaseFilter):
     """ Transform Filter object.
 
      Implements `transform_filter`, which allows a transform, then a
-     filter step returning the transformed values that are not `False`, `None` or `np.nan`.
+     filter step returning the transformed values that are not `False`, `None`
+     or `np.nan`.
 
      """
 

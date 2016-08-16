@@ -7,10 +7,10 @@
 
  Tools for adding a default attribute to pandas objects."""
 
+
 from sklearn.manifold import TSNE, MDS
 from sklearn.decomposition import PCA
 
-from matplotlib import pyplot as plt
 import pandas as pd
 
 from pandas.core.base import NoNewAttributesMixin, AccessorProperty
@@ -40,7 +40,11 @@ class StructureMethods(NoNewAttributesMixin):
     def remove_hs(self, **kwargs):
         return self._data.apply(lambda m: m.remove_hs(**kwargs))
 
-    def visualize(self, fper='morgan', dim_red='tsne', dim_red_kw={}, **kwargs):
+    def visualize(self, fper='morgan', dim_red='tsne', dim_red_kw=None,
+                  **kwargs):
+
+        if dim_red_kw is None:
+            dim_red_kw = {}
 
         if isinstance(dim_red, str):
             dim_red = DIM_RED.get(dim_red.lower())(**dim_red_kw)

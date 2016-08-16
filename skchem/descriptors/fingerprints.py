@@ -12,18 +12,19 @@ Fingerprinting classes and associated functions are defined.
 import pandas as pd
 from rdkit.Chem import GetDistanceMatrix
 from rdkit.DataStructs import ConvertToNumpyArray
-from rdkit.Chem.rdMolDescriptors import (GetMorganFingerprint,
-                                         GetHashedMorganFingerprint,
-                                         GetMorganFingerprintAsBitVect,
-                                         GetAtomPairFingerprint,
-                                         GetHashedAtomPairFingerprint,
-                                         GetHashedAtomPairFingerprintAsBitVect,
-                                         GetTopologicalTorsionFingerprint,
-                                         GetHashedTopologicalTorsionFingerprint,
-                                         GetHashedTopologicalTorsionFingerprintAsBitVect,
-                                         GetMACCSKeysFingerprint,
-                                         GetFeatureInvariants,
-                                         GetConnectivityInvariants)
+from rdkit.Chem.rdMolDescriptors import (
+    GetMorganFingerprint,
+    GetHashedMorganFingerprint,
+    GetMorganFingerprintAsBitVect,
+    GetAtomPairFingerprint,
+    GetHashedAtomPairFingerprint,
+    GetHashedAtomPairFingerprintAsBitVect,
+    GetTopologicalTorsionFingerprint,
+    GetHashedTopologicalTorsionFingerprint,
+    GetHashedTopologicalTorsionFingerprintAsBitVect,
+    GetMACCSKeysFingerprint,
+    GetFeatureInvariants,
+    GetConnectivityInvariants)
 from rdkit.Chem.rdReducedGraphs import GetErGFingerprint
 from rdkit.Chem.rdmolops import RDKFingerprint
 
@@ -66,7 +67,8 @@ class MorganFeaturizer(Transformer, Featurizer):
         <BLANKLINE>
         [1 rows x 2048 columns]
 
-        Change the number of features the fingerprint is folded down to using `n_feats`.
+        Change the number of features the fingerprint is folded down to using
+        `n_feats`.
 
         >>> mf.n_feats = 1024
         >>> mf.transform(m)
@@ -89,7 +91,8 @@ class MorganFeaturizer(Transformer, Featurizer):
         320    1
         Name: MorganFeaturizer, dtype: int64
 
-        Pseudo-gradient with `grad` shows which atoms contributed to which feature.
+        Pseudo-gradient with `grad` shows which atoms contributed to which
+        feature.
 
         >>> mf.grad(m)[res > 0]
         atom_idx  0  1  2
@@ -100,8 +103,9 @@ class MorganFeaturizer(Transformer, Featurizer):
         320       1  1  1
 
     """
-    def __init__(self, radius=2, n_feats=2048, as_bits=True, use_features=False,
-                 use_bond_types=True, use_chirality=False, **kwargs):
+    def __init__(self, radius=2, n_feats=2048, as_bits=True,
+                 use_features=False, use_bond_types=True, use_chirality=False,
+                 verbose=True):
 
         """ Initialize the fingerprinter object.
 
@@ -117,7 +121,7 @@ class MorganFeaturizer(Transformer, Featurizer):
                  Whether to return bits (`True`) or counts (`False`).
                  Default is `True`.
              use_features (bool):
-                 Whether to use map atom types to generic features (FCFP analog).
+                 Whether to use map atom types to generic features (FCFP).
                  Default is `False`.
              use_bond_types (bool):
                  Whether to use bond types to differentiate environments.
@@ -125,9 +129,12 @@ class MorganFeaturizer(Transformer, Featurizer):
              use_chirality (bool):
                  Whether to use chirality to differentiate environments.
                  Default is `False`.
+             verbose (bool):
+                Whether to output a progress bar.
+
         """
 
-        super(MorganFeaturizer, self).__init__(**kwargs)
+        super(MorganFeaturizer, self).__init__(verbose=verbose)
         self.radius = radius
         self.n_feats = n_feats
         self.sparse = self.n_feats < 0
@@ -140,8 +147,8 @@ class MorganFeaturizer(Transformer, Featurizer):
 
         """Private method to transform a skchem molecule.
 
-        Use `transform` for the public method, which genericizes the argument to
-        iterables of mols.
+        Use `transform` for the public method, which genericizes the argument
+        to iterables of mols.
 
         Args:
             mol (skchem.Mol): Molecule to calculate fingerprint for.
@@ -153,11 +160,12 @@ class MorganFeaturizer(Transformer, Featurizer):
 
         if self.as_bits and self.n_feats > 0:
 
-            fp = GetMorganFingerprintAsBitVect(mol, self.radius,
-                                               nBits=self.n_feats,
-                                               useFeatures=self.use_features,
-                                               useBondTypes=self.use_bond_types,
-                                               useChirality=self.use_chirality)
+            fp = GetMorganFingerprintAsBitVect(
+                mol, self.radius, nBits=self.n_feats,
+                useFeatures=self.use_features,
+                useBondTypes=self.use_bond_types,
+                useChirality=self.use_chirality)
+
             res = np.array(0)
             ConvertToNumpyArray(fp, res)
             res = res.astype(np.uint8)
@@ -166,20 +174,23 @@ class MorganFeaturizer(Transformer, Featurizer):
 
             if self.n_feats <= 0:
 
-                res = GetMorganFingerprint(mol, self.radius,
-                                           useFeatures=self.use_features,
-                                           useBondTypes=self.use_bond_types,
-                                           useChirality=self.use_chirality)
+                res = GetMorganFingerprint(
+                    mol, self.radius,
+                    useFeatures=self.use_features,
+                    useBondTypes=self.use_bond_types,
+                    useChirality=self.use_chirality)
+
                 res = res.GetNonzeroElements()
                 if self.as_bits:
                     res = {k: int(v > 0) for k, v in res.items()}
 
             else:
-                res = GetHashedMorganFingerprint(mol, self.radius,
-                                                 nBits=self.n_feats,
-                                                 useFeatures=self.use_features,
-                                                 useBondTypes=self.use_bond_types,
-                                                 useChirality=self.use_chirality)
+                res = GetHashedMorganFingerprint(
+                    mol, self.radius, nBits=self.n_feats,
+                    useFeatures=self.use_features,
+                    useBondTypes=self.use_bond_types,
+                    useChirality=self.use_chirality)
+
                 res = np.array(list(res))
 
         return res
@@ -230,12 +241,12 @@ class MorganFeaturizer(Transformer, Featurizer):
 
         else:
 
-            res = list(GetHashedMorganFingerprint(mol, self.radius,
-                                                  nBits=self.n_feats,
-                                                  useFeatures=self.use_features,
-                                                  useBondTypes=self.use_bond_types,
-                                                  useChirality=self.use_chirality,
-                                                  bitInfo=info))
+            GetHashedMorganFingerprint(mol, self.radius, nBits=self.n_feats,
+                                       useFeatures=self.use_features,
+                                       useBondTypes=self.use_bond_types,
+                                       useChirality=self.use_chirality,
+                                       bitInfo=info)
+
             idx = pd.Index(range(self.n_feats), name='features')
             grad = np.zeros((len(idx), len(cols)))
 
@@ -255,8 +266,8 @@ class AtomPairFeaturizer(Transformer, Featurizer):
 
     """ Atom Pair Fingerprints, implemented by RDKit. """
 
-    def __init__(self, min_length=1, max_length=30, n_feats=2048, as_bits=False,
-                 use_chirality=False, **kwargs):
+    def __init__(self, min_length=1, max_length=30, n_feats=2048,
+                 as_bits=False, use_chirality=False, verbose=True):
 
         """ Instantiate an atom pair fingerprinter.
 
@@ -277,9 +288,11 @@ class AtomPairFeaturizer(Transformer, Featurizer):
             use_chirality (bool):
                 Whether to use chirality to differentiate environments.
                 Default is `False`.
+            verbose (bool):
+                Whether to output a progress bar.
         """
 
-        super(AtomPairFeaturizer, self).__init__(**kwargs)
+        super(AtomPairFeaturizer, self).__init__(verbose=verbose)
         self.min_length = min_length
         self.max_length = max_length
         self.n_feats = n_feats
@@ -302,13 +315,12 @@ class AtomPairFeaturizer(Transformer, Featurizer):
                 Fingerprint as an array (or a dict if sparse).
         """
 
-
         if self.as_bits and self.n_feats > 0:
 
-            fp = GetHashedAtomPairFingerprintAsBitVect(mol, nBits=self.n_feats,
-                                           minLength=self.min_length,
-                                           maxLength=self.max_length,
-                                           includeChirality=self.use_chirality)
+            fp = GetHashedAtomPairFingerprintAsBitVect(
+                mol, nBits=self.n_feats, minLength=self.min_length,
+                maxLength=self.max_length, includeChirality=self.use_chirality)
+
             res = np.array(0)
             ConvertToNumpyArray(fp, res)
             res = res.astype(np.uint8)
@@ -317,19 +329,21 @@ class AtomPairFeaturizer(Transformer, Featurizer):
 
             if self.n_feats <= 0:
 
-                res = GetAtomPairFingerprint(mol, nBits=self.n_feats,
-                                               minLength=self.min_length,
-                                               maxLength=self.max_length,
-                                               includeChirality=self.use_chirality)
+                res = GetAtomPairFingerprint(
+                    mol, nBits=self.n_feats, minLength=self.min_length,
+                    maxLength=self.max_length,
+                    includeChirality=self.use_chirality)
+
                 res = res.GetNonzeroElements()
                 if self.as_bits:
                     res = {k: int(v > 0) for k, v in res.items()}
 
             else:
-                res = GetHashedAtomPairFingerprint(mol, nBits=self.n_feats,
-                                               minLength=self.min_length,
-                                               maxLength=self.max_length,
-                                               includeChirality=self.use_chirality)
+                res = GetHashedAtomPairFingerprint(
+                    mol, nBits=self.n_feats, minLength=self.min_length,
+                    maxLength=self.max_length,
+                    includeChirality=self.use_chirality)
+
                 res = np.array(list(res))
 
         return res
@@ -348,7 +362,7 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
     """ Topological Torsion fingerprints, implemented by RDKit. """
 
     def __init__(self, target_size=4, n_feats=2048, as_bits=False,
-                 use_chirality=False, **kwargs):
+                 use_chirality=False, verbose=True):
 
         """
         Args:
@@ -364,6 +378,8 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
             use_chirality (bool):
                 Whether to use chirality to differentiate environments.
                 Default is `False`.
+            verbose (bool):
+                Whether to output a progress bar.
         """
 
         self.target_size = target_size
@@ -371,7 +387,7 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
         self.sparse = self.n_feats < 0
         self.as_bits = as_bits
         self.use_chirality = use_chirality
-        super(TopologicalTorsionFeaturizer, self).__init__(**kwargs)
+        super(TopologicalTorsionFeaturizer, self).__init__(verbose=verbose)
 
     def _transform_mol(self, mol):
         """ Private method to transform a skchem molecule.
@@ -385,9 +401,10 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
 
         if self.as_bits and self.n_feats > 0:
 
-            fp = GetHashedTopologicalTorsionFingerprintAsBitVect(mol, nBits=self.n_feats,
-                                           targetSize=self.target_size,
-                                           includeChirality=self.use_chirality)
+            fp = GetHashedTopologicalTorsionFingerprintAsBitVect(
+                mol, nBits=self.n_feats, targetSize=self.target_size,
+                includeChirality=self.use_chirality)
+
             res = np.array(0)
             ConvertToNumpyArray(fp, res)
             res = res.astype(np.uint8)
@@ -396,17 +413,19 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
 
             if self.n_feats <= 0:
 
-                res = GetTopologicalTorsionFingerprint(mol, nBits=self.n_feats,
-                                               targetSize=self.target_size,
-                                               includeChirality=self.use_chirality)
+                res = GetTopologicalTorsionFingerprint(
+                    mol, nBits=self.n_feats, targetSize=self.target_size,
+                    includeChirality=self.use_chirality)
+
                 res = res.GetNonzeroElements()
                 if self.as_bits:
                     res = {k: int(v > 0) for k, v in res.items()}
 
             else:
-                res = GetHashedTopologicalTorsionFingerprint(mol, nBits=self.n_feats,
-                                               targetSize=self.target_size,
-                                               includeChirality=self.use_chirality)
+                res = GetHashedTopologicalTorsionFingerprint(
+                    mol, nBits=self.n_feats, targetSize=self.target_size,
+                    includeChirality=self.use_chirality)
+
                 res = np.array(list(res))
 
         return res
@@ -414,6 +433,7 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
     @property
     def names(self):
         return 'top_tort'
+
     @property
     def columns(self):
         return pd.RangeIndex(self.n_feats, name='tt_fp_idx')
@@ -421,10 +441,18 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
 
 class MACCSFeaturizer(Transformer, Featurizer):
 
-    """ MACCS Keys Fingerprints """
+    """ MACCS Keys Fingerprints."""
 
-    def __init__(self, **kwargs):
-        super(MACCSFeaturizer, self).__init__(**kwargs)
+    def __init__(self, verbose=True):
+
+        """ Initialize a MACCS Featurizer.
+
+        Args:
+            verbose (bool):
+                Whether to output a progress bar.
+        """
+
+        super(MACCSFeaturizer, self).__init__(verbose=verbose)
         self.n_feats = 166
 
     def _transform_mol(self, mol):
@@ -437,24 +465,42 @@ class MACCSFeaturizer(Transformer, Featurizer):
     @property
     def columns(self):
         return pd.Index(
-            ['ISOTOPE', '103 < ATOMIC NO. < 256', 'GROUP IVA,VA,VIA PERIODS 4-6 (Ge...)', 'ACTINIDE',
-             'GROUP IIIB,IVB (Sc...)', 'LANTHANIDE', 'GROUP VB,VIB,VIIB (V...)', 'QAAA@1', 'GROUP VIII (Fe...)',
-             'GROUP IIA (ALKALINE EARTH)', '4M RING', 'GROUP IB,IIB (Cu...)', 'ON(C)C', 'S-S', 'OC(O)O', 'QAA@1', 'CTC',
-             'GROUP IIIA (B...)', '7M RING', 'SI', 'C=C(Q)Q', '3M RING', 'NC(O)O', 'N-O', 'NC(N)N', 'C$=C($A)$A', 'I',
-             'QCH2Q', 'P', 'CQ(C)(C)A', 'QX', 'CSN', 'NS', 'CH2=A', 'GROUP IA (ALKALI METAL)', 'S HETEROCYCLE',
-             'NC(O)N', 'NC(C)N', 'OS(O)O', 'S-O', 'CTN', 'F', 'QHAQH', 'OTHER', 'C=CN', 'BR', 'SAN', 'OQ(O)O', 'CHARGE',
-             'C=C(C)C', 'CSO', 'NN', 'QHAAAQH', 'QHAAQH', 'OSO', 'ON(O)C', 'O HETEROCYCLE', 'QSQ', 'Snot%A%A', 'S=O',
-             'AS(A)A', 'A$A!A$A', 'N=O', 'A$A!S', 'C%N', 'CC(C)(C)A', 'QS', 'QHQH (&...)', 'QQH', 'QNQ', 'NO', 'OAAO',
-             'S=A', 'CH3ACH3', 'A!N$A', 'C=C(A)A', 'NAN', 'C=N', 'NAAN', 'NAAAN', 'SA(A)A', 'ACH2QH', 'QAAAA@1', 'NH2',
-             'CN(C)C', 'CH2QCH2', 'X!A$A', 'S', 'OAAAO', 'QHAACH2A', 'QHAAACH2A', 'OC(N)C', 'QCH3', 'QN', 'NAAO',
-             '5M RING', 'NAAAO', 'QAAAAA@1', 'C=C', 'ACH2N', '8M RING', 'QO', 'CL', 'QHACH2A', 'A$A($A)$A', 'QA(Q)Q',
-             'XA(A)A', 'CH3AAACH2A', 'ACH2O', 'NCO', 'NACH2A', 'AA(A)(A)A', 'Onot%A%A', 'CH3CH2A', 'CH3ACH2A',
-             'CH3AACH2A', 'NAO', 'ACH2CH2A > 1', 'N=A', 'HETEROCYCLIC ATOM > 1 (&...)', 'N HETEROCYCLE', 'AN(A)A',
-             'OCO', 'QQ', 'AROMATIC RING > 1', 'A!O!A', 'A$A!O > 1 (&...)', 'ACH2AAACH2A', 'ACH2AACH2A',
-             'QQ > 1 (&...)', 'QH > 1', 'OACH2A', 'A$A!N', 'X (HALOGEN)', 'Nnot%A%A', 'O=A > 1', 'HETEROCYCLE',
-             'QCH2A > 1 (&...)', 'OH', 'O > 3 (&...)', 'CH3 > 2 (&...)', 'N > 1', 'A$A!O', 'Anot%A%Anot%A',
-             '6M RING > 1', 'O > 2', 'ACH2CH2A', 'AQ(A)A', 'CH3 > 1', 'A!A$A!A', 'NH', 'OC(C)C', 'QCH2A', 'C=O',
-             'A!CH2!A', 'NA(A)A', 'C-O', 'C-N', 'O > 1', 'CH3', 'N', 'AROMATIC', '6M RING', 'O', 'RING', 'FRAGMENTS'],
+            ['ISOTOPE', '103 < ATOMIC NO. < 256',
+             'GROUP IVA,VA,VIA PERIODS 4-6 (Ge...)', 'ACTINIDE',
+             'GROUP IIIB,IVB (Sc...)', 'LANTHANIDE',
+             'GROUP VB,VIB,VIIB (V...)', 'QAAA@1', 'GROUP VIII (Fe...)',
+             'GROUP IIA (ALKALINE EARTH)', '4M RING', 'GROUP IB,IIB (Cu...)',
+             'ON(C)C', 'S-S', 'OC(O)O', 'QAA@1', 'CTC',
+             'GROUP IIIA (B...)', '7M RING', 'SI', 'C=C(Q)Q', '3M RING',
+             'NC(O)O', 'N-O', 'NC(N)N', 'C$=C($A)$A', 'I',
+             'QCH2Q', 'P', 'CQ(C)(C)A', 'QX', 'CSN', 'NS', 'CH2=A',
+             'GROUP IA (ALKALI METAL)', 'S HETEROCYCLE',
+             'NC(O)N', 'NC(C)N', 'OS(O)O', 'S-O', 'CTN', 'F', 'QHAQH', 'OTHER',
+             'C=CN', 'BR', 'SAN', 'OQ(O)O', 'CHARGE',
+             'C=C(C)C', 'CSO', 'NN', 'QHAAAQH', 'QHAAQH', 'OSO', 'ON(O)C',
+             'O HETEROCYCLE', 'QSQ', 'Snot%A%A', 'S=O',
+             'AS(A)A', 'A$A!A$A', 'N=O', 'A$A!S', 'C%N', 'CC(C)(C)A', 'QS',
+             'QHQH (&...)', 'QQH', 'QNQ', 'NO', 'OAAO',
+             'S=A', 'CH3ACH3', 'A!N$A', 'C=C(A)A', 'NAN', 'C=N', 'NAAN',
+             'NAAAN', 'SA(A)A', 'ACH2QH', 'QAAAA@1', 'NH2',
+             'CN(C)C', 'CH2QCH2', 'X!A$A', 'S', 'OAAAO', 'QHAACH2A',
+             'QHAAACH2A', 'OC(N)C', 'QCH3', 'QN', 'NAAO',
+             '5M RING', 'NAAAO', 'QAAAAA@1', 'C=C', 'ACH2N', '8M RING', 'QO',
+             'CL', 'QHACH2A', 'A$A($A)$A', 'QA(Q)Q',
+             'XA(A)A', 'CH3AAACH2A', 'ACH2O', 'NCO', 'NACH2A', 'AA(A)(A)A',
+             'Onot%A%A', 'CH3CH2A', 'CH3ACH2A',
+             'CH3AACH2A', 'NAO', 'ACH2CH2A > 1', 'N=A',
+             'HETEROCYCLIC ATOM > 1 (&...)', 'N HETEROCYCLE', 'AN(A)A',
+             'OCO', 'QQ', 'AROMATIC RING > 1', 'A!O!A', 'A$A!O > 1 (&...)',
+             'ACH2AAACH2A', 'ACH2AACH2A',
+             'QQ > 1 (&...)', 'QH > 1', 'OACH2A', 'A$A!N', 'X (HALOGEN)',
+             'Nnot%A%A', 'O=A > 1', 'HETEROCYCLE',
+             'QCH2A > 1 (&...)', 'OH', 'O > 3 (&...)', 'CH3 > 2 (&...)',
+             'N > 1', 'A$A!O', 'Anot%A%Anot%A',
+             '6M RING > 1', 'O > 2', 'ACH2CH2A', 'AQ(A)A', 'CH3 > 1',
+             'A!A$A!A', 'NH', 'OC(C)C', 'QCH2A', 'C=O',
+             'A!CH2!A', 'NA(A)A', 'C-O', 'C-N', 'O > 1', 'CH3', 'N',
+             'AROMATIC', '6M RING', 'O', 'RING', 'FRAGMENTS'],
             name='maccs_idx')
 
 
@@ -464,9 +510,10 @@ class ErGFeaturizer(Transformer, Featurizer):
 
      Implemented in RDKit."""
 
-    def __init__(self, atom_types=0, fuzz_increment=0.3, min_path=1, max_path=15,  **kwargs):
+    def __init__(self, atom_types=0, fuzz_increment=0.3, min_path=1,
+                 max_path=15, verbose=True):
 
-        super(ErGFeaturizer, self).__init__(**kwargs)
+        super(ErGFeaturizer, self).__init__(verbose=verbose)
         self.atom_types = atom_types
         self.fuzz_increment = fuzz_increment
         self.min_path = min_path
@@ -490,9 +537,16 @@ class FeatureInvariantsFeaturizer(Transformer, Featurizer):
 
     """ Feature invariants fingerprints. """
 
-    def __init__(self, **kwargs):
+    def __init__(self, verbose=True):
 
-        super(FeatureInvariantsFeaturizer, self).__init__(**kwargs)
+        """ Initialize a FeatureInvariantsFeaturizer.
+
+        Args:
+            verbose (bool):
+                Whether to output a progress bar.
+        """
+        super(FeatureInvariantsFeaturizer, self).__init__(verbose=verbose)
+        raise NotImplementedError
 
     def _transform_mol(self, mol):
 
@@ -506,14 +560,27 @@ class FeatureInvariantsFeaturizer(Transformer, Featurizer):
     def columns(self):
         return None
 
+
 class ConnectivityInvariantsFeaturizer(Transformer, Featurizer):
 
     """ Connectivity invariants fingerprints """
 
-    def __init__(self, include_ring_membership=True, **kwargs):
-        super(ConnectivityInvariantsFeaturizer, self).__init__(self, **kwargs)
+    def __init__(self, include_ring_membership=True, verbose=True):
+
+        """ Initialize a ConnectivityInvariantsFeaturizer.
+
+        Args:
+            include_ring_membership (bool):
+                Whether ring membership is considered when generating the
+                invariants.
+
+            verbose (bool):
+                Whether to output a progress bar.
+        """
+        super(ConnectivityInvariantsFeaturizer, self).__init__(self,
+                                                               verbose=verbose)
         self.include_ring_membership = include_ring_membership
-        raise NotImplementedError # this is a sparse descriptor
+        raise NotImplementedError  # this is a sparse descriptor
 
     def _transform_mol(self, mol):
 
@@ -527,15 +594,14 @@ class ConnectivityInvariantsFeaturizer(Transformer, Featurizer):
     def columns(self):
         return None
 
+
 class RDKFeaturizer(Transformer, Featurizer):
 
     """ RDKit fingerprint """
 
-    # TODO: finish docstring
-
     def __init__(self, min_path=1, max_path=7, n_feats=2048, n_bits_per_hash=2,
                  use_hs=True, target_density=0.0, min_size=128,
-                 branched_paths=True, use_bond_types=True, **kwargs):
+                 branched_paths=True, use_bond_types=True, verbose=True):
 
         """ RDK fingerprints
 
@@ -547,29 +613,37 @@ class RDKFeaturizer(Transformer, Featurizer):
                 maximum number of bonds to include in the subgraphs.
 
             n_feats (int):
-                The number of features to which to fold the fingerprint down. For unfolded, use `-1`.
+                The number of features to which to fold the fingerprint down.
+                For unfolded, use `-1`.
 
             n_bits_per_hash (int)
                 number of bits to set per path.
 
             use_hs (bool):
-                include paths involving Hs in the fingerprint if the molecule has explicit Hs.
+                include paths involving Hs in the fingerprint if the molecule
+                has explicit Hs.
 
             target_density (float):
-                fold the fingerprint until this minimum density has been reached.
+                fold the fingerprint until this minimum density has been
+                reached.
 
             min_size (int):
-                the minimum size the fingerprint will be folded to when trying to reach tgtDensity.
+                the minimum size the fingerprint will be folded to when trying
+                to reach tgtDensity.
 
             branched_paths (bool):
-                if set both branched and unbranched paths will be used in the fingerprint.
+                if set both branched and unbranched paths will be used in the
+                fingerprint.
 
             use_bond_types (bool):
                 if set both bond orders will be used in the path hashes.
 
+            verbose (bool):
+                Whether to output a progress bar.
+
         """
 
-        super(RDKFeaturizer, self).__init__(**kwargs)
+        super(RDKFeaturizer, self).__init__(verbose=verbose)
 
         self.min_path = min_path
         self.max_path = max_path
@@ -595,7 +669,7 @@ class RDKFeaturizer(Transformer, Featurizer):
 
     @property
     def name(self):
-        return 'rdkit'
+        return 'rdkfp'
 
     @property
     def columns(self):

@@ -33,7 +33,8 @@ else:
     NoFoundError = FileNotFoundError
 
 
-class ChemAxonStandardizer(CLIWrapper, BatchTransformer, Transformer, TransformFilter):
+class ChemAxonStandardizer(CLIWrapper, BatchTransformer, Transformer,
+                           TransformFilter):
 
     """ ChemAxon Standardizer Wrapper.
 
@@ -120,7 +121,8 @@ class ChemAxonStandardizer(CLIWrapper, BatchTransformer, Transformer, TransformF
     install_hint = """ Install ChemAxon from https://www.chemaxon.com.  It requires a license,
     which can be freely obtained for academics. """
 
-    DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), 'default_config.xml')
+    DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__),
+                                  'default_config.xml')
 
     def __init__(self, config_path=None, keep_failed=False, **kwargs):
 
@@ -160,19 +162,18 @@ class ChemAxonStandardizer(CLIWrapper, BatchTransformer, Transformer, TransformF
         return [int(err[0]) - 1 for err in errs if len(err)]
 
     def _cli_args(self, infile, outfile):
-         """ The command line arguments to use for the subprocess. """
+        """ The command line arguments to use for the subprocess. """
 
-         return  ['standardize', infile,
-                '-c', self.config_path,
-                '-f', 'sdf',
-                '-o', outfile,
-                '--ignore-error']
+        return ['standardize', infile, '-c', self.config_path,
+                '-f', 'sdf', '-o', outfile, '--ignore-error']
 
     @staticmethod
     def validate_install():
         """ Check if we can call cxcalc. """
         try:
-            return subprocess.call(['standardize', '-h'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+            return subprocess.call(['standardize', '-h'],
+                                   stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL) == 0
         except NoFoundError:
             return False
 
@@ -180,5 +181,6 @@ class ChemAxonStandardizer(CLIWrapper, BatchTransformer, Transformer, TransformF
         return sdf_count(filename)
 
     def filter(self, *args, **kwargs):
-        warnings.warn('Filter returns the unstandardized Mols. Did you mean to use `transform_filter`?')
+        warnings.warn('Filter returns the unstandardized Mols. Did you mean to'
+                      'use `transform_filter`?')
         super(ChemAxonStandardizer, self).filter(*args, **kwargs)

@@ -10,14 +10,14 @@ Similarity threshold dataset partitioning functionality.
 """
 
 import logging
-import sys
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import pdist, squareform
-from scipy.sparse import triu
+from scipy.spatial.distance import pdist, cdist, squareform
+from scipy.sparse import triu, dok_matrix
 from scipy.optimize import minimize_scalar
+from sklearn.manifold import TSNE, MDS
 
 import multiprocessing
 from functools import partial, wraps
@@ -28,34 +28,35 @@ LOGGER = logging.getLogger(__name__)
 
 
 def returns_pairs(func):
-    """ Wraps a function that returns a ((i, j), sim) list to return a dataframe. """
+    """ Wraps a function that returns a ((i, j), sim) list to return a
+    dataframe. """
+
     @wraps(func)
     def inner(*args, **kwargs):
         pairs = func(*args, **kwargs)
-        return pd.DataFrame([(p[0][0], p[0][1], p[1]) for p in pairs], columns=['i', 'j', 'sim']).sort_values('sim')
+        return pd.DataFrame([(p[0][0], p[0][1], p[1]) for p in pairs],
+                            columns=['i', 'j', 'sim']).sort_values('sim')
     return inner
 
 
-def _above_minimum(args, X, metric, threshold, size):
+def _above_minimum(args, inp, metric, threshold, size):
     """ finds pairs above a minimum similarity in chunks """
-    from scipy.spatial.distance import cdist
-    from scipy.sparse import dok_matrix
-    import numpy as np
     i, j = slice(*args[0]), slice(*args[1])
-    x_i, x_j = X[i], X[j]
-    C = 1 - cdist(x_i, x_j, metric=metric)
+    x_i, x_j = inp[i], inp[j]
+    sim_mat = 1 - cdist(x_i, x_j, metric=metric)
     if i == j:
-        C = np.triu(C, k=1)
-    C[C <= threshold] = 0
-    M = dok_matrix((size, size), dtype=float)
-    M[i, j] = C
-    return list(M.items())
+        sim_mat = np.triu(sim_mat, k=1)
+    sim_mat[sim_mat <= threshold] = 0
+    sparse_mat = dok_matrix((size, size), dtype=float)
+    sparse_mat[i, j] = sim_mat
+    return list(sparse_mat.items())
 
 
 class SimThresholdSplit(object):
 
-    def __init__(self,  min_threshold=0.45, largest_cluster_fraction=0.1, fper='morgan',
-                 similarity_metric='jaccard', memory_optimized=True, n_jobs=1, block_width=1000,
+    def __init__(self,  min_threshold=0.45, largest_cluster_fraction=0.1,
+                 fper='morgan', similarity_metric='jaccard',
+                 memory_optimized=True, n_jobs=1, block_width=1000,
                  verbose=False):
 
         """ Threshold similarity split for chemical datasets.
@@ -66,9 +67,10 @@ class SimThresholdSplit(object):
         into a cluster, as the density of compounds varies with dataset.
 
         Machine learning techniques should be able to extrapolate outside of a
-        molecular series, or scaffold, however random splits will result in some
-        'easy' test sets that are either *identical* or in the same molecular
-        series or share a significant scaffold with training set compounds.
+        molecular series, or scaffold, however random splits will result in
+        some 'easy' test sets that are either *identical* or in the same
+        molecular series or share a significant scaffold with training set
+        compounds.
 
         This splitting technique reduces or eliminates (depending on the
         threshold set) this effect, making the problem harder.
@@ -79,8 +81,8 @@ class SimThresholdSplit(object):
                 The minimum similarity threshold.  Lower will be slower.
 
             largest_cluster_fraction (float):
-                The fraction of the total dataset the largest cluster can be. This decided the
-                final similarity threshold.
+                The fraction of the total dataset the largest cluster can be.
+                This decided the final similarity threshold.
 
             fper (str or skchem.Fingerprinter):
                 The fingerprinting technique to use to generate the similarity
@@ -96,13 +98,16 @@ class SimThresholdSplit(object):
                 If memory_optimized is True, how many processes to run it over.
 
             block_width (int):
-                If memory_optimized, what block length to use.  This is the width of the sub
-                matrices that are calculated at a time.
+                If memory_optimized, what block length to use.  This is the
+                width of the submatrices that are calculated at a time.
 
         Notes:
-            The splits will not always be exactly the size requested, due to the
-            constraint and requirement to maintain random shuffling.
+            The splits will not always be exactly the size requested, due to
+            the constraint and requirement to maintain random shuffling.
         """
+
+        self.index = self.fps = self._n_jobs = self._n_instances_ = None
+        self.pairs_ = self.threshold_ = None
 
         if isinstance(fper, str):
             fper = descriptors.get(fper)
@@ -120,14 +125,14 @@ class SimThresholdSplit(object):
 
     def fit(self, inp, pairs=None):
 
-        """
+        """ Fit the cross validator to the data.
         Args:
              inp (pd.Series or pd.DataFrame or np.array):
-                - `pd.Series` of `skchem.Mol` instances
-                - `pd.DataFrame` with `skchm.Mol` instances as a `structure` row.
+                - `pd.Series` of `Mol` instances
+                - `pd.DataFrame` with `Mol` instances as a `structure` row.
                 - `pd.DataFrame` of fingerprints if `fper` is `None`
-                - `pd.DataFrame` of similarity matrix if `similarity_metric` is `None`
-                - `np.array` of similarity matrix if `similarity_metric` is `None`
+                - `pd.DataFrame` of sim matrix if `similarity_metric` is `None`
+                - `np.array` of sim matrix if `similarity_metric` is `None`
 
             pairs (list<tuple<tuple(i, j), k>>):
                 An optional precalculated list of pairwise distances.
@@ -163,7 +168,9 @@ class SimThresholdSplit(object):
 
     @property
     def n_jobs(self):
-        """ The number of processes to use to calculate the distance matrix.  -1 for all available. """
+        """ The number of processes to use to calculate the distance matrix.
+
+         -1 for all available. """
         return self._n_jobs
 
     @n_jobs.setter
@@ -175,12 +182,17 @@ class SimThresholdSplit(object):
 
     @property
     def block_width(self):
-        """ The width of the subsets of features.  Only used in parallelized. """
+        """ The width of the subsets of features.
+
+         Note:
+             Only used in parallelized. """
+
         return self._block_width
 
     @block_width.setter
     def block_width(self, val):
-        assert val <= self.n_instances_, 'The block width should be less than or equal to the number of instances'
+        assert val <= self.n_instances_, 'The block width should be less than '
+        'or equal to the number of instances'
         self._block_width = val
 
     @property
@@ -190,7 +202,8 @@ class SimThresholdSplit(object):
 
     @n_instances_.setter
     def n_instances_(self, val):
-        assert val >= self._block_width, 'The block width should be less than or equal to the number of instances'
+        assert val >= self._block_width, 'The block width should be less than '
+        'or equal to the number of instances'
         self._n_instances_ = val
 
     def _cluster_cumsum(self, shuffled=True):
@@ -213,8 +226,12 @@ class SimThresholdSplit(object):
                 Generator of boolean split masks for the reqested splits.
 
         Example:
-            st = SimThresholdSplit(ms, fper='morgan', similarity_metric='jaccard')
-            train, valid, test = st.split(ratio=(70, 15, 15))
+            >>> ms = skchem.data.Diversity.read_frame('structure') # doctest: +SKIP
+            >>> st = SimThresholdSplit(fper='morgan', # doctest: +SKIP
+            ...                        similarity_metric='jaccard')
+            >>> st.fit(ms) # doctest: +SKIP
+            >>> train, valid, test = st.split(ratio=(70, 15, 15)) # doctest: +SKIP
+
         """
 
         ratio = self._split_sizes(ratio)
@@ -254,9 +271,9 @@ class SimThresholdSplit(object):
 
     @staticmethod
     @returns_pairs
-    def _pairs_from_sim_mat(S):
-        S = triu(S, k=1).todok()
-        return list(S.items())
+    def _pairs_from_sim_mat(sim_mat):
+        sim_mat = triu(sim_mat, k=1).todok()
+        return list(sim_mat.items())
 
     @returns_pairs
     def _pairs_from_fps(self, fps):
@@ -269,43 +286,47 @@ class SimThresholdSplit(object):
         return pairs
 
     def _pairs_from_fps_mem_intensive(self, fps):
-        """ Fast single process but memory intensive implementation of pairs. """
+        """ Fast single process, memory intensive implementation of pairs. """
         LOGGER.debug('Generating pairs using memory intensive technique.')
-        D = squareform(pdist(fps, self.similarity_metric))
-        S = 1 - D # similarity is 1 - distance
-        S[S <= self.min_threshold] = 0
-        return self._pairs_from_sim_mat(S)
+        dist_mat = squareform(pdist(fps, self.similarity_metric))
+        sim_mat = 1 - dist_mat # similarity is 1 - distance
+        sim_mat[sim_mat <= self.min_threshold] = 0
+        return self._pairs_from_sim_mat(sim_mat)
 
     def _pairs_from_fps_mem_opt(self, fps):
 
-        """ Fast, multi-processed and memory efficient generation of pairwise distances above a certain threshold."""
+        """ Fast, multi-processed and memory efficient pairs."""
 
         def slice_generator(low, high, width, end=False):
-            """ Generator of index of checkerboards for the upper triangle of a matrix. """
+            """ Checkerboard indices for the upper triangle of a matrix. """
             while low < high:
                 res = (low, low + width if low + width < high else high)
                 if end:
                     yield res
                 else:
+                    gen = slice_generator(low, high, width, end=True)
                     # py2 compat
-                    # yield from ((res, j) for j in slice_generator(low, high, width, end=True))
-                    for slice_ in ((res, j) for j in slice_generator(low, high, width, end=True)):
+                    # yield from ((res, j) for j in
+                    # slice_generator(low, high, width, end=True))
+                    for slice_ in ((res, j) for j in gen):
                         yield slice_
                 low += width
 
         size = len(fps)
 
         fps = fps.values
-        f = partial(_above_minimum, X=fps, threshold=self.min_threshold, metric=self.similarity_metric, size=size)
+        f = partial(_above_minimum, inp=fps, threshold=self.min_threshold,
+                    metric=self.similarity_metric, size=size)
         slices = slice_generator(0, len(fps), self.block_width)
 
         if self.n_jobs == 1:
             # single processed
             LOGGER.debug('Generating pairs using memory optimized technique.')
-            return sum((f(slice) for slice in slices), [])
+            return sum((f(slice_) for slice_ in slices), [])
         else:
             # multiprocessed
-            LOGGER.debug('Generating pairs using memory optimized technique with %s processes', self.n_jobs)
+            LOGGER.debug('Generating pairs using memory optimized technique '
+                         'with %s processes', self.n_jobs)
             # py2 compat
             # with multiprocessing.Pool(self.n_jobs) as p:
             #    return sum(p.map(f, [(i, j) for i, j in slices]), [])
@@ -333,11 +354,16 @@ class SimThresholdSplit(object):
         def f(threshold):
             pairs = self.pairs_.loc[self.pairs_.sim > threshold, ('i', 'j')]
             res = pd.Series(self._cluster(pairs))
-            return np.abs(res.value_counts().max() - self.largest_cluster * self.n_instances_)
+            return np.abs(res.value_counts().max() -
+                          self.largest_cluster * self.n_instances_)
 
-        self.threshold_ = minimize_scalar(f, bounds=(self.min_threshold, 1), method='bounded').x
+        self.threshold_ = minimize_scalar(f,
+                                          bounds=(self.min_threshold, 1),
+                                          method='bounded').x
+
         LOGGER.info('Optimal threshold: %s', self.threshold_)
-        self.clusters = pd.Series(self._cluster(self.pairs_.loc[self.pairs_.sim > self.threshold_, ('i', 'j')]),
+        gd_prs = self.pairs_.loc[self.pairs_.sim > self.threshold_, ('i', 'j')]
+        self.clusters = pd.Series(self._cluster(gd_prs),
                                   index=self.index,
                                   name='clusters')
         return self.threshold_
@@ -371,7 +397,8 @@ class SimThresholdSplit(object):
         ax.set_xlabel('similarity')
         return ax
 
-    def visualize_space(self, dim_reducer='tsne', dim_red_kw={}, subsample=5000, ax=None, c=None):
+    def visualize_space(self, dim_reducer='tsne', dim_red_kw=None,
+                        subsample=5000, ax=None, plt_kw=None):
 
         """ Plot chemical space using a transformer
 
@@ -379,20 +406,34 @@ class SimThresholdSplit(object):
             dim_reducer (str or sklearn object):
                 Technique to use to reduce fingerprint space.
 
+            dim_red_kw (dict):
+                Keyword args to pass to dim_reducer.
+
             subsample (int):
                 for a large dataset, subsample the number of compounds to
                 consider.
 
             ax (matplotlib.axis):
                 Axis to make the plot on.
+
+            plt_kw (dict):
+                Keyword args to pass to the plot.
+
         Returns:
             matplotlib.axes
         """
 
+        if dim_red_kw is None:
+            dim_red_kw = {}
+
+        if plt_kw is None:
+            plt_kw = {}
+
         if isinstance(dim_reducer, str):
             if dim_reducer not in ('tsne', 'mds'):
-                raise NotImplementedError('Dimensionality reducer {} not available'.format(dim_reducer))
-            from sklearn.manifold import TSNE, MDS
+                msg = 'Dimensionality reducer {} not available'.format(
+                    dim_reducer)
+                raise NotImplementedError(msg)
             reducers = {'tsne': TSNE, 'mds': MDS}
             dim_reducer = reducers[dim_reducer](**dim_red_kw)
 
@@ -401,7 +442,4 @@ class SimThresholdSplit(object):
         if not ax:
             ax = plt.gca()
 
-        return ax.scatter(two_d[:, 0], two_d[:, 1], c=c)
-
-
-
+        return ax.scatter(two_d[:, 0], two_d[:, 1], **plt_kw)

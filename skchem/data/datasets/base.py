@@ -13,6 +13,7 @@ from fuel.datasets import H5PYDataset
 from fuel.utils import find_in_data_path
 from fuel import config
 
+
 class Dataset(H5PYDataset):
 
     """ Abstract base class providing an interface to the skchem data format."""

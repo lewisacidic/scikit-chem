@@ -16,4 +16,3 @@ from .smiles import read_smiles, write_smiles
 __all__ = [
     'read_sdf', 'write_sdf', 'read_smiles', 'write_smiles'
 ]
-

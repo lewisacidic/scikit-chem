@@ -11,7 +11,6 @@ Module specifying moe descriptors.
 
 class MOEDescriptorCalculator(object):
 
-
     def __init__(self):
         pass
 

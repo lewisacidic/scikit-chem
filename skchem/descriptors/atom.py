@@ -26,6 +26,7 @@ from ..resource import PERIODIC_TABLE, ORGANIC
 from ..base import AtomTransformer, Featurizer
 from ..utils import nanarray
 
+
 def element(a):
 
     """ Return the element """
@@ -38,7 +39,8 @@ def is_element(a, symbol='C'):
     """ Is the atom of a given element """
     return element(a) == symbol
 
-element_features = {'is_{}'.format(e): functools.partial(is_element, symbol=e) for e in ORGANIC}
+element_features = {'is_{}'.format(e): functools.partial(is_element, symbol=e)
+                    for e in ORGANIC}
 
 
 def is_h_acceptor(a):
@@ -188,7 +190,6 @@ def gasteiger_charge(a, force_calc=False):
     if res and not force_calc:
         return float(res)
     else:
-        idx = a.GetIdx()
         m = a.GetOwningMol()
         rdPartialCharges.ComputeGasteigerCharges(m)
         return float(a.props['_GasteigerCharge'])
@@ -220,7 +221,9 @@ def is_hybridized(a, hybrid_type=HybridizationType.SP3):
 
     return str(a.GetHybridization()) is hybrid_type
 
-hybridization_features = {'is_' + n + '_hybridized': functools.partial(is_hybridized, hybrid_type=n) for n in HybridizationType.names}
+hybridization_features = {'is_' + n + '_hybridized': functools.partial(
+    is_hybridized, hybrid_type=n)
+                          for n in HybridizationType.names}
 
 ATOM_FEATURES = {
     'atomic_number': atomic_number,
@@ -249,11 +252,11 @@ ATOM_FEATURES.update(hybridization_features)
 
 class AtomFeaturizer(AtomTransformer, Featurizer):
 
-    def __init__(self, features='all', **kwargs):
-
+    def __init__(self, features='all', verbose=True):
+        self._features = None
         self.features = features
 
-        super(AtomFeaturizer, self).__init__(**kwargs)
+        super(AtomFeaturizer, self).__init__(verbose=verbose)
 
     @property
     def name(self):
@@ -270,11 +273,13 @@ class AtomFeaturizer(AtomTransformer, Featurizer):
         elif isinstance(features, str):
             features = {features: ATOM_FEATURES[features]}
         elif isinstance(features, list):
-            features = {feature: ATOM_FEATURES[feature] for feature in features}
+            features = {feature: ATOM_FEATURES[feature]
+                        for feature in features}
         elif isinstance(features, (dict, pd.Series)):
             features = features
         else:
-            raise NotImplementedError('Cannot use features {}'.format(features))
+            raise NotImplementedError('Cannot use features {}'.format(
+                features))
 
         self._features = pd.Series(features)
         self._features.index.name = 'atom_features'
@@ -319,6 +324,10 @@ class SpacialDistanceTransformer(DistanceTransformer):
 
     # TODO: handle multiple conformers
 
+    def __init__(self, verbose=True):
+        super(SpacialDistanceTransformer, self).__init__(verbose=verbose)
+
+    @property
     def name(self):
         return 'spacial_dist'
 
@@ -332,8 +341,10 @@ class GraphDistanceTransformer(DistanceTransformer):
 
     """ Transformer class for generating Graph distance matrices. """
 
-    # TODO: handle multiple conformers
+    def __init__(self, verbose=True):
+        super(GraphDistanceTransformer, self).__init__(verbose=verbose)
 
+    @property
     def name(self):
         return 'graph_dist'
 

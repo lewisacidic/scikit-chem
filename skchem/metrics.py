@@ -3,6 +3,9 @@
 # Copyright (C) 2015-2016 Rich Lewis <rl403@cam.ac.uk>
 # License: 3-clause BSD
 
+import numpy as np
+
+
 def bedroc_score(y_true, y_pred, decreasing=True, alpha=20.0):
 
     """BEDROC metric implemented according to Truchon and Bayley.
@@ -32,9 +35,9 @@ def bedroc_score(y_true, y_pred, decreasing=True, alpha=20.0):
      """
 
     assert len(y_true) == len(y_pred), \
-     'The number of scores must be equal to the number of labels'
+        'The number of scores must be equal to the number of labels'
 
-    N = len(y_true)
+    big_n = len(y_true)
     n = sum(y_true == 1)
 
     if decreasing:
@@ -44,13 +47,14 @@ def bedroc_score(y_true, y_pred, decreasing=True, alpha=20.0):
 
     m_rank = (y_true[order] == 1).nonzero()[0]
 
-    s = np.sum(np.exp(-alpha * m_rank / N))
+    s = np.sum(np.exp(-alpha * m_rank / big_n))
 
-    r_a = n / N
+    r_a = n / big_n
 
-    rand_sum = r_a * (1 - np.exp(-alpha))/(np.exp(alpha/N) - 1)
+    rand_sum = r_a * (1 - np.exp(-alpha))/(np.exp(alpha/big_n) - 1)
 
-    fac = r_a * np.sinh(alpha / 2) / (np.cosh(alpha / 2) - np.cosh(alpha/2 - alpha * r_a))
+    fac = r_a * np.sinh(alpha / 2) / (np.cosh(alpha / 2) -
+                                      np.cosh(alpha/2 - alpha * r_a))
 
     cte = 1 / (1 - np.exp(alpha * (1 - r_a)))
 

@@ -9,9 +9,10 @@ __all__ = [
     'ChemAxonStandardizer'
 ]
 
+
 def get(identifier):
     if isinstance(identifier, str):
-        DEFAULTS = {'chemaxon': ChemAxonStandardizer}
-        return DEFAULTS[identifier]()
+        defaults = {'chemaxon': ChemAxonStandardizer}
+        return defaults[identifier]()
     else:
         return identifier

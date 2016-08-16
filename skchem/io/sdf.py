@@ -18,16 +18,20 @@ import pandas as pd
 from ..core import Mol
 from ..utils import Suppressor, squeeze
 
+
 def _drop_props(row):
     for prop in row.structure.props.keys():
         row.structure.ClearProp(prop)
 
+
 def _set_props(row, cols):
     for i in cols:
-        row.structure.SetProp(str(i), str(row[i])) # rdkit props can only be str
+        row.structure.SetProp(str(i), str(row[i]))
+
 
 def _set_name(row):
-    row.structure.name = str(row.name) # rdkit props can only be strs
+    row.structure.name = str(row.name)  # rdkit props can only be strs
+
 
 def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
              skipmols=None, skipfooter=None, read_props=True, mol_props=False,
@@ -39,7 +43,7 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
 
     Args:
         sdf (str or file-like):
-            The location of data to load, as a file path, or a file-like object.
+            The location of data to load as a file path, or a file-like object.
         error_bad_mol (bool):
             Whether an error should be raised if a molecule fails to parse.
             Default is False.
@@ -59,11 +63,11 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
             Whether to read the properties into the data frame.
             Default is `True`.
         mol_props (bool):
-            Whether to keep properties in the molecule dictionary after they are
-            extracted to the dataframe.
+            Whether to keep properties in the molecule dictionary after they
+            are extracted to the DataFrame.
             Default is `False`.
         args, kwargs:
-            Arguments will be passed to rdkit's ForwardSDMolSupplier.
+            Arguments will be passed to RDKit ForwardSDMolSupplier.
 
     Returns:
         pandas.DataFrame:
@@ -80,7 +84,7 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
         nmols += skipmols
 
     if isinstance(sdf, str):
-        sdf = open(sdf, 'rb') # use read bytes for python 3 compatibility
+        sdf = open(sdf, 'rb')  # use read bytes for python 3 compatibility
 
     # use the suppression context manager to not pollute our stdout with rdkit
     # errors and warnings.
@@ -100,8 +104,6 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
             if nmols and i >= nmols:
                 break
 
-            # rdkit returns None if it fails to parse a molecule.  We will raise
-            # errors unless force is used.
             if mol is None:
                 msg = 'Molecule {} could not be decoded.'.format(i + 1)
                 if error_bad_mol:
@@ -112,7 +114,6 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
 
             mols.append(Mol(mol))
 
-
         if skipfooter:
             mols = mols[:-skipfooter]
 
@@ -120,7 +121,8 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
     data = pd.DataFrame(mols, columns=['structure'])
 
     if read_props:
-        props = pd.DataFrame([{k: v for (k, v) in mol.props.items()} for mol in mols])
+        props = pd.DataFrame([{k: v for (k, v) in mol.props.items()}
+                              for mol in mols])
         data = pd.concat([data, props], axis=1)
         # now we have extracted the props, we can delete if required
         if not mol_props:
@@ -129,6 +131,7 @@ def read_sdf(sdf, error_bad_mol=False, warn_bad_mol=True, nmols=None,
     data.index = idx
     return squeeze(data, axis=1)
 
+
 def write_sdf(data, sdf, write_cols=True, index_as_name=True, mol_props=False,
               *args, **kwargs):
 
@@ -136,8 +139,8 @@ def write_sdf(data, sdf, write_cols=True, index_as_name=True, mol_props=False,
 
     Args:
         data (pandas.Series or pandas.DataFrame):
-            Pandas data structure with a `structure` column containing compounds
-            to serialize.
+            Pandas data structure with a `structure` column containing
+            compounds to serialize.
         sdf (str or file-like):
             A file path or file-like object specifying where to write the
             compound data.
@@ -179,10 +182,12 @@ def write_sdf(data, sdf, write_cols=True, index_as_name=True, mol_props=False,
     for mol, name in zip(data.structure, names):
         mol.name = name
 
+
 @wraps(write_sdf)
 def _to_sdf_series(self, *args, **kwargs):
 
     return write_sdf(self, write_cols=False, *args, **kwargs)
+
 
 @wraps(write_sdf)
 def _to_sdf_df(self, *args, **kwargs):
@@ -200,6 +205,7 @@ def _from_sdf_df(_, *args, **kwargs):
     return read_sdf(*args, **kwargs)
 
 pd.DataFrame.from_sdf = _from_sdf_df
+
 
 @classmethod
 @wraps(read_sdf)

@@ -17,6 +17,7 @@ __all__ = [
     'MMFF', 'UFF', 'RoughEmbedding'
 ]
 
+
 def get(name):
     DEFAULTS = {
         'uff': UFF,

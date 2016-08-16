@@ -17,9 +17,10 @@ import logging
 
 import pandas as pd
 
-from .utils import NamedProgressBar
+from .utils import NamedProgressBar, DummyProgressBar
 from . import core
-from .utils import iterable_to_series, optional_second_method, nanarray, squeeze
+from .utils import (iterable_to_series, optional_second_method, nanarray,
+                    squeeze)
 from . import io
 
 LOGGER = logging.getLogger(__name__)
@@ -29,7 +30,8 @@ class BaseTransformer(object):
 
     """ Transformer Base Class.
 
-    Specific Base Transformer classes inherit from this class and implement `transform` and `axis_names`.
+    Specific Base Transformer classes inherit from this class and implement
+    `transform` and `axis_names`.
     """
 
     __metaclass__ = ABCMeta
@@ -44,8 +46,7 @@ class BaseTransformer(object):
         if self.verbose:
             bar = NamedProgressBar(name=self.__class__.__name__, **kwargs)
         else:
-            def bar(x):
-                return x
+            bar = DummyProgressBar(**kwargs)
         return bar
 
     @property
@@ -72,7 +73,8 @@ class Transformer(BaseTransformer):
 
     """ Molecular based Transformer Base class.
 
-    Concrete Transformers inherit from this class and must implement `_transform_mol` and `_columns`.
+    Concrete Transformers inherit from this class and must implement
+    `_transform_mol` and `_columns`.
 
     See Also:
          AtomTransformer."""
@@ -127,10 +129,11 @@ class Transformer(BaseTransformer):
 
 
 class BatchTransformer(BaseTransformer):
-    """ Transformer Mixin in which transforms on multiple molecules save overhead.
+    """  Mixin for which transforms on multiple molecules save overhead.
 
-    Implement `_transform_series` with the transformation rather than `_transform_mol`. Must occur before
-    `Transformer` or  `AtomTransformer` in method resolution order.
+    Implement `_transform_series` with the transformation rather than
+    `_transform_mol`. Must occur before `Transformer` or  `AtomTransformer` in
+    method resolution order.
 
     See Also:
          Transformer, AtomTransformer.
@@ -154,7 +157,8 @@ class BatchTransformer(BaseTransformer):
 class AtomTransformer(BaseTransformer):
     """ Transformer that will produce a Panel.
 
-    Concrete classes inheriting from this should implement `_transform_atom`, `_transform_mol` and `minor_axis`.
+    Concrete classes inheriting from this should implement `_transform_atom`,
+    `_transform_mol` and `minor_axis`.
 
     See Also:
         Transformer
@@ -234,21 +238,28 @@ class AtomTransformer(BaseTransformer):
 
         res = nanarray((len(ser), self.max_atoms, len(self.minor_axis)))
         for i, mol in enumerate(bar(ser)):
-            res[i, :len(mol.atoms), :len(self.minor_axis)] = self._transform_mol(mol)
+            res[i, :len(mol.atoms),
+                :len(self.minor_axis)] = self._transform_mol(mol)
         return res
 
 
 class External(object):
     """ Mixin for wrappers of external CLI tools.
 
-     Concrete classes must implement `validate_install`."""
+    Concrete classes must implement `validate_install`.
+
+    Attributes:
+        install_hint (str): an explanation of how to install external tool.
+    """
 
     __metaclass__ = ABCMeta
 
-    install_hint = "" # give an explanation of how to install external tool here.
+    install_hint = ""
 
     def __init__(self, **kwargs):
-        assert self.validated, 'External tool not installed. ' + self.install_hint
+        if not self.validated:
+            msg = 'External tool not installed. {}'.format(self.install_hint)
+            raise RuntimeError(msg)
         super(External, self).__init__(**kwargs)
 
     @property
@@ -268,8 +279,8 @@ class External(object):
 class CLIWrapper(External, BaseTransformer):
     """ CLI wrapper.
 
-    Concrete classes inheriting from this must implement `_cli_args`, `monitor_progress`,
-    `_parse_outfile`, `_parse_errors`."""
+    Concrete classes inheriting from this must implement `_cli_args`,
+    `monitor_progress`, `_parse_outfile`, `_parse_errors`."""
 
     def __init__(self, error_on_fail=False, warn_on_fail=True, **kwargs):
         super(CLIWrapper, self).__init__(**kwargs)
@@ -278,7 +289,8 @@ class CLIWrapper(External, BaseTransformer):
 
     def _transform_series(self, ser):
         """ Transform a series. """
-        with NamedTemporaryFile(suffix='.sdf') as infile, NamedTemporaryFile() as outfile:
+        with NamedTemporaryFile(suffix='.sdf') as infile, \
+                NamedTemporaryFile() as outfile:
             io.write_sdf(ser, infile.name)
             args = self._cli_args(infile.name, outfile.name)
             p = subprocess.Popen(args, stderr=subprocess.PIPE)
@@ -295,15 +307,18 @@ class CLIWrapper(External, BaseTransformer):
 
         errs = p.stderr.read().decode()
         errs = self._parse_errors(errs)
-        # set the index of results to that of the input, with the failed indices removed
+        # set the index of results to that of the input, with the failed
+        # indices removed
         if isinstance(res, (pd.Series, pd.DataFrame)):
             res.index = ser.index.delete(errs)
         elif isinstance(res, pd.Panel):
             res.items = ser.index.delete(errs)
         else:
-            raise ValueError('Parsed datatype ({}) not supported.'.format(type(res)))
+            msg = 'Parsed datatype ({}) not supported.'.format(type(res))
+            raise ValueError(msg)
 
-        # go through the errors and put them back in (transform doesn't lose instances)
+        # go through the errors and put them back in
+        # (transform doesn't lose instances)
         if len(errs):
             for err in errs:
                 err = ser.index[err]
@@ -340,8 +355,7 @@ class Featurizer(object):
 
     """ Base class for m -> data transforms, such as Fingerprinting etc.
 
-    Concrete subclasses should implement `name`, returning a string uniquely identifying the featurizer. """
+    Concrete subclasses should implement `name`, returning a string uniquely
+    identifying the featurizer. """
 
     __metaclass__ = ABCMeta
-
-

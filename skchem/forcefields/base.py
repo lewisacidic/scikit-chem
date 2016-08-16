@@ -14,7 +14,6 @@ from abc import ABCMeta, abstractmethod
 import pandas as pd
 from rdkit.Chem.rdDistGeom import EmbedMolecule
 
-from .. import core
 from ..utils import Suppressor
 from ..base import Transformer
 from ..filters.base import TransformFilter
@@ -29,15 +28,16 @@ class ForceField(Transformer, TransformFilter):
 
      """
 
-    def __init__(self, embed=True, warn_on_fail=True, error_on_fail=False,
-                 drop_failed=True, add_hs=True, **kwargs):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, preembed=True, warn_on_fail=True,
+                 error_on_fail=False, add_hs=True, verbose=True):
 
         self.add_hs = add_hs
-        self.drop_failed = drop_failed
         self.warn_on_fail = warn_on_fail
         self.error_on_fail = error_on_fail
-        self.preembed = embed
-        super(ForceField, self).__init__(**kwargs)
+        self.preembed = preembed
+        super(ForceField, self).__init__(verbose=verbose)
 
     @property
     def columns(self):
@@ -61,17 +61,20 @@ class ForceField(Transformer, TransformFilter):
 
     def _transform_mol(self, mol):
 
+        mol = mol.copy()
+
         with Suppressor():
             if self.preembed:
                 mol = self.embed(mol)
 
-            if mol is None: # embedding failed
+            if mol is None:  # embedding failed
                 return None
 
             res = self._optimize(mol)
 
         if res == -1:
-            msg = 'Failed to optimize molecule \'{}\' using {}'.format(mol.name, self.__class__)
+            msg = 'Failed to optimize molecule \'{}\' using {}'.format(
+                mol.name, self.__class__)
             if self.error_on_fail:
                 raise RuntimeError(msg)
             elif self.warn_on_fail:

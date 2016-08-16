@@ -22,7 +22,7 @@ class ChemicalObject(object):
     @classmethod
     def from_super(cls, obj):
 
-        """A method that converts the class of an object of parent class to that of the child. """
+        """ Converts the class of an object to this class. """
 
         obj.__class__ = cls
         return obj
@@ -32,7 +32,8 @@ class ChemicalObjectView(object):
 
     """ Abstract iterable view of chemical objects.
 
-    Concrete classes inheriting from it should implement `__getitem__` and `__len__`.
+    Concrete classes inheriting from it should implement `__getitem__`
+    and `__len__`.
     """
 
     __metaclass__ = ABCMeta
@@ -203,7 +204,7 @@ class PropertyView(View):
     def __getitem__(self, key):
 
         # we manually work out if it was a float that was stored, as GetProp
-        # returns floats and ints set by SetDoubleProp and SetIntProp as strings
+        # returns floats and ints set by SetDoubleProp and SetIntProp as strs
         value = self._owner.GetProp(str(key))
         try:
             return int(value)
@@ -216,12 +217,15 @@ class PropertyView(View):
     def __setitem__(self, key, value):
 
         if not isinstance(key, str):
-            warnings.warn("RDKit property keys can only be of type `str`.  Using `{key}` as a `str`.".format(key=key))
+            msg = 'RDKit property keys can only be of type `str`.' \
+                  '  Using `{key}` as a `str`.'.format(key=key)
+            warnings.warn(msg)
             key = str(key)
 
         if key[0] == '_':
-            warnings.warn("`{value}` is a private RDKit property key. "
-                          "Using this may have unintended consequences.".format(value=value))
+            msg = '`{value}` is a private RDKit property key. '
+            'Using this may have unintended consequences.'.format(value=value)
+            warnings.warn(msg)
 
         if isinstance(value, str):
             self._owner.SetProp(key, value)
@@ -230,8 +234,10 @@ class PropertyView(View):
         elif isinstance(value, (float, np.float64, np.float32)):
             self._owner.SetDoubleProp(key, value)
         else:
-            warnings.warn("RDKit property keys can only be `str`, `int` or `float`."
-                          "Using `{value}` as a `str`.".format(value=value))
+            msg = 'RDKit property keys can only be `str`, `int` or `float`. '
+            'Using `{value}` as a `str`.'.format(value=value)
+
+            warnings.warn(msg)
             self._owner.SetProp(key, str(value))
 
     def __delitem__(self, index):
@@ -256,7 +262,8 @@ class MolPropertyView(View):
         return list(res)
 
     def get(self, key, default=None):
-        return pd.Series((a.props.get(key, default) for a in self._obj_view), index=self._obj_view.index)
+        return pd.Series((a.props.get(key, default) for a in self._obj_view),
+                         index=self._obj_view.index)
 
     def __getitem__(self, key):
         if key not in self.keys():
@@ -268,7 +275,8 @@ class MolPropertyView(View):
             for idx, val in pd.compat.iteritems(value):
                 self._obj_view[int(idx)].props[key] = val
         else:
-            assert len(self._obj_view) == len(value), "Must pass same number of values as atoms."
+            assert len(self._obj_view) == len(value), \
+                "Must pass same number of values as atoms."
             for atom, val in zip(self._obj_view, value):
                 atom.props[key] = val
 
@@ -278,16 +286,15 @@ class MolPropertyView(View):
 
     def to_frame(self):
 
-        """ Return a DataFrame of the properties of the objects of the molecular view. """
+        """ Return a DataFrame of the properties of the view's objects. """
 
         return pd.DataFrame(dict(self), index=self._obj_view.index)
 
     def to_dict(self):
 
-        """ Return a dict of the properties of the objectos fo the molecular view. """
+        """ Return a dict of the properties of the view's objects. """
 
         return {k: v.tolist() for k, v in self.items()}
 
     def __str__(self):
         return str(self.to_dict())
-

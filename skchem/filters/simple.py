@@ -26,33 +26,34 @@ class ElementFilter(Filter):
 
         Args:
             elements (list[str]):
-                A list of elements to filter with.  If an element not in the list is
-                found in a molecule, return False, else return True.
+                A list of elements to filter with.  If an element not in the
+                list is found in a molecule, return False, else return True.
 
             as_bits (bool):
-                Whether to return integer counts or booleans for atoms if mode is `count`.
+                Whether to return integer counts or booleans for atoms if mode
+                is `count`.
 
         Examples:
 
             Basic usage on molecules:
 
             >>> import skchem
-            >>> has_halogen = skchem.filters.ElementFilter(['F', 'Cl', 'Br', 'I'], agg='any')
+            >>> hal_f = skchem.filters.ElementFilter(['F', 'Cl', 'Br', 'I'])
 
             Molecules with one of the atoms transform to `True`.
 
             >>> m1 = skchem.Mol.from_smiles('ClC(Cl)Cl', name='chloroform')
-            >>> has_halogen.transform(m1)
+            >>> hal_f.transform(m1)
             True
 
             Molecules with none of the atoms transform to `False`.
 
             >>> m2 = skchem.Mol.from_smiles('CC', name='ethane')
-            >>> has_halogen.transform(m2)
+            >>> hal_f.transform(m2)
             False
 
             Can see the atom breakdown by passing `agg` == `False`:
-            >>> has_halogen.transform(m1, agg=False)
+            >>> hal_f.transform(m1, agg=False)
             has_element
             F     0
             Cl    3
@@ -63,31 +64,33 @@ class ElementFilter(Filter):
             Can transform series.
 
             >>> ms = [m1, m2]
-            >>> has_halogen.transform(ms)
+            >>> hal_f.transform(ms)
             chloroform     True
             ethane        False
             dtype: bool
 
-            >>> has_halogen.transform(ms, agg=False)
+            >>> hal_f.transform(ms, agg=False)
             has_element  F  Cl  Br  I
             chloroform   0   3   0  0
             ethane       0   0   0  0
 
             Can also filter series:
 
-            >>> has_halogen.filter(ms)
+            >>> hal_f.filter(ms)
             chloroform    <Mol: ClC(Cl)Cl>
             Name: structure, dtype: object
 
-            >>> has_halogen.filter(ms, neg=True)
+            >>> hal_f.filter(ms, neg=True)
             ethane    <Mol: CC>
             Name: structure, dtype: object
 
         """
-    def __init__(self, elements=None, as_bits=False, **kwargs):
+    def __init__(self, elements=None, as_bits=False, agg='any', verbose=True):
+        self._elements = None
+
         self.elements = elements
         self.as_bits = as_bits
-        super(ElementFilter, self).__init__(**kwargs)
+        super(ElementFilter, self).__init__(agg=agg, verbose=verbose)
 
     @property
     def elements(self):
@@ -119,14 +122,11 @@ class ElementFilter(Filter):
 
 class OrganicFilter(ElementFilter):
     """ Whether a molecule is organic.
-        For the purpose of this function, an organic molecule is defined as having
-        atoms with elements only in the set H, B, C, N, O, F, P, S, Cl, Br, I.
-        Args:
-            mol (skchem.Mol):
-                The molecule to be tested.
-        Returns:
-            bool:
-                Whether the molecule is organic.
+
+        For the purpose of this function, an organic molecule is defined as
+        having atoms with elements only in the set H, B, C, N, O, F, P, S, Cl,
+        Br, I.
+
         Examples:
                 Basic usage as a function on molecules:
                 >>> import skchem
@@ -165,9 +165,11 @@ class OrganicFilter(ElementFilter):
                 Name: structure, dtype: object
         """
 
-    def __init__(self):
-        super(OrganicFilter, self).__init__(elements=None, agg='not any')
-        self.elements = [element for element in self.elements if element not in ORGANIC]
+    def __init__(self, verbose=True):
+        super(OrganicFilter, self).__init__(elements=None, agg='not any',
+                                            verbose=verbose)
+        self.elements = [element for element in self.elements
+                         if element not in ORGANIC]
 
 
 def n_atoms(mol, above=2, below=75, include_hydrogens=False):
@@ -181,10 +183,10 @@ def n_atoms(mol, above=2, below=75, include_hydrogens=False):
             The molecule to be tested.
         above (int):
             The lower threshold number of atoms (exclusive).
-            Defaults to None.
         below (int):
             The higher threshold number of atoms (inclusive).
-            Defaults to None.
+        include_hydrogens (bool):
+            Whether to consider hydrogens in the atom count.
 
     Returns:
         bool:
@@ -232,19 +234,22 @@ def n_atoms(mol, above=2, below=75, include_hydrogens=False):
 
     """
 
-    assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
+    assert above < below, 'Interval {} < a < {} undefined.'.format(above,
+                                                                   below)
 
     n_a = len(mol.atoms)
     if include_hydrogens:
-        n_a += sum(atom.GetNumImplicitHs() + atom.GetNumExplicitHs() for atom in mol.atoms)
+        n_a += sum(atom.GetNumImplicitHs() + atom.GetNumExplicitHs()
+                   for atom in mol.atoms)
 
     return above <= n_a < below
 
+
 class AtomNumberFilter(Filter):
 
-    """Filter for whether the number of atoms in a molecule falls in a defined interval.
+    """Filter whether the number of atoms in a Mol falls in a defined interval.
 
-    ``above <= n_atoms < below``
+    `above <= n_atoms < below`
 
     Args:
         above (int):
@@ -288,17 +293,20 @@ class AtomNumberFilter(Filter):
         Name: num_atoms_in_range, dtype: bool
     """
 
-    def __init__(self, above=3, below=60, include_hydrogens=False, **kwargs):
+    def __init__(self, above=3, below=60, include_hydrogens=False, agg='any',
+                 verbose=True):
 
-        assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
+        assert above < below, 'Interval {} < a < {} undefined.'.format(above,
+                                                                       below)
         self.above = above
         self.below = below
         self.include_hydrogens = include_hydrogens
 
-        super(AtomNumberFilter, self).__init__(**kwargs)
+        super(AtomNumberFilter, self).__init__(agg=agg, verbose=verbose)
 
     def _transform_mol(self, mol):
-        return n_atoms(mol, above=self.above, below=self.below, include_hydrogens=self.include_hydrogens)
+        return n_atoms(mol, above=self.above, below=self.below,
+                       include_hydrogens=self.include_hydrogens)
 
     @property
     def columns(self):
@@ -345,9 +353,9 @@ def mass(mol, above=10, below=900):
 
 
 class MassFilter(Filter):
-    """ Filter whether a the molecular weight of a molecule is lower than a threshold.
+    """ Filter whether the molecular weight of a molecule is outside a range.
 
-    ``above <= mass < below``
+    `above <= mass < below`
 
     Args:
         mol: (skchem.Mol):
@@ -386,13 +394,14 @@ class MassFilter(Filter):
 
     """
 
-    def __init__(self, above=3, below=900, **kwargs):
+    def __init__(self, above=3, below=900, agg='any', verbose=True):
 
-        assert above < below, 'Interval {} < a < {} undefined.'.format(above, below)
+        assert above < below, 'Interval {} < a < {} undefined.'.format(above,
+                                                                       below)
         self.above = above
         self.below = below
 
-        super(MassFilter, self).__init__( **kwargs)
+        super(MassFilter, self).__init__(agg=agg, verbose=verbose)
 
     def _transform_mol(self, mol):
         return mass(mol, above=self.above, below=self.below)

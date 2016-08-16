@@ -17,6 +17,7 @@ import pandas as pd
 from ..utils import Suppressor, squeeze
 from ..core import Mol
 
+
 def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
                 title_line=False, error_bad_mol=False, warn_bad_mol=True,
                 drop_bad_mol=True, *args, **kwargs):
@@ -74,7 +75,7 @@ def read_smiles(smiles_file, smiles_column=0, name_column=None, delimiter='\t',
         if title_line is True:
             header = 0
         elif header is not None:
-            pass #remove from the kwargs to not pass it twice
+            pass  #remove from the kwargs to not pass it twice
         else:
             header = None
 
@@ -146,10 +147,12 @@ def write_smiles(data, smiles_path):
 def _from_smiles_df(_, *args, **kwargs):
     return read_smiles(*args, **kwargs)
 
+
 @classmethod
 @wraps(read_smiles)
 def _from_smiles_series(_, *args, **kwargs):
     return read_smiles(*args, **kwargs).structure
+
 
 @wraps(write_smiles)
 def _to_smiles_df(self, *args, **kwargs):

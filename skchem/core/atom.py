@@ -16,6 +16,7 @@ from rdkit import Chem
 
 from .base import ChemicalObject, PropertyView, ChemicalObjectView
 
+
 class Atom(Chem.rdchem.Atom, ChemicalObject):
 
     """ Object representing an Atom in scikit-chem. """
@@ -71,7 +72,9 @@ class AtomView(ChemicalObjectView):
         res = super(AtomView, self).__getitem__(index)
         if res is None:
             if index >= len(self):
-                raise IndexError('Index {} out of range for molecule with {} atoms.'.format(index, len(self)))
+                msg = 'Index {} out of range for molecule with' \
+                    '{} atoms.'.format(index, len(self))
+                raise IndexError(msg)
             else:
                 return Atom.from_super(self.owner.GetAtomWithIdx(index))
         else:
@@ -82,19 +85,20 @@ class AtomView(ChemicalObjectView):
 
     @property
     def element(self):
-        """ A `pd.Series` of the element of the atoms in the `AtomView`. """
+        """ A `pd.Series` of the element of the atoms in `AtomView`. """
 
         return pd.Series((atom.element for atom in self), index=self.index)
 
     @property
     def atomic_number(self):
-        """ A `pd.Series` of the atomic number of the atoms in the `AtomView`. """
+        """ A `pd.Series` of the atomic number of the atoms in `AtomView`. """
 
-        return pd.Series((atom.atomic_number for atom in self), index=self.index)
+        return pd.Series((atom.atomic_number for atom in self),
+                         index=self.index)
 
     @property
     def atomic_mass(self):
-        """ A `pd.Series` of the atomic mass of the atoms in the `AtomView`. """
+        """ A `pd.Series` of the atomic mass of the atoms in `AtomView`. """
 
         return pd.Series((atom.mass for atom in self), index=self.index)
 

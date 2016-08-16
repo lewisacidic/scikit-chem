@@ -9,13 +9,16 @@
 Module implementing pipelines.
 """
 
+
 def is_transform_filter(obj):
     """ Whether an object is a TransformFilter (by duck typing). """
     return hasattr(obj, 'transform_filter')
 
+
 def is_filter(obj):
     """ Whether an object is a Filter (by duck typing). """
     return hasattr(obj, 'filter')
+
 
 def is_transformer(obj):
     """ Whether an object is a Transformer (by duck typing). """

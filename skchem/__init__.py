@@ -24,8 +24,8 @@ from .io import read_sdf, read_smiles
 
 __version__ = '0.0.6'
 
-__all__ = ['core', 'filters', 'data', 'descriptors', 'io', 'vis', 'cross_validation',
-           'standardizers', 'interact', 'pipeline']
+__all__ = ['core', 'filters', 'data', 'descriptors', 'io', 'vis',
+           'cross_validation', 'standardizers', 'interact', 'pipeline']
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())

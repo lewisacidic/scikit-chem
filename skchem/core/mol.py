@@ -9,6 +9,8 @@
 Defining molecules in scikit-chem.
 """
 
+import copy
+
 import rdkit.Chem
 import rdkit.Chem.inchi
 from rdkit.Chem import AddHs, RemoveHs
@@ -99,7 +101,8 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         >>> [a.element for a in m.atoms]
         ['C', 'C', 'O', 'Cl']
 
-        The view provides shorthands for some attributes to get these as pandas objects:
+        The view provides shorthands for some attributes to get these as pandas
+        objects:
 
         >>> m.atoms.element
         atom_idx
@@ -144,7 +147,7 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
             **kwargs: Arguments to be passed to the rdkit Mol constructor.
         """
         super(Mol, self).__init__(*args, **kwargs)
-        self.__two_d = None #set in constructor
+        self.__two_d = None # set in constructor
 
     @property
     def name(self):
@@ -206,8 +209,8 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
         """ List[Conformer]: conformers of the molecule. """
 
-        return [Conformer.from_super(self.GetConformer(i)) \
-            for i in range(len(self.GetConformers()))]
+        return [Conformer.from_super(self.GetConformer(i))
+                for i in range(len(self.GetConformers()))]
 
     def to_formula(self):
 
@@ -231,16 +234,17 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
             self.__two_d = Compute2DCoords(self)
         return self.conformers[self.__two_d]
 
-    def add_hs(self, inplace=False, add_coords=True, explicit_only=False, only_on_atoms=False):
-        """
+    def add_hs(self, inplace=False, add_coords=True, explicit_only=False,
+               only_on_atoms=False):
+        """ Add hydrogens to self.
 
         Args:
             inplace (bool):
-                Whether to add Hs to `Mol`, or return a new `Mol`. Default is `False`, return a new `Mol`.
+                Whether to add Hs to `Mol`, or return a new `Mol`.
             add_coords (bool):
-                Whether to set 3D coordinate for added  Hs. Default is `True`.
+                Whether to set 3D coordinate for added Hs.
             explicit_only (bool):
-                Whether to add only explicit Hs, or also implicit ones. Default is `False`.
+                Whether to add only explicit Hs, or also implicit ones.
             only_on_atoms (iterable<bool>):
                 An iterable specifying the atoms to add Hs.
         Returns:
@@ -248,31 +252,36 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
                 `Mol` with Hs added.
         """
         if inplace:
-            raise NotImplementedError('Inplace addition of Hs is not yet supported.')
-        return self.__class__.from_super(AddHs(self, addCoords=add_coords,
-                                           onlyOnAtoms=only_on_atoms, explicitOnly=explicit_only))
+            msg = 'Inplace addition of Hs is not yet supported.'
+            raise NotImplementedError(msg)
+        raw = AddHs(self, addCoords=add_coords, onlyOnAtoms=only_on_atoms,
+                    explicitOnly=explicit_only)
+        return self.__class__.from_super(raw)
 
-    def remove_hs(self, inplace=False, sanitize=True, update_explicit=False, implicit_only=False):
+    def remove_hs(self, inplace=False, sanitize=True, update_explicit=False,
+                  implicit_only=False):
 
-        """
+        """ Remove hydrogens from self.
 
         Args:
             inplace (bool):
-                Whether to add Hs to `Mol`, or return a new `Mol`. Default is `False`, return a new `Mol`.
+                Whether to add Hs to `Mol`, or return a new `Mol`.
             sanitize (bool):
-                Whether to sanitize after Hs are removed. Default is `True`.
+                Whether to sanitize after Hs are removed.
             update_explicit (bool):
-                Whether to update explicit count after the removal. Default is `False`.
+                Whether to update explicit count after the removal.
             implicit_only (bool):
-                Whether to remove explict and implicit Hs, or Hs only. Default is `False`.
+                Whether to remove explict and implicit Hs, or Hs only.
         Returns:
             skchem.Mol:
                 `Mol` with Hs removed.
         """
         if inplace:
-            raise NotImplementedError('Inplace removed of Hs is not yet supported.')
-        return self.__class__.from_super(RemoveHs(self, implicitOnly=implicit_only,
-                                              updateExplicitCount=update_explicit, sanitize=sanitize))
+            msg = 'Inplace removed of Hs is not yet supported.'
+            raise NotImplementedError(msg)
+        raw = RemoveHs(self, implicitOnly=implicit_only,
+                       updateExplicitCount=update_explicit, sanitize=sanitize)
+        return self.__class__.from_super(raw)
 
     def to_dict(self, kind="chemdoodle"):
 
@@ -282,7 +291,6 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
             kind (str):
                 The type of representation to use.  Only `chemdoodle` is
                 currently supported.
-                Defaults to 'Chemdoodle'.
 
         Returns:
             dict:
@@ -298,7 +306,8 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
         """ Chemdoodle dict representation of the molecule.
 
-        Documentation of the format may be found on the [chemdoodle website](https://web.chemdoodle.com/docs/chemdoodle-json-format/)"""
+        Documentation of the format may be found on the `chemdoodle website \
+        <https://web.chemdoodle.com/docs/chemdoodle-json-format>`_"""
 
         atom_positions = [p.to_dict() for p in self._two_d().atom_positions]
         atom_elements = [a.element for a in self.atoms]
@@ -340,16 +349,13 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         res = rdkit.Chem.InchiToInchiKey(self.to_inchi())
 
         if res is None:
-            raise RuntimeError("The molecule could not be encoded as InChI key.")
+            raise RuntimeError("An InChI key could not be generated.")
 
         return res
 
     def to_binary(self):
 
         """  Serialize the molecule to binary encoding.
-
-        Args:
-            None
 
         Returns:
             bytes: the molecule in bytes.
@@ -373,6 +379,12 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
         return cls(binary)
 
+    def copy(self):
+
+        """ Return a copy of the molecule. """
+
+        return Mol.from_super(copy.deepcopy(self))
+
     def __repr__(self):
         try:
             formula = self.to_formula()
@@ -380,17 +392,18 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
             # if we can't generate the formula, just say it is unknown
             formula = 'unknown'
 
-        return '<{klass} name="{name}" formula="{formula}" at {address}>'.format(
+        return '<{klass} name="{name}" formula="{form}" at {address}>'.format(
             klass=self.__class__.__name__,
             name=self.name,
-            formula=formula,
+            form=formula,
             address=hex(id(self)))
 
     def __contains__(self, item):
         if isinstance(item, Mol):
             return self.HasSubstructMatch(item)
         else:
-            raise NotImplementedError('No way to check if {} contains {}'.format(self, item))
+            msg = 'No way to check if {} contains {}'.format(self, item)
+            raise NotImplementedError(msg)
 
     def __eq__(self, item):
         if isinstance(item, self.__class__):
@@ -407,6 +420,7 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
     def __str__(self):
         return '<Mol: {}>'.format(self.to_smiles())
 
+
 def bind_constructor(constructor_name, name_to_bind=None):
 
     """ Bind an (rdkit) constructor to the class """
@@ -416,15 +430,17 @@ def bind_constructor(constructor_name, name_to_bind=None):
 
         """ The constructor to be bound. """
 
-        m = getattr(rdkit.Chem, 'MolFrom' + constructor_name)(in_arg, *args, **kwargs)
+        m = getattr(rdkit.Chem, 'MolFrom' + constructor_name)(in_arg, *args,
+                                                              **kwargs)
         if m is None:
             raise ValueError('Failed to parse molecule, {}'.format(in_arg))
         m = Mol.from_super(m)
         m.name = name
         return m
 
-    setattr(Mol, 'from_{}'.format(constructor_name).lower() \
-        if name_to_bind is None else name_to_bind, constructor)
+    setattr(Mol, 'from_{}'.format(constructor_name).lower()
+                 if name_to_bind is None else name_to_bind, constructor)
+
 
 def bind_serializer(serializer_name, name_to_bind=None):
 
@@ -434,14 +450,17 @@ def bind_serializer(serializer_name, name_to_bind=None):
 
         """ The serializer to be bound. """
         with Suppressor():
-            return getattr(rdkit.Chem, 'MolTo' + serializer_name)(self, *args, **kwargs)
+            return getattr(rdkit.Chem, 'MolTo' + serializer_name)(self, *args,
+                                                                  **kwargs)
 
-    setattr(Mol, 'to_{}'.format(serializer_name).lower() \
-        if name_to_bind is None else name_to_bind, serializer)
+    setattr(Mol, 'to_{}'.format(serializer_name).lower()
+                 if name_to_bind is None else name_to_bind, serializer)
 
-CONSTRUCTORS = ['Inchi', 'Smiles', 'Mol2Block', 'Mol2File', 'MolBlock', \
-                    'MolFile', 'PDBBlock', 'PDBFile', 'Smarts', 'TPLBlock', 'TPLFile']
-SERIALIZERS = ['Inchi', 'Smiles', 'MolBlock', 'MolFile', 'PDBBlock', 'Smarts', 'TPLBlock', 'TPLFile']
+CONSTRUCTORS = ['Inchi', 'Smiles', 'Mol2Block', 'Mol2File', 'MolBlock',
+                'MolFile', 'PDBBlock', 'PDBFile', 'Smarts', 'TPLBlock',
+                'TPLFile']
+SERIALIZERS = ['Inchi', 'Smiles', 'MolBlock', 'MolFile', 'PDBBlock', 'Smarts',
+               'TPLBlock', 'TPLFile']
 
 list(map(bind_constructor, CONSTRUCTORS))
 list(map(bind_serializer, SERIALIZERS))

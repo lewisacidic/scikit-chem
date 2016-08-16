@@ -11,3 +11,5 @@ Module for plotting images of molecules.
 
 from .mol import draw
 from .atom import plot_weights
+
+__all__ = ['draw', 'plot_weights']

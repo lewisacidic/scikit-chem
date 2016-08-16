@@ -5,8 +5,12 @@
 
 import re
 
+
 def camel_to_snail(s):
+    """ Convert CamelCase to snail_case. """
     return re.sub('(?!^)([A-Z]+)', r'_\1', s).lower()
 
+
 def free_to_snail(s):
+    """ Convert Free Case to snail_case. """
     return s.strip().lower().replace(' ', '_')
