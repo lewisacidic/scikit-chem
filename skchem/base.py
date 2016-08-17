@@ -11,6 +11,7 @@ Base classes for scikit-chem objects.
 """
 import subprocess
 from abc import ABCMeta, abstractmethod
+import multiprocessing
 from tempfile import NamedTemporaryFile
 import time
 import logging
@@ -20,7 +21,7 @@ import pandas as pd
 from .utils import NamedProgressBar, DummyProgressBar
 from . import core
 from .utils import (iterable_to_series, optional_second_method, nanarray,
-                    squeeze)
+                    squeeze, yaml_dump, json_dump)
 from . import io
 
 LOGGER = logging.getLogger(__name__)
@@ -41,6 +42,57 @@ class BaseTransformer(object):
     def __init__(self, verbose=True):
         self.verbose = verbose
 
+    def get_params(self):
+        """ Get a dictionary of the parameters of this object. """
+        params = list(self.__class__.__init__.__code__.co_varnames)
+        params.remove('self')
+        return {param: getattr(self, param) for param in params}
+
+    @classmethod
+    def from_params(cls, params):
+        """ Create a instance from a params dictionary. """
+        return cls(**params)
+
+    def to_dict(self):
+
+        """ Return a dictionary representation of the object."""
+
+        n = '{}.{}'.format(self.__class__.__module__, self.__class__.__name__)
+        return {n: self.get_params()}
+
+    def to_json(self, target=None):
+
+        """ Serialize the object as JSON.
+
+        Args:
+            target (str or file-like):
+                A file or filepath to serialize the object to.  If `None`,
+                return the JSON as a string.
+
+            Returns:
+                None or str
+        """
+
+        return json_dump(self.to_dict(), target)
+
+    def to_yaml(self, target=None):
+
+        """ Serialize the object as YAML.
+
+        Args:
+            target (str or file-like):
+                A file or filepath to serialize the object to.  If `None`,
+                return the YAML as a string.
+
+            Returns:
+                None or str
+        """
+
+        return yaml_dump(self.to_dict(), target)
+
+    def copy(self):
+        """ Return a copy of this object. """
+        return self.__class__(**self.get_params())
 
     def optional_bar(self, **kwargs):
         if self.verbose:
@@ -67,6 +119,9 @@ class BaseTransformer(object):
             pd.Series or pd.DataFrame
         """
         pass
+
+    def __eq__(self, other):
+        return self.get_params() == other.get_params()
 
 
 class Transformer(BaseTransformer):

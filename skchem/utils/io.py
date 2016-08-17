@@ -9,6 +9,9 @@
 IO helper functions for skchem.
 """
 
+import yaml
+import json
+
 
 def line_count(filename):
 
@@ -49,3 +52,25 @@ def sdf_count(filename):
 
     with open(filename, 'rb') as f:
         return sum(1 for l in f if l[:4] == b'$$$$')
+
+
+def json_dump(obj, target=None):
+    """ Write object as json to file or stream, or return as string. """
+
+    if target is None:
+        return json.dumps(obj)
+    elif isinstance(target, str):
+        with open(target, 'w') as f:
+            json.dump(obj, f)
+    else:
+        json.dump(obj, target)
+
+
+def yaml_dump(obj, target=None):
+    """ Write object as yaml to file or stream, or return as string. """
+
+    if isinstance(target, str):
+        with open(target, 'w') as f:
+            yaml.dump(obj, f, default_flow_style=False)
+    else:
+        return yaml.dump(obj, target, default_flow_style=False)
