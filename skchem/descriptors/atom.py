@@ -219,7 +219,7 @@ def is_hybridized(a, hybrid_type=HybridizationType.SP3):
 
     """ Hybridized as type hybrid_type, default SP3 """
 
-    return str(a.GetHybridization()) is hybrid_type
+    return str(a.GetHybridization()) == str(hybrid_type)
 
 hybridization_features = {'is_' + n + '_hybridized': functools.partial(
     is_hybridized, hybrid_type=n)
@@ -252,11 +252,11 @@ ATOM_FEATURES.update(hybridization_features)
 
 class AtomFeaturizer(AtomTransformer, Featurizer):
 
-    def __init__(self, features='all', verbose=True):
+    def __init__(self, features='all', n_jobs=1, verbose=True):
         self._features = None
         self.features = features
 
-        super(AtomFeaturizer, self).__init__(verbose=verbose)
+        super(AtomFeaturizer, self).__init__(n_jobs=n_jobs, verbose=verbose)
 
     @property
     def name(self):
@@ -268,10 +268,11 @@ class AtomFeaturizer(AtomTransformer, Featurizer):
 
     @features.setter
     def features(self, features):
-        if features == 'all':
-            features = ATOM_FEATURES
-        elif isinstance(features, str):
-            features = {features: ATOM_FEATURES[features]}
+        if isinstance(features, str):
+            if features == 'all':
+                features = ATOM_FEATURES
+            else:
+                features = {features: ATOM_FEATURES[features]}
         elif isinstance(features, list):
             features = {feature: ATOM_FEATURES[feature]
                         for feature in features}
@@ -324,8 +325,18 @@ class SpacialDistanceTransformer(DistanceTransformer):
 
     # TODO: handle multiple conformers
 
-    def __init__(self, verbose=True):
-        super(SpacialDistanceTransformer, self).__init__(verbose=verbose)
+    def __init__(self, n_jobs=1, verbose=True):
+
+        """ Initialize a SpacialDistanceTransformer.
+
+        Args:
+            n_jobs (int):
+                The number of processes to run the featurizer in.
+            verbose (bool):
+                Whether to output a progress bar.
+        """
+        super(SpacialDistanceTransformer, self).__init__(n_jobs=n_jobs,
+                                                         verbose=verbose)
 
     @property
     def name(self):
@@ -341,8 +352,19 @@ class GraphDistanceTransformer(DistanceTransformer):
 
     """ Transformer class for generating Graph distance matrices. """
 
-    def __init__(self, verbose=True):
-        super(GraphDistanceTransformer, self).__init__(verbose=verbose)
+    def __init__(self, n_jobs=1, verbose=True):
+
+        """ Initialize a GraphDistanceTransformer.
+
+        Args:
+            n_jobs (int):
+                The number of processes to run the featurizer in.
+            verbose (bool):
+                Whether to output a progress bar.
+        """
+
+        super(GraphDistanceTransformer, self).__init__(n_jobs=n_jobs,
+                                                       verbose=verbose)
 
     @property
     def name(self):

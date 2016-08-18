@@ -17,8 +17,8 @@ class MMFF(ForceField):
 
     """ Merck Molecular Force Field transformer. """
 
-    def __init__(self, preembed=True, warn_on_fail=True,
-                 error_on_fail=False, add_hs=True, verbose=True):
+    def __init__(self, preembed=True, warn_on_fail=True, error_on_fail=False,
+                 add_hs=True, n_jobs=1, verbose=True):
 
         """ Initialize a MMFF object.
 
@@ -35,7 +35,7 @@ class MMFF(ForceField):
         super(MMFF, self).__init__(preembed=preembed,
                                    warn_on_fail=warn_on_fail,
                                    error_on_fail=error_on_fail, add_hs=add_hs,
-                                   verbose=verbose)
+                                   verbose=verbose, n_jobs=n_jobs)
 
     def _optimize(self, mol):
 

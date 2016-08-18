@@ -35,77 +35,81 @@ from ..base import Transformer, Featurizer
 class MorganFeaturizer(Transformer, Featurizer):
     """ Morgan fingerprints, implemented by RDKit.
 
-     Notes:
+    Notes:
 
-         Currently, folded bits are by far the fastest implementation.
+    Currently, folded bits are by far the fastest implementation.
 
-     Examples:
+    Due to the speed of calculation, it is unlikely to see a speedup using
+    the current parallel code, as more time is spent moving data across
+    processes than for calculating in a single process.
 
-        >>> import skchem
-        >>> import pandas as pd
-        >>> pd.options.display.max_rows = pd.options.display.max_columns = 5
+    Examples:
 
-        >>> mf = skchem.descriptors.MorganFeaturizer()
-        >>> m = skchem.Mol.from_smiles('CCC')
+    >>> import skchem
+    >>> import pandas as pd
+    >>> pd.options.display.max_rows = pd.options.display.max_columns = 5
 
-        Can transform an individual molecule to yield a Series:
+    >>> mf = skchem.descriptors.MorganFeaturizer()
+    >>> m = skchem.Mol.from_smiles('CCC')
 
-        >>> mf.transform(m)
-        morgan_fp_idx
-        0       0
-        1       0
-               ..
-        2046    0
-        2047    0
-        Name: MorganFeaturizer, dtype: uint8
+    Can transform an individual molecule to yield a Series:
 
-        Can transform a list of molecules to yield a DataFrame:
+    >>> mf.transform(m)
+    morgan_fp_idx
+    0       0
+    1       0
+    ..
+    2046    0
+    2047    0
+    Name: MorganFeaturizer, dtype: uint8
 
-        >>> mf.transform([m])
-        morgan_fp_idx  0     1     ...   2046  2047
-        0                 0     0  ...      0     0
-        <BLANKLINE>
-        [1 rows x 2048 columns]
+    Can transform a list of molecules to yield a DataFrame:
 
-        Change the number of features the fingerprint is folded down to using
-        `n_feats`.
+    >>> mf.transform([m])
+    morgan_fp_idx  0     1     ...   2046  2047
+    0                 0     0  ...      0     0
+    <BLANKLINE>
+    [1 rows x 2048 columns]
 
-        >>> mf.n_feats = 1024
-        >>> mf.transform(m)
-        morgan_fp_idx
-        0       0
-        1       0
-               ..
-        1022    0
-        1023    0
-        Name: MorganFeaturizer, dtype: uint8
+    Change the number of features the fingerprint is folded down to using
+    `n_feats`.
 
-        Count fingerprints with `as_bits` = False
+    >>> mf.n_feats = 1024
+    >>> mf.transform(m)
+    morgan_fp_idx
+    0       0
+    1       0
+    ..
+    1022    0
+    1023    0
+    Name: MorganFeaturizer, dtype: uint8
 
-        >>> mf.as_bits = False
-        >>> res = mf.transform(m); res[res > 0]
-        morgan_fp_idx
-        33     2
-        80     1
-        294    2
-        320    1
-        Name: MorganFeaturizer, dtype: int64
+    Count fingerprints with `as_bits` = False
 
-        Pseudo-gradient with `grad` shows which atoms contributed to which
-        feature.
+    >>> mf.as_bits = False
+    >>> res = mf.transform(m); res[res > 0]
+    morgan_fp_idx
+    33     2
+    80     1
+    294    2
+    320    1
+    Name: MorganFeaturizer, dtype: int64
 
-        >>> mf.grad(m)[res > 0]
-        atom_idx  0  1  2
-        features
-        33        1  0  1
-        80        0  1  0
-        294       1  2  1
-        320       1  1  1
+    Pseudo-gradient with `grad` shows which atoms contributed to which
+    feature.
+
+    >>> mf.grad(m)[res > 0]
+    atom_idx  0  1  2
+    features
+    33        1  0  1
+    80        0  1  0
+    294       1  2  1
+    320       1  1  1
 
     """
     def __init__(self, radius=2, n_feats=2048, as_bits=True,
                  use_features=False, use_bond_types=True, use_chirality=False,
-                 verbose=True):
+                 n_jobs=1, verbose=True):
 
         """ Initialize the fingerprinter object.
 
@@ -113,28 +117,37 @@ class MorganFeaturizer(Transformer, Featurizer):
              radius (int):
                  The maximum radius for atom environments.
                  Default is `2`.
+
              n_feats (int):
                  The number of features to which to fold the fingerprint down.
                  For unfolded, use `-1`.
                  Default is `2048`.
+
              as_bits (bool):
                  Whether to return bits (`True`) or counts (`False`).
                  Default is `True`.
+
              use_features (bool):
                  Whether to use map atom types to generic features (FCFP).
                  Default is `False`.
+
              use_bond_types (bool):
                  Whether to use bond types to differentiate environments.
                  Default is `False`.
+
              use_chirality (bool):
                  Whether to use chirality to differentiate environments.
                  Default is `False`.
+
+             n_jobs (int):
+                 The number of processes to run the featurizer in.
+
              verbose (bool):
-                Whether to output a progress bar.
+                 Whether to output a progress bar.
 
         """
 
-        super(MorganFeaturizer, self).__init__(verbose=verbose)
+        super(MorganFeaturizer, self).__init__(n_jobs=n_jobs, verbose=verbose)
         self.radius = radius
         self.n_feats = n_feats
         self.sparse = self.n_feats < 0
@@ -267,7 +280,7 @@ class AtomPairFeaturizer(Transformer, Featurizer):
     """ Atom Pair Fingerprints, implemented by RDKit. """
 
     def __init__(self, min_length=1, max_length=30, n_feats=2048,
-                 as_bits=False, use_chirality=False, verbose=True):
+                 as_bits=False, use_chirality=False, n_jobs=1, verbose=True):
 
         """ Instantiate an atom pair fingerprinter.
 
@@ -275,24 +288,33 @@ class AtomPairFeaturizer(Transformer, Featurizer):
             min_length (int):
                 The minimum length of paths between pairs.
                 Default is `1`, i.e. pairs can be bonded together.
+
             max_length (int):
                 The maximum length of paths between pairs.
                 Default is `30`.
+
             n_feats (int):
                 The number of features to which to fold the fingerprint down.
                 For unfolded, use `-1`.
                 Default is `2048`.
+
             as_bits (bool):
                 Whether to return bits (`True`) or counts (`False`).
                 Default is `False`.
+
             use_chirality (bool):
                 Whether to use chirality to differentiate environments.
                 Default is `False`.
+
+            n_jobs (int):
+                The number of processes to run the featurizer in.
+
             verbose (bool):
                 Whether to output a progress bar.
         """
 
-        super(AtomPairFeaturizer, self).__init__(verbose=verbose)
+        super(AtomPairFeaturizer, self).__init__(n_jobs=n_jobs,
+                                                 verbose=verbose)
         self.min_length = min_length
         self.max_length = max_length
         self.n_feats = n_feats
@@ -362,22 +384,29 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
     """ Topological Torsion fingerprints, implemented by RDKit. """
 
     def __init__(self, target_size=4, n_feats=2048, as_bits=False,
-                 use_chirality=False, verbose=True):
+                 use_chirality=False, n_jobs=1, verbose=True):
 
-        """
+        """ Initialize a TopologicalTorsionFeaturizer object.
+
         Args:
             target_size (int):
                 # TODO
+
             n_feats (int):
                 The number of features to which to fold the fingerprint down.
                 For unfolded, use `-1`.
                 Default is `2048`.
+
             as_bits (bool):
                 Whether to return bits (`True`) or counts (`False`).
                 Default is `False`.
+
             use_chirality (bool):
                 Whether to use chirality to differentiate environments.
                 Default is `False`.
+            n_jobs (int):
+                The number of processes to run the featurizer in.
+
             verbose (bool):
                 Whether to output a progress bar.
         """
@@ -387,7 +416,8 @@ class TopologicalTorsionFeaturizer(Transformer, Featurizer):
         self.sparse = self.n_feats < 0
         self.as_bits = as_bits
         self.use_chirality = use_chirality
-        super(TopologicalTorsionFeaturizer, self).__init__(verbose=verbose)
+        super(TopologicalTorsionFeaturizer, self).__init__(n_jobs=n_jobs,
+                                                           verbose=verbose)
 
     def _transform_mol(self, mol):
         """ Private method to transform a skchem molecule.
@@ -443,16 +473,19 @@ class MACCSFeaturizer(Transformer, Featurizer):
 
     """ MACCS Keys Fingerprints."""
 
-    def __init__(self, verbose=True):
+    def __init__(self, n_jobs=1, verbose=True):
 
         """ Initialize a MACCS Featurizer.
 
         Args:
+            n_jobs (int):
+                The number of processes to run the featurizer in.
+
             verbose (bool):
                 Whether to output a progress bar.
         """
 
-        super(MACCSFeaturizer, self).__init__(verbose=verbose)
+        super(MACCSFeaturizer, self).__init__(n_jobs=n_jobs, verbose=verbose)
         self.n_feats = 166
 
     def _transform_mol(self, mol):
@@ -511,9 +544,33 @@ class ErGFeaturizer(Transformer, Featurizer):
      Implemented in RDKit."""
 
     def __init__(self, atom_types=0, fuzz_increment=0.3, min_path=1,
-                 max_path=15, verbose=True):
+                 max_path=15, n_jobs=1, verbose=True):
 
-        super(ErGFeaturizer, self).__init__(verbose=verbose)
+        """ Initialize an ErGFeaturizer object.
+
+        # TODO complete docstring
+
+        Args:
+            atom_types (AtomPairsParameters):
+                The atom types to use.
+
+            fuzz_increment (float):
+                The fuzz increment.
+
+            min_path (int):
+                The minimum path.
+
+            max_path (int):
+                The maximum path.
+
+            n_jobs (int):
+                The number of processes to run the featurizer in.
+
+            verbose (bool):
+                Whether to output a progress bar.
+        """
+
+        super(ErGFeaturizer, self).__init__(n_jobs=n_jobs, verbose=verbose)
         self.atom_types = atom_types
         self.fuzz_increment = fuzz_increment
         self.min_path = min_path
@@ -537,7 +594,7 @@ class FeatureInvariantsFeaturizer(Transformer, Featurizer):
 
     """ Feature invariants fingerprints. """
 
-    def __init__(self, verbose=True):
+    def __init__(self, n_jobs=1, verbose=True):
 
         """ Initialize a FeatureInvariantsFeaturizer.
 
@@ -545,7 +602,8 @@ class FeatureInvariantsFeaturizer(Transformer, Featurizer):
             verbose (bool):
                 Whether to output a progress bar.
         """
-        super(FeatureInvariantsFeaturizer, self).__init__(verbose=verbose)
+        super(FeatureInvariantsFeaturizer, self).__init__(n_jobs=n_jobs,
+                                                          verbose=verbose)
         raise NotImplementedError
 
     def _transform_mol(self, mol):
@@ -565,7 +623,8 @@ class ConnectivityInvariantsFeaturizer(Transformer, Featurizer):
 
     """ Connectivity invariants fingerprints """
 
-    def __init__(self, include_ring_membership=True, verbose=True):
+    def __init__(self, include_ring_membership=True, n_jobs=1,
+                 verbose=True):
 
         """ Initialize a ConnectivityInvariantsFeaturizer.
 
@@ -574,10 +633,14 @@ class ConnectivityInvariantsFeaturizer(Transformer, Featurizer):
                 Whether ring membership is considered when generating the
                 invariants.
 
+            n_jobs (int):
+                The number of processes to run the featurizer in.
+
             verbose (bool):
                 Whether to output a progress bar.
         """
         super(ConnectivityInvariantsFeaturizer, self).__init__(self,
+                                                               n_jobs=n_jobs,
                                                                verbose=verbose)
         self.include_ring_membership = include_ring_membership
         raise NotImplementedError  # this is a sparse descriptor
@@ -601,7 +664,8 @@ class RDKFeaturizer(Transformer, Featurizer):
 
     def __init__(self, min_path=1, max_path=7, n_feats=2048, n_bits_per_hash=2,
                  use_hs=True, target_density=0.0, min_size=128,
-                 branched_paths=True, use_bond_types=True, verbose=True):
+                 branched_paths=True, use_bond_types=True, n_jobs=1,
+                 verbose=True):
 
         """ RDK fingerprints
 
@@ -638,12 +702,15 @@ class RDKFeaturizer(Transformer, Featurizer):
             use_bond_types (bool):
                 if set both bond orders will be used in the path hashes.
 
+            n_jobs (int):
+                The number of processes to run the featurizer in.
+
             verbose (bool):
                 Whether to output a progress bar.
 
         """
 
-        super(RDKFeaturizer, self).__init__(verbose=verbose)
+        super(RDKFeaturizer, self).__init__(n_jobs=n_jobs, verbose=verbose)
 
         self.min_path = min_path
         self.max_path = max_path

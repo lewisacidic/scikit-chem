@@ -39,8 +39,21 @@ class BaseTransformer(object):
 
     # To share some functionality betweeen Transformer and AtomTransformer
 
-    def __init__(self, verbose=True):
+    def __init__(self, n_jobs=1, verbose=True):
+        self._n_jobs = None  # property cache
+        self.n_jobs = n_jobs
         self.verbose = verbose
+
+    @property
+    def n_jobs(self):
+        return self._n_jobs
+
+    @n_jobs.setter
+    def n_jobs(self, val):
+        if val >= 1:
+            self._n_jobs = val
+        elif val == -1:
+            self._n_jobs = multiprocessing.cpu_count()
 
     def get_params(self):
         """ Get a dictionary of the parameters of this object. """
@@ -147,9 +160,16 @@ class Transformer(BaseTransformer):
 
     def _transform_series(self, ser):
         """ Transform a series of molecules to an np.ndarray. """
-        bar = self.optional_bar()
+        LOGGER.debug('Transforming series of length %s with %s jobs',
+                     len(ser), self.n_jobs)
 
-        return [self._transform_mol(mol) for mol in bar(ser)]
+        bar = self.optional_bar(max_value=len(ser))
+        if self.n_jobs == 1:
+            return [self._transform_mol(mol) for mol in bar(ser)]
+        else:
+            cpy = self.copy()
+            with multiprocessing.Pool(processes=self.n_jobs) as pool:
+                return [res for res in bar(pool.imap(cpy._transform_mol, ser))]
 
     @optional_second_method
     def transform(self, mols, **kwargs):
@@ -283,20 +303,23 @@ class AtomTransformer(BaseTransformer):
 
     def _transform_series(self, ser):
         """ Transform a Series<Mol> to a 3D array. """
-
-        if self.verbose:
-            bar = NamedProgressBar(name=self.__class__.__name__)
-        else:
-            # use identity.
-            def bar(obj):
-                return obj
+        LOGGER.debug('Transforming series of length %s with %s jobs',
+                     len(ser), self.n_jobs)
+        bar = self.optional_bar(max_value=len(ser))
 
         res = nanarray((len(ser), self.max_atoms, len(self.minor_axis)))
-        for i, mol in enumerate(bar(ser)):
-            res[i, :len(mol.atoms),
-                :len(self.minor_axis)] = self._transform_mol(mol)
-        return res
 
+        if self.n_jobs == 1:
+            for i, mol in enumerate(bar(ser)):
+                res[i, :len(mol.atoms),
+                    :len(self.minor_axis)] = self._transform_mol(mol)
+        else:
+            cpy = self.copy()
+            with multiprocessing.Pool(self.n_jobs) as pool:
+                for (i, ans) in enumerate(bar(pool.imap(cpy._transform_mol,
+                                                        ser))):
+                    res[i, :len(ans), :len(self.minor_axis)] = ans
+        return res
 
 class External(object):
     """ Mixin for wrappers of external CLI tools.
@@ -341,6 +364,18 @@ class CLIWrapper(External, BaseTransformer):
         super(CLIWrapper, self).__init__(**kwargs)
         self.error_on_fail = error_on_fail
         self.warn_on_fail = warn_on_fail
+
+    @property
+    def n_jobs(self):
+        return self._n_jobs
+
+    @n_jobs.setter
+    def n_jobs(self, val):
+        if val != 1:
+            raise NotImplementedError('Multiprocessed external code is not yet'
+                                      ' supported.')
+        else:
+            self._n_jobs = val
 
     def _transform_series(self, ser):
         """ Transform a series. """

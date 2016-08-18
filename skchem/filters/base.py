@@ -17,12 +17,27 @@ from .. import core
 from ..utils import iterable_to_series, Defaults, optional_second_method
 
 
+def not_all(x):
+    """ Not all x """
+    return not all(x)
+
+
+def not_any(x):
+    """ Not any x """
+    return not any(x)
+
+
+def identity(x):
+    """ The identity """
+    return x
+
+
 AGGS = Defaults(defaults={
-    'none': lambda x: x,
+    'none': identity,
     'any': any,
     'all': all,
-    'not all': lambda x: not all(x),
-    'not any': lambda x: not any(x)
+    'not all': not_all,
+    'not any': not_any
 })
 
 
@@ -30,9 +45,9 @@ class BaseFilter(BaseTransformer):
 
     """ The base Filter class. """
 
-    def __init__(self, agg='any', verbose=True):
+    def __init__(self, agg='any', **kwargs):
         self._agg = None
-        super(BaseFilter, self).__init__(verbose=verbose)
+        super(BaseFilter, self).__init__(**kwargs)
         self.agg = agg
 
     def axes_names(self):
@@ -109,13 +124,6 @@ class BaseFilter(BaseTransformer):
 class Filter(BaseFilter, Transformer):
     """ Filter base class.
 
-     Args:
-         func (function: Mol => bool):
-             The function to use to filter the arguments.
-         agg (str or function: iterable<bool> => bool):
-             The aggregation to use in the filter. Can be 'any', 'all',
-             'not any', 'not all' or a callable, for example `any` or `all`.
-
      Examples:
 
          >>> import skchem
@@ -149,8 +157,19 @@ class Filter(BaseFilter, Transformer):
          anonymous    <Mol: c1ccccc1>
          dtype: object
      """
-    def __init__(self, func=None, agg='any', verbose=True):
-        super(Filter, self).__init__(agg=agg, verbose=verbose)
+    def __init__(self, func=None, agg='any', n_jobs=1, verbose=True):
+
+        """ Initialize a `Filter` object.
+
+             Args:
+             func (function: Mol => bool):
+                 The function to use to filter the arguments.
+             agg (str or function: iterable<bool> => bool):
+                 The aggregation to use in the filter. Can be 'any', 'all',
+                 'not any', 'not all' or a callable, for example `any` or `all`.
+        """
+
+        super(Filter, self).__init__(agg=agg, n_jobs=n_jobs, verbose=verbose)
         if func is not None:
             self._transform_mol = func
 

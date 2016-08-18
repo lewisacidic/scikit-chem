@@ -37,9 +37,24 @@ class ChiralFilter(Filter):
         Name: is_chiral, dtype: bool
 
     """
-    def __init__(self, check_meso=True, agg='any', verbose=True):
+    def __init__(self, check_meso=True, n_jobs=1, verbose=True):
+
+        """ Initialize a `ChiralFilter` object.
+
+        Args:
+            check_meso (bool):
+                Whether to include a check for meso compounds.
+
+            n_jobs (int):
+                The number of procesess to run the filter in.
+
+            verbose (bool):
+                Whether to output a progress bar.
+        """
+
         self.check_meso = check_meso
-        super(ChiralFilter, self).__init__(agg=agg, verbose=verbose)
+        super(ChiralFilter, self).__init__(agg='any', n_jobs=n_jobs,
+                                           verbose=verbose)
 
     @property
     def columns(self):

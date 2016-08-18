@@ -21,16 +21,6 @@ class SMARTSFilter(Filter):
 
     """ Filter a molecule based on smarts.
 
-    Args:
-        smarts (pd.Series or dict):
-            A series of SMARTS to use in the filter.
-        agg (function):
-            Option specifying the mode of the filter.
-
-            - None : No filtering takes place
-            - any: If any of the substructures are in molecule return True.
-            - all: If all of the substructures are in molecule.
-
     Examples:
 
         >>> import skchem
@@ -67,19 +57,38 @@ class SMARTSFilter(Filter):
         Name: structure, dtype: object
     """
 
-    def __init__(self, smarts, agg='any', verbose=True):
+    def __init__(self, smarts, agg='any', merge_hs=True, n_jobs=1,
+                 verbose=True):
+
+        """ Initialize a `SMARTSFilter` object.
+
+        Args:
+            smarts (pd.Series or dict):
+                A series of SMARTS to use in the filter.
+            agg (str or callable):
+                Option specifying the mode of the filter:
+                - 'any': If any of the substructures are in molecule.
+                - 'all': If all of the substructures are in molecule.
+            n_jobs (int):
+                The number of processes to run the filter in.
+            verbose (bool):
+                Whether to output a progress bar.
+
+        """
+
+        self.merge_hs = merge_hs
 
         def read_smarts(s):
             if isinstance(s, str):
-                return Mol.from_smarts(s, mergeHs=True)
+                return Mol.from_smarts(s, mergeHs=self.merge_hs)
             else:
                 return s
 
         self.smarts = pd.Series(smarts).apply(read_smarts)
-        super(SMARTSFilter, self).__init__(agg=agg, verbose=verbose)
+        super(SMARTSFilter, self).__init__(agg=agg, n_jobs=n_jobs,
+                                           verbose=verbose)
 
     def _transform_mol(self, mol):
-
         return self.smarts.apply(lambda smarts: smarts in mol).values
 
     @property
@@ -133,10 +142,19 @@ class PAINSFilter(SMARTSFilter):
 
     _pains = None
 
-    def __init__(self, verbose=True):
+    def __init__(self, n_jobs=1, verbose=True):
+
+        """ Initialize a `PAINSFilter` object.
+
+        Args:
+            n_jobs (int):
+                The number of procesess to run the filter in.
+            verbose (bool):
+                Whether to output a progress bar.
+        """
 
         super(PAINSFilter, self).__init__(self._load_pains(), agg='not any',
-                                          verbose=verbose)
+                                          n_jobs=n_jobs, verbose=verbose)
 
     @classmethod
     def _load_pains(cls):

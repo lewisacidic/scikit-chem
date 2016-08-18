@@ -30,14 +30,14 @@ class ForceField(Transformer, TransformFilter):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, preembed=True, warn_on_fail=True,
-                 error_on_fail=False, add_hs=True, verbose=True):
+    def __init__(self, preembed=True, warn_on_fail=True, error_on_fail=False,
+                 add_hs=True, n_jobs=1, verbose=True):
 
         self.add_hs = add_hs
         self.warn_on_fail = warn_on_fail
         self.error_on_fail = error_on_fail
         self.preembed = preembed
-        super(ForceField, self).__init__(verbose=verbose)
+        super(ForceField, self).__init__(verbose=verbose, n_jobs=n_jobs)
 
     @property
     def columns(self):

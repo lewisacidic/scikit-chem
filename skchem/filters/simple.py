@@ -24,15 +24,6 @@ class ElementFilter(Filter):
 
     """ Filter by elements.
 
-        Args:
-            elements (list[str]):
-                A list of elements to filter with.  If an element not in the
-                list is found in a molecule, return False, else return True.
-
-            as_bits (bool):
-                Whether to return integer counts or booleans for atoms if mode
-                is `count`.
-
         Examples:
 
             Basic usage on molecules:
@@ -85,12 +76,36 @@ class ElementFilter(Filter):
             Name: structure, dtype: object
 
         """
-    def __init__(self, elements=None, as_bits=False, agg='any', verbose=True):
+    def __init__(self, elements=None, as_bits=False, agg='any', n_jobs=1,
+                 verbose=True):
+
+        """ Initialize an ElementFilter object.
+
+        Args:
+            elements (list[str]):
+                A list of elements to filter with.  If an element not in the
+                list is found in a molecule, return False, else return True.
+
+            as_bits (bool):
+                Whether to return integer counts or booleans for atoms if mode
+                is `count`.
+
+            agg (str or callable):
+                The callable to combine rows to produce the predicate.
+
+            n_jobs (int):
+                How many processes to use.
+
+            verbose(bool):
+                Whether to output a progress bar.
+        """
+
         self._elements = None
 
         self.elements = elements
         self.as_bits = as_bits
-        super(ElementFilter, self).__init__(agg=agg, verbose=verbose)
+        super(ElementFilter, self).__init__(agg=agg, n_jobs=n_jobs,
+                                            verbose=verbose)
 
     @property
     def elements(self):
@@ -121,6 +136,7 @@ class ElementFilter(Filter):
 
 
 class OrganicFilter(ElementFilter):
+
     """ Whether a molecule is organic.
 
         For the purpose of this function, an organic molecule is defined as
@@ -165,9 +181,19 @@ class OrganicFilter(ElementFilter):
                 Name: structure, dtype: object
         """
 
-    def __init__(self, verbose=True):
+    def __init__(self, n_jobs=1, verbose=True):
+
+        """ Initialize an Organic Filter object.
+
+        Args:
+            n_jobs (int):
+                The number of processes to run the filter in.
+            verbose (bool):
+                Whether to output a progress bar.
+        """
+
         super(OrganicFilter, self).__init__(elements=None, agg='not any',
-                                            verbose=verbose)
+                                            n_jobs=n_jobs, verbose=verbose)
         self.elements = [element for element in self.elements
                          if element not in ORGANIC]
 
@@ -231,7 +257,6 @@ def n_atoms(mol, above=2, below=75, include_hydrogens=False):
         False
         >>> skchem.filters.n_atoms(m, above=9, below=14, include_hydrogens=True)
         True
-
     """
 
     assert above < below, 'Interval {} < a < {} undefined.'.format(above,
@@ -250,14 +275,6 @@ class AtomNumberFilter(Filter):
     """Filter whether the number of atoms in a Mol falls in a defined interval.
 
     `above <= n_atoms < below`
-
-    Args:
-        above (int):
-            The lower threshold number of atoms (exclusive).
-            Defaults to None.
-        below (int):
-            The higher threshold number of atoms (inclusive).
-            Defaults to None.
 
     Examples:
         >>> import skchem
@@ -293,8 +310,23 @@ class AtomNumberFilter(Filter):
         Name: num_atoms_in_range, dtype: bool
     """
 
-    def __init__(self, above=3, below=60, include_hydrogens=False, agg='any',
+    def __init__(self, above=3, below=60, include_hydrogens=False, n_jobs=1,
                  verbose=True):
+
+        """ Initialize an AtomNumberFilter object.
+
+        Args:
+            mol: (skchem.Mol):
+                The molecule to be tested.
+            above (int):
+                The lower threshold on the mass.
+            below (int):
+                The higher threshold on the mass.
+            n_jobs (int):
+                The number of processes to run the filter in.
+            verbose (bool):
+                Whether to output a progress bar.
+        """
 
         assert above < below, 'Interval {} < a < {} undefined.'.format(above,
                                                                        below)
@@ -302,7 +334,8 @@ class AtomNumberFilter(Filter):
         self.below = below
         self.include_hydrogens = include_hydrogens
 
-        super(AtomNumberFilter, self).__init__(agg=agg, verbose=verbose)
+        super(AtomNumberFilter, self).__init__(agg='any', n_jobs=n_jobs,
+                                               verbose=verbose)
 
     def _transform_mol(self, mol):
         return n_atoms(mol, above=self.above, below=self.below,
@@ -312,11 +345,12 @@ class AtomNumberFilter(Filter):
     def columns(self):
         return pd.Index(['num_atoms_in_range'])
 
+
 def mass(mol, above=10, below=900):
 
     """ Whether a the molecular weight of a molecule is lower than a threshold.
 
-    ``above <= mass < below``
+    `above <= mass < below`
 
     Args:
         mol: (skchem.Mol):
@@ -353,19 +387,10 @@ def mass(mol, above=10, below=900):
 
 
 class MassFilter(Filter):
+
     """ Filter whether the molecular weight of a molecule is outside a range.
 
     `above <= mass < below`
-
-    Args:
-        mol: (skchem.Mol):
-            The molecule to be tested.
-        above (float):
-            The lower threshold on the mass.
-            Defaults to None.
-        below (float):
-            The higher threshold on the mass.
-            Defaults to None.
 
     Examples:
 
@@ -394,14 +419,30 @@ class MassFilter(Filter):
 
     """
 
-    def __init__(self, above=3, below=900, agg='any', verbose=True):
+    def __init__(self, above=3, below=900, n_jobs=1, verbose=True):
+
+        """ Initialize a MassFilter object.
+
+        Args:
+            mol: (skchem.Mol):
+                The molecule to be tested.
+            above (float):
+                The lower threshold on the mass.
+            below (float):
+                The higher threshold on the mass.
+            n_jobs (int):
+                The number of processes to run the filter in.
+            verbose (bool):
+                Whether to output a progress bar.
+        """
 
         assert above < below, 'Interval {} < a < {} undefined.'.format(above,
                                                                        below)
         self.above = above
         self.below = below
 
-        super(MassFilter, self).__init__(agg=agg, verbose=verbose)
+        super(MassFilter, self).__init__(agg='any', n_jobs=n_jobs,
+                                         verbose=verbose)
 
     def _transform_mol(self, mol):
         return mass(mol, above=self.above, below=self.below)
