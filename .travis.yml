@@ -10,7 +10,7 @@ install:
 
 # command to run tests
 script: 
-  python setup.py test --run-slow
+  pytest --run-slow
 
 after_success:
   ocular
