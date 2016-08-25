@@ -358,7 +358,7 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
         """ float: the intrinsic state of the atom. """
 
         # py2compat
-        return (float(2 / self.principal_quantum_number) ** 2 *
+        return ((2. / self.principal_quantum_number) ** 2 *
                 self.valence_degree + 1) / self.depleted_degree
 
     @property
@@ -708,7 +708,7 @@ class AtomView(ChemicalObjectView):
         view. """
 
         #py2 compat
-        return ((2 / self.principal_quantum_number).astype(float) ** 2 *
+        return ((2. / self.principal_quantum_number).astype(float) ** 2 *
                 self.valence_degree + 1) / self.depleted_degree
 
     @property
