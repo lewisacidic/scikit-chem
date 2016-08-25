@@ -1,3 +1,6 @@
+[run]
+omit = skchem/tests/*
+
 [report]
 omit =
     */python?.?/*

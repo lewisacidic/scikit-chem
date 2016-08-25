@@ -4,13 +4,14 @@
 # License: 3-clause BSD
 
 """
-# file title
+# conftest
 
-Description
+Configuring pytest for scikit-chem.
 """
 
-import pytest
-
 def pytest_addoption(parser):
-    parser.addoption("--with-chemaxon", action="store_true",
-        help="mark tests that fail if no chemaxon provided.")
+    parser.addoption('--with-chemaxon', action='store_true',
+                     help='mark tests that fail if no chemaxon provided.')
+
+    parser.addoption('--run-slow', action='store_true',
+                     help='mark tests that take a while to run.')

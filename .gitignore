@@ -57,3 +57,5 @@ target/
 .DS_Store
 .idea/
 .ipynb_checkpoints
+
+htmlcov/
