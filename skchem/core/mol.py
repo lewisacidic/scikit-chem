@@ -14,14 +14,13 @@ import copy
 import rdkit.Chem
 import rdkit.Chem.inchi
 from rdkit.Chem import AddHs, RemoveHs
-from rdkit.Chem.rdDepictor import Compute2DCoords
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula, CalcExactMolWt
 
 import json
 
 from .atom import AtomView
 from .bond import BondView
-from .conformer import Conformer
+from .conformer import ConformerView
 from .base import ChemicalObject, PropertyView
 from ..utils import Suppressor
 
@@ -98,19 +97,15 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         <BondView values="['C-C', 'C=O', 'C-Cl']" at ...>
 
         These are iterable:
-        >>> [a.element for a in m.atoms]
+        >>> [a.symbol for a in m.atoms]
         ['C', 'C', 'O', 'Cl']
 
         The view provides shorthands for some attributes to get these as pandas
         objects:
 
-        >>> m.atoms.element
-        atom_idx
-        0     C
-        1     C
-        2     O
-        3    Cl
-        dtype: object
+        >>> m.atoms.symbol
+        array(['C', 'C', 'O', 'Cl'],
+              dtype='<U3')
 
         Atom and bond props can also be set:
 
@@ -209,8 +204,9 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
 
         """ List[Conformer]: conformers of the molecule. """
 
-        return [Conformer.from_super(self.GetConformer(i))
-                for i in range(len(self.GetConformers()))]
+        if not hasattr(self, '_conformers'):
+            self._conformers = ConformerView(self)
+        return self._conformers
 
     def to_formula(self):
 
@@ -222,17 +218,10 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         # formula may be undefined if atoms are uncertainly typed
         # e.g. if the molecule was initialize through SMARTS
         try:
-            return CalcMolFormula(self)
+            with Suppressor():
+                return CalcMolFormula(self)
         except RuntimeError:
             raise ValueError('Formula is undefined for {}'.format(self))
-
-    def _two_d(self):
-
-        """ Return a conformer with coordinates in two dimension. """
-
-        if not hasattr(self, '__two_d'):
-            self.__two_d = Compute2DCoords(self)
-        return self.conformers[self.__two_d]
 
     def add_hs(self, inplace=False, add_coords=True, explicit_only=False,
                only_on_atoms=False):
@@ -283,7 +272,7 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
                        updateExplicitCount=update_explicit, sanitize=sanitize)
         return self.__class__.from_super(raw)
 
-    def to_dict(self, kind="chemdoodle"):
+    def to_dict(self, kind="chemdoodle", conformer_id=-1):
 
         """ A dictionary representation of the molecule.
 
@@ -297,27 +286,38 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
                 dictionary representation of the molecule."""
 
         if kind == "chemdoodle":
-            return self._to_dict_chemdoodle()
+            return self._to_dict_chemdoodle(conformer_id=conformer_id)
 
         else:
             raise NotImplementedError
 
-    def _to_dict_chemdoodle(self):
+    def _to_dict_chemdoodle(self, conformer_id=-1):
 
         """ Chemdoodle dict representation of the molecule.
 
         Documentation of the format may be found on the `chemdoodle website \
         <https://web.chemdoodle.com/docs/chemdoodle-json-format>`_"""
 
-        atom_positions = [p.to_dict() for p in self._two_d().atom_positions]
-        atom_elements = [a.element for a in self.atoms]
+        try:
+            pos = self.conformers[conformer_id].positions
+        except IndexError as e:
+            if conformer_id == -1:
+                # no conformers available, so we generate one with 2d coords,
+                # save the positions, then delete the conf
 
-        for i, atom_position in enumerate(atom_positions):
-            atom_position['l'] = atom_elements[i]
+                self.conformers.append_2d()
+                pos = self.conformers[0].positions
+
+                del self.conformers[0]
+            else:
+                raise e
+
+        atoms = [{'x': p[0], 'y': p[1], 'z': p[2], 'l': s}
+                 for s, p in zip(self.atoms.symbol, pos.round(4))]
 
         bonds = [b.to_dict() for b in self.bonds]
 
-        return {"m": [{"a": atom_positions, "b": bonds}]}
+        return {"m": [{"a": atoms, "b": bonds}]}
 
     def to_json(self, kind='chemdoodle'):
 
@@ -410,12 +410,6 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
             return (self in item) and (item in self)
         else:
             return False
-
-    def _repr_javascript(self):
-
-        """ Rich printing in javascript. """
-
-        return self.to_json()
 
     def __str__(self):
         return '<Mol: {}>'.format(self.to_smiles())

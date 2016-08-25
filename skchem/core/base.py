@@ -47,7 +47,7 @@ class ChemicalObjectView(object):
         # subclass call this, then implement the actual get if None
         if isinstance(index, slice):
             return self.to_list()[index]
-        if isinstance(index, list) \
+        if isinstance(index, (list, tuple)) \
                 and all(isinstance(i, bool) for i in index) \
                 and len(index) == len(self):
             return [self[i] for i, ix in enumerate(index) if ix]
@@ -57,7 +57,7 @@ class ChemicalObjectView(object):
             return None
 
     @abstractmethod
-    def __len__(self):
+    def __len__(self):  # pragma: no cover
         pass
 
     def __iter__(self):
@@ -115,7 +115,7 @@ class View(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def keys(self):
+    def keys(self):  # pragma: no cover
         return []
 
     def get(self, index, default=None):
@@ -147,15 +147,15 @@ class View(object):
         self.__delitem__(key)
 
     @abstractmethod
-    def __getitem__(self, key):
+    def __getitem__(self, key):  # pragma: no cover
         pass
 
     @abstractmethod
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value):  # pragma: no cover
         pass
 
     @abstractmethod
-    def __delitem__(self, key):
+    def __delitem__(self, key):  # pragma: no cover
         pass
 
     def __iter__(self):
@@ -187,6 +187,8 @@ class PropertyView(View):
 
      This provides properties for rdkit objects. """
 
+    _reserved = ('origNoImplicit', 'isImplicit')
+
     def __init__(self, owner):
         """ Initialize a PropertyView.
 
@@ -199,7 +201,9 @@ class PropertyView(View):
     def keys(self):
         """ The available property keys on the object. """
 
-        return list(k for k in self._owner.GetPropNames() if k[:1] != '_')
+        # pretend not to know about 'reserved' props
+        return list(k for k in self._owner.GetPropNames()
+                    if (k[:1] != '_' and k not in self._reserved))
 
     def __getitem__(self, key):
 
@@ -222,7 +226,7 @@ class PropertyView(View):
             warnings.warn(msg)
             key = str(key)
 
-        if key[0] == '_':
+        if key[0] == '_' or key in self._reserved:
             msg = '`{value}` is a private RDKit property key. '
             'Using this may have unintended consequences.'.format(value=value)
             warnings.warn(msg)
@@ -272,6 +276,7 @@ class MolPropertyView(View):
 
     def __setitem__(self, key, value):
         if isinstance(value, (pd.Series, dict)):
+            print('got dict or series')
             for idx, val in pd.compat.iteritems(value):
                 self._obj_view[int(idx)].props[key] = val
         else:
