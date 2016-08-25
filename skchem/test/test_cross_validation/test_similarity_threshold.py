@@ -17,6 +17,7 @@ import numpy as np
 from ...data import Diversity
 from ...cross_validation import SimThresholdSplit
 
+from .. import slow
 
 @pytest.fixture
 def x():
@@ -26,11 +27,13 @@ def x():
 def cv(x):
     return SimThresholdSplit(fper=None, block_width=500, n_jobs=1).fit(x)
 
+@slow
 def test_split(cv, x):
     train, test = cv.split((8, 2))
     assert (1 - cdist(x[train], x[test]) > cv.threshold_).sum() == 0
     assert np.allclose([train.sum()], [len(x) * 0.8], rtol=0.05)
 
+@slow
 def test_k_fold(cv, x):
     kfold = [fold for fold in cv.k_fold(5)]
     assert len(kfold) == 5

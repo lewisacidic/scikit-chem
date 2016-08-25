@@ -248,7 +248,7 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
     @property
     def van_der_waals_radius(self):
 
-        """ float: the Van der Waals radius in Å. """
+        """ float: the Van der Waals radius in angstroms. """
 
         return PERIODIC_TABLE.van_der_waals_radius[self.atomic_number]
 

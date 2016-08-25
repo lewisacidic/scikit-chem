@@ -124,7 +124,7 @@ class ElementFilter(Filter):
 
     def _transform_mol(self, mol):
 
-        counter = Counter(atom.element for atom in mol.atoms)
+        counter = Counter(atom.symbol for atom in mol.atoms)
         res = pd.Series(counter)
 
         res = res[self.elements].fillna(0).astype(int)

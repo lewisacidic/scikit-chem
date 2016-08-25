@@ -81,7 +81,7 @@ def atomic_mass(a):
 
     """ Atomic mass of atom """
 
-    return a.mass
+    return a.atomic_mass
 
 
 def explicit_valence(a):
@@ -195,9 +195,9 @@ def gasteiger_charge(a, force_calc=False):
         return float(a.props['_GasteigerCharge'])
 
 
-def electronegativity(a):
+def pauling_electronegativity(a):
 
-    return PERIODIC_TABLE.loc[a.atomic_number, 'pauling_electronegativity']
+    return a.pauling_electronegativity
 
 
 def first_ionization(a):
@@ -230,7 +230,7 @@ ATOM_FEATURES = {
     'atomic_mass': atomic_mass,
     'formal_charge': formal_charge,
     'gasteiger_charge': gasteiger_charge,
-    'electronegativity': electronegativity,
+    'pauling_electronegativity': pauling_electronegativity,
     'first_ionisation': first_ionization,
     'group': group,
     'period': period,

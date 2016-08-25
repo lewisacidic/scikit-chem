@@ -19,6 +19,9 @@ if not hasattr(pytest, 'config'):
     pytest.config = FakeConfig()
 
 with_chemaxon = pytest.mark.skipif(
-    not pytest.config.getoption("--with-chemaxon"),
-    reason="no chemaxon provided."
-)
+    not pytest.config.getoption('--with-chemaxon'),
+    reason='no chemaxon provided.')
+
+slow = pytest.mark.skipif(
+    not pytest.config.getoption('--run-slow'),
+    reason='test runs slowly.')
