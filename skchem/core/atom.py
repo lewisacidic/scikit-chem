@@ -255,7 +255,7 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
     @property
     def van_der_waals_volume(self):
 
-        """ float: the van der waals volume in Å^3.
+        """ float: the van der waals volume in angstroms^3.
 
         $\frac{4}{3} \pi r_v^3 $ """
 
