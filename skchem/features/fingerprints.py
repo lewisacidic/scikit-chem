@@ -37,11 +37,11 @@ class MorganFeaturizer(Transformer, Featurizer):
 
     Notes:
 
-    Currently, folded bits are by far the fastest implementation.
+        Currently, folded bits are by far the fastest implementation.
 
-    Due to the speed of calculation, it is unlikely to see a speedup using
-    the current parallel code, as more time is spent moving data across
-    processes than for calculating in a single process.
+        Due to the speed of calculation, it is unlikely to see a speedup using
+        the current parallel code, as more time is spent moving data across
+        processes than for calculating in a single process.
 
     Examples:
 
@@ -49,7 +49,7 @@ class MorganFeaturizer(Transformer, Featurizer):
     >>> import pandas as pd
     >>> pd.options.display.max_rows = pd.options.display.max_columns = 5
 
-    >>> mf = skchem.descriptors.MorganFeaturizer()
+    >>> mf = skchem.features.MorganFeaturizer()
     >>> m = skchem.Mol.from_smiles('CCC')
 
     Can transform an individual molecule to yield a Series:

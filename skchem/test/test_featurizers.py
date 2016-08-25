@@ -1,5 +1,5 @@
 
-from ..descriptors import AtomFeaturizer
+from ..features import AtomFeaturizer
 from ..core import Mol
 import pytest
 
@@ -50,9 +50,7 @@ def test_on_m(af, m):
 
 
 def test_on_ser(af, s):
-    print(s)
     feats = af.transform(s)
-    print(feats)
     assert np.array_equal(feats.shape, (len(s), af.max_atoms, len(af.minor_axis)))
     assert feats.ix[1, 0, 'is_C'] == True
     assert feats.ix[2, 2, 'is_O'] == True

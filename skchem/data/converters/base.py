@@ -21,7 +21,7 @@ from fuel.datasets import H5PYDataset
 
 from ... import forcefields
 from ... import filters
-from ... import descriptors
+from ... import features
 from ... import standardizers
 from ... import pipeline
 
@@ -67,25 +67,25 @@ Feature = namedtuple('Feature', ['fper', 'key', 'axis_names'])
 
 def default_features():
     return (
-        Feature(fper=descriptors.MorganFeaturizer(),
+        Feature(fper=features.MorganFeaturizer(),
                 key='X_morg',
                 axis_names=['batch', 'features']),
-        Feature(fper=descriptors.PhysicochemicalFeaturizer(),
+        Feature(fper=features.PhysicochemicalFeaturizer(),
                 key='X_pc',
                 axis_names=['batch', 'features']),
-        Feature(fper=descriptors.AtomFeaturizer(max_atoms=100),
+        Feature(fper=features.AtomFeaturizer(max_atoms=100),
                 key='A',
                 axis_names=['batch', 'atom_idx', 'features']),
-        Feature(fper=descriptors.GraphDistanceTransformer(max_atoms=100),
+        Feature(fper=features.GraphDistanceTransformer(max_atoms=100),
                 key='G',
                 axis_names=['batch', 'atom_idx', 'atom_idx']),
-        Feature(fper=descriptors.SpacialDistanceTransformer(max_atoms=100),
+        Feature(fper=features.SpacialDistanceTransformer(max_atoms=100),
                 key='G_d',
                 axis_names=['batch', 'atom_idx', 'atom_idx']),
-        Feature(fper=descriptors.ChemAxonFeaturizer(features='all'),
+        Feature(fper=features.ChemAxonFeaturizer(features='all'),
                 key='X_cx',
                 axis_names=['batch', 'features']),
-        Feature(fper=descriptors.ChemAxonAtomFeaturizer(features='all', max_atoms=100),
+        Feature(fper=features.ChemAxonAtomFeaturizer(features='all', max_atoms=100),
                 key='A_cx',
                 axis_names=['batch', 'atom_idx', 'features'])
     )

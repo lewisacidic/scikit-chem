@@ -5,7 +5,7 @@
 
 import matplotlib.pyplot as plt
 
-from .. import descriptors
+from .. import features
 from .. import core
 from .. import vis
 from ipywidgets import Dropdown, Text, VBox, HBox, Valid, HTML
@@ -19,7 +19,7 @@ class Visualizer(object):
         self.initialize_ipython()
 
         if isinstance(fper, str):
-            self.fper = descriptors.get(fper)
+            self.fper = features.get(fper)
         else:
             self.fper = fper
 

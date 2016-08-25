@@ -10,7 +10,7 @@ import logging
 from . import core
 from . import filters
 from . import data
-from . import descriptors
+from . import features
 from . import io
 from . import vis
 from . import cross_validation
@@ -24,7 +24,7 @@ from .io import read_sdf, read_smiles
 
 __version__ = '0.0.6'
 
-__all__ = ['core', 'filters', 'data', 'descriptors', 'io', 'vis',
+__all__ = ['core', 'filters', 'data', 'features', 'io', 'vis',
            'cross_validation', 'standardizers', 'interact', 'pipeline']
 
 LOGGER = logging.getLogger(__name__)

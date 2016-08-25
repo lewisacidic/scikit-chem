@@ -14,7 +14,7 @@ import os
 
 from .base import Converter, default_pipeline, contiguous_order, Feature
 from ...cross_validation import SimThresholdSplit
-from ... import descriptors
+from ... import features
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,23 +39,23 @@ class ChEMBLConverter(Converter):
         (ms, y, train, valid, test) = contiguous_order((ms, y, train, valid, test), (train, valid, test))
         splits = (('train', train), ('valid', valid), ('test', test))
 
-        features = (
-        Feature(fper=descriptors.MorganFeaturizer(),
+        feats = (
+        Feature(fper=features.MorganFeaturizer(),
                 key='X_morg',
                 axis_names=['batch', 'features']),
-        Feature(fper=descriptors.PhysicochemicalFeaturizer(),
+        Feature(fper=features.PhysicochemicalFeaturizer(),
                 key='X_pc',
                 axis_names=['batch', 'features']),
-        Feature(fper=descriptors.AtomFeaturizer(max_atoms=100),
+        Feature(fper=features.AtomFeaturizer(max_atoms=100),
                 key='A',
                 axis_names=['batch', 'atom_idx', 'features']),
-        Feature(fper=descriptors.GraphDistanceTransformer(max_atoms=100),
+        Feature(fper=features.GraphDistanceTransformer(max_atoms=100),
                 key='G',
                 axis_names=['batch', 'atom_idx', 'atom_idx']),
-        Feature(fper=descriptors.SpacialDistanceTransformer(max_atoms=100),
+        Feature(fper=features.SpacialDistanceTransformer(max_atoms=100),
                 key='G_d'))
 
-        self.run(ms, y, output_path, splits=splits)
+        self.run(ms, y, output_path, features=feats, splits=splits)
 
 
     def parse_infile(self, filename):

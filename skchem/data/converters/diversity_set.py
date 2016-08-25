@@ -18,7 +18,7 @@ from .base import Converter, contiguous_order, Feature
 from ...pipeline import Pipeline
 from ...io import read_sdf
 from ...cross_validation import SimThresholdSplit
-from ...descriptors import MorganFeaturizer
+from ...features import MorganFeaturizer
 from ...standardizers import ChemAxonStandardizer
 
 class DiversityConverter(Converter):

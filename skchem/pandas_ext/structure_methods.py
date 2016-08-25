@@ -18,7 +18,7 @@ from pandas.core.series import Series
 from pandas.core.index import Index
 
 from .. import core
-from .. import descriptors
+from .. import features
 
 DIM_RED = {
     'tsne': TSNE,
@@ -49,7 +49,7 @@ class StructureMethods(NoNewAttributesMixin):
         if isinstance(dim_red, str):
             dim_red = DIM_RED.get(dim_red.lower())(**dim_red_kw)
 
-        fper = descriptors.get(fper)
+        fper = features.get(fper)
         fper.verbose = False
         feats = fper.transform(self._data)
         feats = feats.fillna(feats.mean())

@@ -22,7 +22,7 @@ from sklearn.manifold import TSNE, MDS
 import multiprocessing
 from functools import partial, wraps
 
-from .. import descriptors
+from .. import features
 
 LOGGER = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ class SimThresholdSplit(object):
         self.pairs_ = self.threshold_ = None
 
         if isinstance(fper, str):
-            fper = descriptors.get(fper)
+            fper = features.get(fper)
 
         self.fper = fper
         self.similarity_metric = similarity_metric
