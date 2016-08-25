@@ -9,7 +9,7 @@
 Module for plotting images of molecules.
 """
 
-from .mol import draw
+from .mol import draw, draw_3d
 from .atom import plot_weights
 
-__all__ = ['draw', 'plot_weights']
+__all__ = ['draw', 'draw_3d', 'plot_weights']
