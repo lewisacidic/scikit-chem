@@ -707,7 +707,8 @@ class AtomView(ChemicalObjectView):
         """ np.ndarray<float>: the intrinsic state of the atoms in the
         view. """
 
-        return ((2 / self.principal_quantum_number) ** 2 *
+        #py2 compat
+        return ((2 / self.principal_quantum_number).astype(float) ** 2 *
                 self.valence_degree + 1) / self.depleted_degree
 
     @property
