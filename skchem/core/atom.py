@@ -334,7 +334,8 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
         if self.atomic_number == 1:
             return -0.2
         else:
-            return (self.valence_degree - self.depleted_degree) / \
+            # py2 compat
+            return float(self.valence_degree - self.depleted_degree) / \
                    (self.principal_quantum_number ** 2)
 
     @property
@@ -356,7 +357,8 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
 
         """ float: the intrinsic state of the atom. """
 
-        return ((2 / self.principal_quantum_number) ** 2 *
+        # py2compat
+        return (float(2 / self.principal_quantum_number) ** 2 *
                 self.valence_degree + 1) / self.depleted_degree
 
     @property

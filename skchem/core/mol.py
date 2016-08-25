@@ -100,12 +100,10 @@ class Mol(rdkit.Chem.rdchem.Mol, ChemicalObject):
         >>> [a.symbol for a in m.atoms]
         ['C', 'C', 'O', 'Cl']
 
-        The view provides shorthands for some attributes to get these as pandas
-        objects:
+        The view provides shorthands for some attributes to get these:
 
-        >>> m.atoms.symbol
-        array(['C', 'C', 'O', 'Cl'],
-              dtype='<U3')
+        >>> m.atoms.symbol  # doctest: +ELLIPSIS
+        array(['C', 'C', 'O', 'Cl'], dtype=...)
 
         Atom and bond props can also be set:
 
