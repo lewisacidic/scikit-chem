@@ -9,10 +9,7 @@ import numpy as np
 import pandas as pd
 
 from ...core import atom, Mol
-
-
-from . import example_mol
-
+from . import example_mol  # provides m fixture
 
 @pytest.fixture(name='plat')
 def plat_mol():
@@ -27,6 +24,7 @@ def example_atom(m):
 @pytest.fixture(name='dummy_props')
 def dummy_properties():
     return ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+
 
 @pytest.fixture(name='mwp')
 def mol_with_props(m, dummy_props):
@@ -110,6 +108,9 @@ valence_test_data = [
 
 valence_params = pytest.mark.parametrize('field, expected', valence_test_data)
 
+
+def test_index(a):
+    assert a.index == 0
 
 def test_all_params_on_view():
 
@@ -317,3 +318,47 @@ def test_view_warns_obj(m):
 
 def test_view_index(m):
     assert m.atoms.index.equals(pd.RangeIndex(7, name='atom_idx'))
+
+
+def test_covalent_unspecified():
+    a = atom.Atom('C')
+    assert a.covalent_radius == 0.77
+
+
+def test_adjacency_matrix(m):
+
+    adj_mat = [[0, 1, 0, 0, 0, 0, 0],
+               [1, 0, 1, 1, 0, 0, 0],
+               [0, 1, 0, 0, 0, 0, 0],
+               [0, 1, 0, 0, 1, 1, 0],
+               [0, 0, 0, 1, 0, 0, 0],
+               [0, 0, 0, 1, 0, 0, 1],
+               [0, 0, 0, 0, 0, 1, 0]]
+
+    assert np.array_equal(m.atoms.adjacency_matrix(), adj_mat)
+
+
+def test_adjacency_matrix_bo(m):
+
+    adj_mat = [[0, 1, 0, 0, 0, 0, 0],
+               [1, 0, 2, 1, 0, 0, 0],
+               [0, 2, 0, 0, 0, 0, 0],
+               [0, 1, 0, 0, 1, 1, 0],
+               [0, 0, 0, 1, 0, 0, 0],
+               [0, 0, 0, 1, 0, 0, 1],
+               [0, 0, 0, 0, 0, 1, 0]]
+
+    assert np.array_equal(m.atoms.adjacency_matrix(bond_orders=True), adj_mat)
+
+
+def test_distance_matrix(m):
+
+    dist_mat = [[0, 1, 2, 2, 3, 3, 4],
+                [1, 0, 1, 1, 2, 2, 3],
+                [2, 1, 0, 2, 3, 3, 4],
+                [2, 1, 2, 0, 1, 1, 2],
+                [3, 2, 3, 1, 0, 2, 3],
+                [3, 2, 3, 1, 2, 0, 1],
+                [4, 3, 4, 2, 3, 1, 0]]
+
+    assert np.array_equal(m.atoms.distance_matrix(), dist_mat)

@@ -111,7 +111,7 @@ class Conformer(rdkit.Chem.rdchem.Conformer, ChemicalObject):
         eig_val, eig_vects = np.linalg.eigh(self._inertia_tensor())
         self.positions = self.positions.dot(eig_vects)
 
-    def canonize(self):
+    def canonicalize(self):
 
         """ Center the reference frame at the centre of mass and """
 

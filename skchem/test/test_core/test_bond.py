@@ -34,6 +34,7 @@ def test_out_of_range(m):
 def test_reverse_index(m):
     assert m.bonds[-1].order == 1
 
+
 def test_slice(m):
     assert len(m.bonds[[1, 4]]) == 2
 
@@ -45,6 +46,10 @@ def test_repr(b):
 def test_owner(m):
     # rdkit gives a copy of the object, so cant test for identity
     assert m.bonds[0].owner.to_smiles() == m.to_smiles()
+
+
+def test_index(b):
+    assert b.index == 0
 
 
 def test_to_dict(b):
@@ -106,6 +111,7 @@ arom_params = pytest.mark.parametrize('param, expected', arom_test_data)
 def test_params_on_bond_view(m, param, expected):
     assert np.array_equal(getattr(m.bonds, param), expected)
 
+
 @arom_params
 def test_arom_params(m_a, param, expected):
     assert np.array_equal(getattr(m_a.bonds, param), expected)
@@ -132,6 +138,17 @@ def test_props_keys_full(bwp):
 
 def test_props_len_full(bwp):
     assert len(bwp.props) == 1
+
+
+def test_edge_adj(m):
+
+    assert np.array_equal(m.bonds.adjacency_matrix(), np.array([
+        [0, 1, 1, 0, 0, 0],
+        [1, 0, 1, 0, 0, 0],
+        [1, 1, 0, 1, 1, 0],
+        [0, 0, 1, 0, 1, 0],
+        [0, 0, 1, 1, 0, 1],
+        [0, 0, 0, 0, 1, 0]]))
 
 
 def test_atom_idx_view(m):

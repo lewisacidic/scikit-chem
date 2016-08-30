@@ -9,6 +9,8 @@
 Defining chemical bonds in scikit-chem.
 """
 
+from itertools import chain, combinations
+
 import pandas as pd
 import rdkit.Chem
 import numpy as np
@@ -23,6 +25,13 @@ class Bond(rdkit.Chem.rdchem.Bond, ChemicalObject):
     Class representing a chemical bond in scikit-chem.
 
     """
+
+    @property
+    def index(self):
+
+        """ int: the index of the bond in the atom. """
+
+        return self.GetIdx()
 
     @property
     def atoms(self):
@@ -187,8 +196,19 @@ class BondView(ChemicalObjectView):
     @property
     def index(self):
 
-        """ A `pd.Index` of the bonds in the `BondView`. """
+        """ pd.Index: an index of the bonds in the `BondView`. """
 
         return pd.RangeIndex(len(self), name='bond_idx')
+
+    def adjacency_matrix(self):
+
+        """ np.array[int]: the bond adjacency matrix. """
+
+        res = np.zeros((len(self), len(self)))
+        ixs = zip(*chain(*(combinations((bond.index for bond in atom.bonds), 2)
+                           for atom in self.owner.atoms)))
+        res[tuple(ixs)] = 1
+        res += res.T
+        return res.astype(int)
 
 __all__ = ['Atom', 'AtomView']

@@ -115,8 +115,8 @@ def test_align(c_rot):
     assert np.allclose(z, np.zeros(len(z)))
 
 
-def test_canonize(c_rand):
-    c_rand.canonize()
+def test_canonicalize(c_rand):
+    c_rand.canonicalize()
     x, y, z = c_rand.positions.T
     assert np.allclose(y, np.zeros(len(y)))
     assert np.allclose(z, np.zeros(len(z)))

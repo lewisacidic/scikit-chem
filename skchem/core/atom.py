@@ -29,6 +29,13 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
     """ Object representing an Atom in scikit-chem. """
 
     @property
+    def index(self):
+
+        """ int: the index of the atom. """
+
+        return self.GetIdx()
+
+    @property
     def owner(self):
 
         """ skchem.Mol: the owning molecule.
@@ -279,7 +286,9 @@ class Atom(Chem.rdchem.Atom, ChemicalObject):
         """ float: the covalent radius in angstroms. """
 
         if self.atomic_number in self._cov_dict.keys():
-            return self._cov_dict[self.atomic_number][self.hybridization_state]
+            hstate = self.hybridization_state
+            hstate = 'SP3' if hstate == 'UNSPECIFIED' else hstate
+            return self._cov_dict[self.atomic_number][hstate]
         else:
             return PERIODIC_TABLE.covalent_radius[self.atomic_number]
 
@@ -717,6 +726,41 @@ class AtomView(ChemicalObjectView):
         """ The hexcode to use as a color for the atoms in the view. """
 
         return PERIODIC_TABLE.hexcode[self.atomic_number].values
+
+    def adjacency_matrix(self, bond_orders=False, force=True):
+
+        """ The vertex adjacency matrix.
+
+        Args:
+            bond_orders (bool):
+                Whether to use bond orders.
+            force (bool):
+                Whether to recalculate or used rdkit cached value.
+
+        Returns:
+            np.array[int]
+        """
+
+        return Chem.GetAdjacencyMatrix(self.owner, useBO=bond_orders,
+                                       force=force)
+
+    def distance_matrix(self, bond_orders=False, force=True):
+
+        """ The vertex distance matrix.
+
+        Args:
+            bond_orders (bool):
+                Whether to use bond orders.
+            force (bool):
+                Whether to recalculate or used rdkit cached value.
+
+        Returns:
+            np.array[int]
+        """
+
+        return Chem.GetDistanceMatrix(self.owner, useBO=bond_orders,
+                                      force=force)
+
     @property
     def index(self):
 
