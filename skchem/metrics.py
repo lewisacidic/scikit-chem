@@ -45,7 +45,7 @@ def bedroc_score(y_true, y_pred, decreasing=True, alpha=20.0):
     else:
         order = np.argsort(y_pred)
 
-    m_rank = (y_true[order] == 1).nonzero()[0]
+    m_rank = (y_true[order] == 1).nonzero()[0] + 1
 
     s = np.sum(np.exp(-alpha * m_rank / big_n))
 
